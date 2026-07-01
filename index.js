@@ -101,7 +101,7 @@ addEventListener("keyup", () => {
 });
 </script>`;
 
-const OFFSETLINES = injectScript.split("\n").length + 17;
+const OFFSETLINES = injectScript.split("\n").length + 28;
 injectScript = injectScript.replace("$OFFSETLINES$", OFFSETLINES);
 
 const generatePreviewHTML = (isApp, isDesignMode = true) => {
@@ -180,15 +180,6 @@ const makeEditor = (elEditor) => {
 // Designer mode
 const elHtml = el("#editor-HTML");
 const elConsole = el("#console");
-addEventListener("message", function (event) {
-    if (event.data.type === "code") {
-        const body = new DOMParser().parseFromString(event.data.content, "text/html").body;
-        body.querySelector("#◆xode-js")?.remove();
-        elHTML.value = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
-        hilite(elHTML.closest(".editor"));
-        updateLineNumbers(elHtml);
-    }
-});
 
 const appendLogBlock = ({ type, args, line }) => {
     const elBlock = elNew('code', {
@@ -204,7 +195,17 @@ const appendLogBlock = ({ type, args, line }) => {
 };
 
 addEventListener("message", (evt) => {
-    if (evt.data.type === "clear") {
+    if (evt.data.type === "html") return;
+    
+    if (evt.data.type === "code") {
+        const body = new DOMParser().parseFromString(evt.data.content, "text/html").body;
+        body.querySelector("#◆xode-js")?.remove();
+        elHTML.value = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
+        hilite(elHTML.closest(".editor"));
+        updateLineNumbers(elHtml);
+    }
+    // Console messages
+    else if (evt.data.type === "clear") {
         elConsole.innerHTML = "";
         appendLogBlock({ ...evt.data, args: ["Console cleared"] });
     } else {
