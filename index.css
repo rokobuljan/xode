@@ -284,6 +284,7 @@ input[type="text"] {
 #console {
     display: flex;
     flex-direction: column;
+    flex-wrap: nowrap;
     position: absolute;
     inset: 0;
     background: color-mix(in srgb, var(--bg), #000 20%);
@@ -291,9 +292,10 @@ input[type="text"] {
     font: 0.75rem/1.2 'Consolas', 'Courier New', monospace;
     justify-content: flex-start;
     align-content: flex-start;
-    overflow: auto;
+    overflow: scroll;
 
     .log {
+        flex: 0 0 auto;
         overflow-anchor: none;
         position: relative;
         color: color-mix(in srgb, var(--bg), #fff 80%);
@@ -301,6 +303,7 @@ input[type="text"] {
         border-left: 2px solid transparent;
         padding: 0.5em;
         width: 100%;
+        min-height: 2lh;
         white-space: pre-wrap;
         font: inherit;
 
