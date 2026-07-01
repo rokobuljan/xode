@@ -116,7 +116,7 @@ const generatePreviewHTML = (isApp, isDesignMode = true) => {
     </head>
     <body ${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
         ${elHTML.value}
-        <script${isApp ? ' id="◆xode-js"' : ''}>${elJS.value}</script>
+        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${elJS.value}</script>
     </body>
     </html>`;
 };
