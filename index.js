@@ -57,8 +57,8 @@ const hilite = (elEditor) => {
  * Construct HTML page output for preview or download
  * @param {boolean} isApp set to false to get the cleanest HTML document output
  */
-let injectScript = `<script id="◆xode-inject">
-const OFFSETLINES = $OFFSETLINES$; // This script offset (to lines) for line numbers in console
+const injectScript = `<script id="◆xode-inject">
+const OFFSETLINES = 6; // Fix console.log line numbering (HOW MANY LINES OF CODE ARE ABOVE THIS SCRIPT TAG IN HTML)
 document.designMode = "on";
 const serialize = (arg) => {
     if (arg === null) return "null";
@@ -101,9 +101,6 @@ addEventListener("keyup", () => {
 });
 </script>`;
 
-const OFFSETLINES = injectScript.split("\n").length + 28;
-injectScript = injectScript.replace("$OFFSETLINES$", OFFSETLINES);
-
 const generatePreviewHTML = (isApp, isDesignMode = true) => {
     return /*html*/`<!DOCTYPE html>
     <html lang="en">
@@ -111,12 +108,12 @@ const generatePreviewHTML = (isApp, isDesignMode = true) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Xode document</title>
+        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${elJS.value}</script>
         <style${isApp ? ' id="◆xode-css"' : ''}>${elCSS.value}</style>
         ${isApp && isDesignMode ? injectScript : ""}
     </head>
     <body ${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
         ${elHTML.value}
-        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${elJS.value}</script>
     </body>
     </html>`;
 };
