@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xode</title>
+    <link rel="shortcut icon"
+        href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22>%3Ctext y=%22.87em%22 font-size=%2290%22>🔷%3C/text>%3C/svg>"
+        type="image/x-icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.css" />
+    <link rel="stylesheet" type="text/css" href="index.css" />
+</head>
+
+<body>
+    <nav id="top">
+        <h1 class="logo"><b>◆</b>Xode</h1>
+        <input type="text" id="projectTitle" placeholder="Project title">
+        <label class="ckbtn toggleView"><input type="checkbox" id="toggleHTML"><span>HTML</span></label>
+        <label class="ckbtn toggleView"><input type="checkbox" id="toggleCSS"><span>CSS</span></label>
+        <label class="ckbtn toggleView"><input type="checkbox" id="toggleJS"><span>JS</span></label>
+        <label class="ckbtn toggleView"><input type="checkbox" id="toggleConsole"><span>$_</span></label>
+        <label class="ckbtn toggleView"><input type="checkbox" id="togglePreview"><span>Preview</span></label>
+        <label class="ml-auto"><input id="autorun" type="checkbox" checked> <span>Autorun</span></label>
+        <button id="run" type="button" title="Run Xode">▶</button>
+        <button id="download" type="button" title="Download">
+            <svg style="width:1em; height: 1em;" xmlns="http://www.w3.org/2000/svg" xml:space="preserve"
+                viewBox="131 -131 512 512">
+                <path fill="currentColor"
+                    d="M362.6-88.5v240.2L265.7 54l-35.4 34.7L387 245.5 543.8 88.7 509.1 54l-97.7 97V-88.5zM131 292v46.5h512V292z" />
+            </svg>
+        </button>
+    </nav>
+
+    <main id="app" class="view col">
+        <div class="view">
+            <div class="view" data-view="html">
+                <div class="editor" id="editor-HTML">
+                    <pre class="editor-lines"></pre>
+                    <div class="editor-area">
+                        <pre class="editor-highlight"><code class="language-html"></code></pre>
+                        <textarea placeholder="HTML" class="editor-textarea" data-lang="html" spellcheck="false"
+                            autocorrect="off" autocapitalize="off"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="splitter"></div>
+            <div class="view" data-view="css">
+                <div class="editor">
+                    <pre class="editor-lines"></pre>
+                    <div class="editor-area">
+                        <pre class="editor-highlight"><code class="language-css"></code></pre>
+                        <textarea placeholder="CSS" class="editor-textarea" data-lang="css" spellcheck="false"
+                            autocorrect="off" autocapitalize="off"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="splitter"></div>
+            <div class="view" data-view="js">
+                <div class="editor">
+                    <pre class="editor-lines"></pre>
+                    <div class="editor-area">
+                        <pre class="editor-highlight"><code class="language-js"></code></pre>
+                        <textarea placeholder="JavaScript" class="editor-textarea" data-lang="js" spellcheck="false"
+                            autocorrect="off" autocapitalize="off"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="splitter"></div>
+            <div class="view" data-view="console">
+                <div id="console"></div>
+                <button id="clearConsole" type="button" title="Clear Console">Clear</button>
+            </div>
+        </div>
+        <div class="splitter"></div>
+        <div class="view" data-view="preview">
+            <iframe id="preview"
+                allow="midi; geolocation; microphone; camera; display-capture; encrypted-media; clipboard-read; clipboard-write;"
+                sandbox="allow-modals allow-forms allow-scripts allow-popups allow-top-navigation-by-user-activation allow-downloads"
+                allow="fullscreen" allowpaymentrequest="" frameborder="0" src=""></iframe>
+        </div>
+    </main>
+
+    <script type="module" src="index.js"></script>
+</body>
+
+</html>

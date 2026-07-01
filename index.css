@@ -1,0 +1,371 @@
+:root {
+    --bg: hsl(221 15% 20%);
+    --fg: hsl(221 30% 98%);
+    --c1: #0bf;
+    --ce: #f44747;
+
+    accent-color: var(--c1);
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: hsl(221 10% 60% / 0);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: hsl(221 10% 40%);
+}
+
+*,
+*::after,
+*::before {
+    margin: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100dvh;
+}
+
+body {
+    font: 1rem/1.4 Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+}
+
+button {
+    padding: 0.4em 0.6em;
+    border: 1px solid hsl(221 0% 50% / 0.4);
+    border-radius: 0.15rem;
+    background: transparent;
+    color: color-mix(in srgb, var(--fg), var(--bg) 20%);
+    text-align: center;
+    line-height: 1em;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+#top {
+    background: var(--bg);
+    color: #fff;
+    padding: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    br {
+        all: unset;
+        display: block;
+        height: 1ch;
+        flex: 1;
+        white-space: pre;
+    }
+
+    .logo {
+        font-weight: 400;
+        font-size: 1.1rem;
+
+        b {
+            color: var(--c1);
+        }
+    }
+
+    & label>* {
+        vertical-align: middle;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+    }
+}
+
+#app {
+    flex: 1;
+    height: 100%;
+}
+
+/* EDITOR */
+
+.editor {
+    display: flex;
+    overflow: auto;
+    height: 100%;
+    width: 100%;
+    background: hsl(221 15% 20%);
+}
+
+.editor-area {
+    position: relative;
+    width: 100%;
+    container-type: size;
+    /* pointer-events: none; */
+    /* height: min-content;
+    min-height: 100%;
+    min-width: max-content; */
+}
+
+textarea,
+.editor-highlight code,
+.editor-textarea,
+.editor-lines {
+    background: transparent;
+    font: normal normal 13px/1.4 "Fira Code", monospace;
+}
+
+.editor-highlight code,
+.editor-textarea {
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow: hidden;
+    padding: 0 !important;
+}
+
+.editor-textarea {
+    position: relative;
+    display: block;
+    min-width: 100%;
+    resize: none;
+    field-sizing: content;
+    min-height: 100cqh;
+    /* 1* Make text invisible */
+    color: #fff0;
+    /* 1* but keep caret visible */
+    caret-color: hsl(221 100% 95%);
+    border: 0;
+
+    &:focus {
+        outline: transparent;
+    }
+
+    &::selection {
+        background: hsl(221 100% 95% / 0.2);
+    }
+
+    &::placeholder {
+        color: hsl(221 15% 40% / 0.5);
+        font-style: italic;
+        font-weight: bold;
+    }
+}
+
+.is-resizing {
+    user-select: none;
+
+    iframe {
+        pointer-events: none;
+    }
+}
+
+.editor-highlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    user-select: none;
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+.editor-lines {
+    flex-shrink: 0;
+    position: sticky;
+    left: 0px;
+    height: max-content;
+    min-height: 100%;
+    z-index: 1;
+    text-align: right;
+    color: hsl(0 100% 100% / 0.35);
+    background: inherit;
+    margin-bottom: 0;
+
+    span {
+        display: block;
+        padding: 0 1rem;
+        counter-increment: lineNumber;
+
+        &::before {
+            content: counter(lineNumber);
+        }
+    }
+}
+
+#preview {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.view {
+    --grow: 1;
+
+    position: relative;
+    display: flex;
+    flex: var(--grow) 0 0;
+    overflow: hidden;
+
+    >.splitter {
+        /* Vertical splitters */
+        position: relative;
+        flex: 0 0 1px;
+        touch-action: none;
+        cursor: ew-resize;
+        background-color: color-mix(in srgb, var(--bg), var(--fg) 10%);
+        transition: background-color 0.24s;
+
+        /* Remove splitter if not followed by a view */
+        &:not(:has(~.view)) {
+            display: none;
+        }
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset: -3px;
+            width: calc(100% + 6px);
+            height: calc(100% + 6px);
+            z-index: 10000;
+        }
+
+        &:hover {
+            background-color: color-mix(in srgb, var(--bg), var(--c1) 50%);
+        }
+    }
+
+    &.col {
+        flex-direction: column;
+
+        &>.splitter {
+            /* Horizontal splitters */
+            cursor: ns-resize;
+        }
+    }
+}
+
+.toggleView:has(:checked) {
+    border-color: transparent;
+    opacity: 0.5;
+}
+
+:has(#toggleHTML:checked) .view[data-view="html"],
+:has(#toggleCSS:checked) .view[data-view="css"],
+:has(#toggleJS:checked) .view[data-view="js"],
+:has(#toggleConsole:checked) .view[data-view="console"],
+:has(#togglePreview:checked) .view[data-view="preview"] {
+    display: none;
+}
+
+input[type="text"] {
+    border: 1px solid hsl(221 0% 50% / 0.4);
+    background: hsl(221 20% 100% / 0);
+    color: hsl(221 30% 98%);
+    padding: 0.4em 0.6em;
+    border-radius: 0.15rem;
+    font-size: 0.85rem;
+}
+
+.ckbtn {
+    font-size: 0.85rem;
+    border: 1px solid hsl(221 0% 50% / 0.4);
+    padding: 0.4em 0.6em;
+    line-height: 1;
+    user-select: none;
+    cursor: pointer;
+    border-radius: 0.2em;
+
+    &>input[type="checkbox"] {
+        display: none !important;
+    }
+}
+
+#console {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--bg), #000 20%);
+    color: #d4d4d4;
+    font: 0.75rem/1.2 'Consolas', 'Courier New', monospace;
+    justify-content: flex-start;
+    align-content: flex-start;
+    overflow: auto;
+
+    .log {
+        overflow-anchor: none;
+        position: relative;
+        color: color-mix(in srgb, var(--bg), #fff 80%);
+        border-bottom: 1px solid color-mix(in srgb, var(--bg), var(--fg) 3%);
+        border-left: 2px solid transparent;
+        padding: 0.5em;
+        width: 100%;
+        white-space: pre-wrap;
+        font: inherit;
+
+        .log-line {
+            content: attr(data-line);
+            position: absolute;
+            top: 0;
+            right: 0.5rem;
+            opacity: 0.5;
+            font-size: 0.8em;
+        }
+
+        &.info {
+            border-left: 1px solid var(--c1);
+        }
+
+        &.error {
+            border-left: 1px solid var(--ce);
+            color: color-mix(in srgb, var(--fg), var(--ce) 40%);
+        }
+
+        &.warn {
+            border-left: 1px solid #dcdcaa;
+        }
+
+        &.clear {
+            font-style: italic;
+            color: color-mix(in srgb, var(--fg), var(--bg) 70%);
+        }
+    }
+
+    &:after {
+        content: "\00a0";
+        display: block;
+        overflow-anchor: auto;
+        height: 0ch;
+    }
+}
+
+#clearConsole {
+    position: absolute;
+    top: 0.3em;
+    right: 0.3em;
+    z-index: 100;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background-color: color-mix(in srgb, var(--bg), #0000 50%);
+}
+
+[data-view="console"]:hover #clearConsole {
+    opacity: 1;
+}
+
+
+/* utils */
+.ml-auto {
+    margin-left: auto;
+}
+
+.mr-auto {
+    margin-right: auto;
+}
+
+/* highlight.js customizations: */
+.hljs {
+    background: none;
+}
