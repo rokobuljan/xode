@@ -1,10 +1,7 @@
 import hljs from "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/+esm";
-import esthetic from 'https://cdn.jsdelivr.net/npm/esthetic/+esm';
-
-console.log(esthetic);
-
-
+import esthetic from "https://cdn.jsdelivr.net/npm/esthetic/+esm";
 import "./js/splitview.js";
+
 import { el, els, elNew, download, LS } from "./js/utils.js";
 
 /**
@@ -20,6 +17,16 @@ const elPreview = el("#preview");
 const elAutorun = el("#autorun");
 const elRun = el("#run");
 const elDownload = el("#download");
+
+function formatPane(el, lang) {
+    try {
+        if (lang === 'js') el.value = esthetic.js(el.value, { indentSize: 4, indentChar: ' ' });
+        if (lang === 'css') el.value = esthetic.css(el.value, { indentSize: 4, indentChar: ' ' });
+        if (lang === 'html') el.value = esthetic.html(el.value, { indentSize: 4, indentChar: ' ' });
+    } catch (e) {
+        console.error('Error: ' + e.message, 'error');
+    }
+}
 
 const updateLineNumbers = (elEditor) => {
     if (!elEditor) return;
@@ -151,12 +158,16 @@ const makeEditor = (elEditor) => {
         localStorage[`xode-${projectTitle}-${elTextarea.dataset.lang}`] = elTextarea.value;
     });
 
-    // When tetarea is too small and if we click on -area move caret to end of textarea
-    elArea.addEventListener("click", (evt) => {
-        if (evt.target !== evt.currentTarget) return;
-        const len = elTextarea.value.length;
-        elTextarea.setSelectionRange(len, len);
-        elTextarea.focus();
+    // esthetic beautify on double click
+    elTextarea.addEventListener("keydown", (event) => {
+        // Format on Alt + SHift + F
+        if (event.altKey && event.shiftKey && event.key === "F") {
+            event.preventDefault();
+            formatPane(elTextarea, elTextarea.dataset.lang);
+            hilite(elEditor);
+            updateLineNumbers(elEditor);
+            preview();
+        }
     });
 
     // Get from LS
@@ -195,7 +206,7 @@ const appendLogBlock = ({ type, args, line }) => {
 addEventListener("message", (evt) => {
     if (evt.data.type === "clear") {
         elConsole.innerHTML = "";
-        appendLogBlock({...evt.data, args: ["Console cleared"]});
+        appendLogBlock({ ...evt.data, args: ["Console cleared"] });
     } else {
         appendLogBlock(evt.data);
     }
