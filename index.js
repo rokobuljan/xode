@@ -57,7 +57,7 @@ const hilite = (elEditor) => {
  * Construct HTML page output for preview or download
  * @param {boolean} isApp set to false to get the cleanest HTML document output
  */
-const injectScript = `<script id="◆xode-inject">
+let injectScript = `<script id="◆xode-inject">
 const OFFSETLINES = 6; // Fix console.log line numbering (HOW MANY LINES OF CODE ARE ABOVE THIS SCRIPT TAG IN HTML)
 document.designMode = "on";
 const serialize = (arg) => {
