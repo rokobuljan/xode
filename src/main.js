@@ -4,6 +4,10 @@ import hljs from "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/+esm";
 import esthetic from "https://cdn.jsdelivr.net/npm/esthetic/+esm";
 import "./js/splitview.js";
 import { el, els, elNew, download, LS } from "./js/utils.js";
+// emmet
+import expand, { extract } from 'emmet';
+
+console.log(expand, { extract });
 
 /**
  * XODE Code editor (with highlight.js)
@@ -18,6 +22,46 @@ const elPreview = el("#preview");
 const elAutorun = el("#autorun");
 const elRun = el("#run");
 const elDownload = el("#download");
+
+elHTML.addEventListener('keydown', function (e) {
+    // 1. Only act on Tab key press and prevent default behavior
+    if (e.key !== 'Tab') return;
+    e.preventDefault();
+
+    const source = this.value;
+    const caretPos = this.selectionStart;
+
+    // 2. Extract the abbreviation before the caret
+    // For HTML/JSX use type: 'markup' (default), for CSS use type: 'stylesheet'
+    const extraction = extract(source, caretPos, { type: 'markup' });
+
+    console.log(source, caretPos, extraction);
+
+    if (!extraction) return; // No valid abbreviation found
+
+    const { abbreviation, start, end } = extraction;
+
+
+    // 3. Expand the abbreviation and replace the text
+    try {
+        // The second argument lets you specify syntax (e.g., 'html', 'css', 'jsx')
+        let expanded = expand(abbreviation, { syntax: 'html' });
+
+        expanded = expanded.replace(/\t/g, " ".repeat(4)); // Replace tabs with 4 spaces
+
+        // Replace the extracted abbreviation with the expanded code
+        const newValue = source.substring(0, start) + expanded + source.substring(end);
+        this.value = newValue;
+
+        // Move the caret to the end of the expanded code
+        const newCaretPos = start + expanded.length;
+        this.setSelectionRange(newCaretPos, newCaretPos);
+
+    } catch (error) {
+        console.warn('Failed to expand abbreviation:', error);
+    }
+});
+
 
 function formatPane(el, lang) {
     try {
@@ -176,7 +220,7 @@ const makeEditor = (elEditor) => {
 };
 
 // Designer mode
-const elHtml = el("#editor-HTML");
+const elHTMLEditor = el("#editor-HTML");
 const elConsole = el("#console");
 
 const appendLogBlock = ({ type, args, line }) => {
@@ -200,7 +244,7 @@ addEventListener("message", (evt) => {
         body.querySelector("#◆xode-js")?.remove();
         elHTML.value = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
         hilite(elHTML.closest(".editor"));
-        updateLineNumbers(elHtml);
+        updateLineNumbers(elHTMLEditor);
     }
     // Console messages
     else if (evt.data.type === "clear") {

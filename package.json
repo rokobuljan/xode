@@ -20,5 +20,8 @@
       "vite": "npm:@voidzero-dev/vite-plus-core@latest",
       "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
     }
+  },
+  "dependencies": {
+    "emmet": "^2.4.11"
   }
 }

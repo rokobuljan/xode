@@ -1,7 +1,6 @@
 export const el = (sel, par = document) => par.querySelector(sel);
 export const els = (sel, par = document) => par.querySelectorAll(sel);
 export const elNew = (tag, prop = {}) => Object.assign(document.createElement(tag), prop);
-export const randomString = () => Math.floor(Math.random() * Date.now()).toString(36);
 export const download = (content, filename = "new_document.html", mimeType = "text/html") => {
     const elA = elNew("a", {
         href: URL.createObjectURL(new Blob([content], { type: mimeType })),
