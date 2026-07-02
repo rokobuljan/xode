@@ -23,53 +23,44 @@ const elAutorun = el("#autorun");
 const elRun = el("#run");
 const elDownload = el("#download");
 
-elHTML.addEventListener('keydown', function (e) {
-    // 1. Only act on Tab key press and prevent default behavior
-    if (e.key !== 'Tab') return;
-    e.preventDefault();
-
-    const source = this.value;
-    const caretPos = this.selectionStart;
-
+const emmetExpand = (elTextarea, syntax = "html") => {
+    const source = elTextarea.value;
+    const caretPos = elTextarea.selectionStart;
     // 2. Extract the abbreviation before the caret
     // For HTML/JSX use type: 'markup' (default), for CSS use type: 'stylesheet'
     const extraction = extract(source, caretPos, { type: 'markup' });
-
-    console.log(source, caretPos, extraction);
-
     if (!extraction) return; // No valid abbreviation found
-
     const { abbreviation, start, end } = extraction;
-
-
     // 3. Expand the abbreviation and replace the text
     try {
-        // The second argument lets you specify syntax (e.g., 'html', 'css', 'jsx')
-        let expanded = expand(abbreviation, { syntax: 'html' });
+        let expanded = expand(abbreviation, { syntax });
 
         expanded = expanded.replace(/\t/g, " ".repeat(4)); // Replace tabs with 4 spaces
 
         // Replace the extracted abbreviation with the expanded code
         const newValue = source.substring(0, start) + expanded + source.substring(end);
-        this.value = newValue;
+        elTextarea.value = newValue;
 
         // Move the caret to the end of the expanded code
         const newCaretPos = start + expanded.length;
-        this.setSelectionRange(newCaretPos, newCaretPos);
-
+        elTextarea.setSelectionRange(newCaretPos, newCaretPos);
+        return true;
     } catch (error) {
         console.warn('Failed to expand abbreviation:', error);
     }
-});
-
+};
 
 function formatPane(el, lang) {
+    const estheticOptions = {
+        indentSize: 4,
+        indentChar: " "
+    };
     try {
-        if (lang === 'js') el.value = esthetic.js(el.value, { indentSize: 4, indentChar: ' ' });
-        if (lang === 'css') el.value = esthetic.css(el.value, { indentSize: 4, indentChar: ' ' });
-        if (lang === 'html') el.value = esthetic.html(el.value, { indentSize: 4, indentChar: ' ' });
-    } catch (e) {
-        console.error('Error: ' + e.message, 'error');
+        if (lang === 'js') el.value = esthetic.js(el.value, estheticOptions);
+        else if (lang === 'css') el.value = esthetic.css(el.value, estheticOptions);
+        else if (lang === 'html') el.value = esthetic.html(el.value, estheticOptions);
+    } catch (error) {
+        console.error(`Error: ${error.message}`);
     }
 }
 
@@ -163,7 +154,7 @@ const generatePreviewHTML = (isApp, isDesignMode = true) => {
     </html>`;
 };
 
-let ls = LS("xode");
+// let ls = LS("xode");
 let previewTimeout;
 let projectTitle = localStorage["xode-projectTitle"] ?? "untitled";
 
@@ -185,11 +176,26 @@ const makeEditor = (elEditor) => {
     const elTextarea = el(".editor-textarea", elEditor);
     if (!elTextarea) return;
 
-    const elLines = el(".editor-lines", elEditor);
-    const elArea = el(".editor-area", elEditor);
-
+    const lang = elTextarea.dataset.lang;
     elTextarea.addEventListener("keydown", (evt) => {
-        tabToSpaces(evt);
+        if (evt.key === "Tab") {
+            evt.preventDefault(); // don't switch tabindex
+            if (lang === "html" && emmetExpand(elTextarea, lang)) {
+                hilite(elEditor);
+                updateLineNumbers(elEditor);
+                preview();
+            } else {
+                tabToSpaces(evt);
+            }
+        }
+        // Format on Alt + SHift + F (esthetic beautify)
+        if (evt.altKey && evt.shiftKey && evt.key === "F") {
+            evt.preventDefault();
+            formatPane(elTextarea, lang);
+        }
+        hilite(elEditor);
+        updateLineNumbers(elEditor);
+        preview();
     });
 
     elTextarea.addEventListener("input", () => {
@@ -197,23 +203,11 @@ const makeEditor = (elEditor) => {
         updateLineNumbers(elEditor);
         preview();
         // Save to LS
-        localStorage[`xode-${projectTitle}-${elTextarea.dataset.lang}`] = elTextarea.value;
-    });
-
-    // esthetic beautify on double click
-    elTextarea.addEventListener("keydown", (event) => {
-        // Format on Alt + SHift + F
-        if (event.altKey && event.shiftKey && event.key === "F") {
-            event.preventDefault();
-            formatPane(elTextarea, elTextarea.dataset.lang);
-            hilite(elEditor);
-            updateLineNumbers(elEditor);
-            preview();
-        }
+        localStorage[`xode-${projectTitle}-${lang}`] = elTextarea.value;
     });
 
     // Get from LS
-    elTextarea.value = localStorage[`xode-${projectTitle}-${elTextarea.dataset.lang}`] ?? "";
+    elTextarea.value = localStorage[`xode-${projectTitle}-${lang}`] ?? "";
 
     hilite(elEditor);
     updateLineNumbers(elEditor);

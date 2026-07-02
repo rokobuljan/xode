@@ -1,5 +1,5 @@
 :root {
-    --bg: hsl(221 15% 20%);
+    --bg: hsl(222, 16%, 16%);
     --fg: hsl(221 30% 98%);
     --c1: #0bf;
     --ce: #f44747;
@@ -13,11 +13,11 @@
 }
 
 ::-webkit-scrollbar-track {
-    background: hsl(221 10% 60% / 0);
+    background: #0000;
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: hsl(221 10% 40%);
+    background-color: color-mix(in srgb, var(--bg), var(--fg) 30%);
 }
 
 *,
@@ -95,17 +95,13 @@ button {
     overflow: auto;
     height: 100%;
     width: 100%;
-    background: hsl(221 15% 20%);
+    background: var(--bg);
 }
 
 .editor-area {
     position: relative;
     width: 100%;
     container-type: size;
-    /* pointer-events: none; */
-    /* height: min-content;
-    min-height: 100%;
-    min-width: max-content; */
 }
 
 textarea,
@@ -134,7 +130,7 @@ textarea,
     /* 1* Make text invisible */
     color: #fff0;
     /* 1* but keep caret visible */
-    caret-color: hsl(221 100% 95%);
+    caret-color: var(--fg);
     border: 0;
 
     &:focus {
@@ -142,11 +138,11 @@ textarea,
     }
 
     &::selection {
-        background: hsl(221 100% 95% / 0.2);
+        background: color-mix(in srgb, var(--fg), #0000 85%);
     }
 
     &::placeholder {
-        color: hsl(221 15% 40% / 0.5);
+        color: color-mix(in srgb, var(--fg), #0000 85%);
         font-style: italic;
         font-weight: bold;
     }
@@ -177,7 +173,7 @@ textarea,
     min-height: 100%;
     z-index: 1;
     text-align: right;
-    color: hsl(0 100% 100% / 0.35);
+    color: color-mix(in srgb, var(--bg), var(--fg) 30%);
     background: inherit;
     margin-bottom: 0;
 
@@ -259,7 +255,7 @@ textarea,
 }
 
 input[type="text"] {
-    border: 1px solid hsl(221 0% 50% / 0.4);
+    border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%);
     background: hsl(221 20% 100% / 0);
     color: hsl(221 30% 98%);
     padding: 0.4em 0.6em;
@@ -269,7 +265,7 @@ input[type="text"] {
 
 .ckbtn {
     font-size: 0.85rem;
-    border: 1px solid hsl(221 0% 50% / 0.4);
+    border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%);
     padding: 0.4em 0.6em;
     line-height: 1;
     user-select: none;
