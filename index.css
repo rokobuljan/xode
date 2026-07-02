@@ -294,6 +294,16 @@ input[type="text"] {
     align-content: flex-start;
     overflow: scroll;
 
+    &:empty {
+        &::before {
+            content: "$_  Console";
+            font-style: italic;
+            padding: 0.5em 0.8em;
+            font-size: 1.2em;
+            opacity: 0.2;
+        }
+    }
+
     .log {
         flex: 0 0 auto;
         overflow-anchor: none;
