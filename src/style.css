@@ -256,6 +256,10 @@ textarea,
 :has(#toggleConsole:checked) .view[data-view="console"],
 :has(#togglePreview:checked) .view[data-view="preview"] {
     display: none;
+
+    +.splitter {
+        display: none;
+    }
 }
 
 input[type="text"] {
