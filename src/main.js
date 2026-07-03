@@ -159,12 +159,12 @@ addEventListener("keyup", () => {
 addEventListener("message", (evt) => {
     if (evt.data.type !== "cmd") return;
     let [cmd, par] = evt.data.args;
-    console.log(cmd, par)
     if (cmd == "InsertImage") par = prompt("Image URL:", "");
     else if (cmd == "CreateLink") {
         par = prompt("Link URL:", "http://");
         if (par === "" || par == "http://") cmd = "Unlink";
     }
+    document.execCommand('styleWithCSS', false, false);
     document.execCommand(cmd, false, par);
     window.parent.postMessage({ type: "code", args: [document.querySelector("body").innerHTML] }, "*");
 });
