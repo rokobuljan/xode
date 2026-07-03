@@ -1,0 +1,43 @@
+.view:has(.cmd-group) {
+    display: flex;
+    flex-direction: column;
+
+    .buttons {
+        background: var(--bg);
+
+        img {
+            filter: invert(1);
+        }
+    }
+}
+
+.buttons {
+    top: 0px;
+    height: 34px;
+    width: 100%;
+    border-bottom: 1px solid #e2e2e2;
+}
+
+.buttons img,
+.cmd-group img {
+    position: relative;
+    cursor: pointer;
+    padding: 6px 5px;
+    border-radius: 3px;
+    float: left;
+}
+
+.buttons img.on {
+    background: #e6e6e6;
+    box-shadow: inset 0px 1px 1px #888, inset 0 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.cmd-group {
+    position: relative;
+    overflow: hidden;
+    padding: 4px;
+    float: left;
+    top: 0px;
+    margin: 0;
+    border-right: 1px solid color-mix(in srgb, var(--bg), var(--fg) 20%);
+}

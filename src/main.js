@@ -1,13 +1,42 @@
 import "./index.css";
+import "./css/designer.css";
 
 import hljs from "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/+esm";
-import esthetic from "https://cdn.jsdelivr.net/npm/esthetic/+esm";
 import "./js/splitview.js";
 import { el, els, elNew, download, LS } from "./js/utils.js";
 // emmet
 import expand, { extract } from 'emmet';
 
-console.log(expand, { extract });
+// Prettier
+import * as prettier from "prettier/standalone";
+import prettierPluginBabel from "prettier/plugins/babel";
+import prettierPluginEstree from "prettier/plugins/estree";
+import prettierPluginHtml from "prettier/plugins/html";
+import prettierPluginPostcss from "prettier/plugins/postcss";
+
+async function formatCode(code, language) {
+    const parserMap = {
+        js: "babel",
+        html: "html",
+        css: "css",
+    };
+
+    const pluginMap = {
+        babel: [prettierPluginBabel, prettierPluginEstree],
+        html: [prettierPluginHtml],
+        css: [prettierPluginPostcss],
+    };
+
+    const parser = parserMap[language];
+
+    return await prettier.format(code, {
+        parser,
+        plugins: pluginMap[parser],
+        semi: true,
+        singleQuote: true,
+        tabWidth: 4,
+    });
+}
 
 /**
  * XODE Code editor (with highlight.js)
@@ -15,10 +44,11 @@ console.log(expand, { extract });
  * @url https://roxon.hr
  */
 
-const elHTML = el(`[data-lang="html"]`);
-const elCSS = el(`[data-lang="css"]`);
-const elJS = el(`[data-lang="js"]`);
-const elPreview = el("#preview");
+
+const elHTML = el(`[data-syntax="html"]`);
+const elCSS = el(`[data-syntax="css"]`);
+const elJS = el(`[data-syntax="js"]`);
+const elPreview = el("#preview"); // the iframe
 const elAutorun = el("#autorun");
 const elRun = el("#run");
 const elDownload = el("#download");
@@ -50,19 +80,10 @@ const emmetExpand = (elTextarea, syntax = "html") => {
     }
 };
 
-function formatPane(el, lang) {
-    const estheticOptions = {
-        indentSize: 4,
-        indentChar: " "
-    };
-    try {
-        if (lang === 'js') el.value = esthetic.js(el.value, estheticOptions);
-        else if (lang === 'css') el.value = esthetic.css(el.value, estheticOptions);
-        else if (lang === 'html') el.value = esthetic.html(el.value, estheticOptions);
-    } catch (error) {
-        console.error(`Error: ${error.message}`);
-    }
-}
+const formatPane = async (el, syntax) => {
+    const formatted = await formatCode(el.value, syntax);
+    el.value = formatted;
+};
 
 const updateLineNumbers = (elEditor) => {
     if (!elEditor) return;
@@ -75,9 +96,8 @@ const updateLineNumbers = (elEditor) => {
 
 const tabToSpaces = (evt) => {
     if (evt.key !== "Tab") return;
-    const spaces = " ".repeat(4);
     evt.preventDefault();  // this will prevent us from tabbing out of the editor
-    document.execCommand("insertHTML", false, spaces);
+    document.execCommand("insertHTML", false, " ".repeat(4));
 };
 
 const hilite = (elEditor) => {
@@ -132,8 +152,21 @@ window.addEventListener("error", (evt) => {
 window.addEventListener('unhandledrejection', (evt) => {
     window.parent.postMessage({ type: "error", line: evt.lineno ?? '?', args: [\`Unhandled Promise: \${serialize(evt.reason)}\`] }, '*');
 });
+// Designer mode on
 addEventListener("keyup", () => {
-    window.parent.postMessage({ type: "html", args: [document.querySelector("body").innerHTML] }, "*");
+    window.parent.postMessage({ type: "code", args: [document.querySelector("body").innerHTML] }, "*");
+});
+addEventListener("message", (evt) => {
+    if (evt.data.type !== "cmd") return;
+    let [cmd, par] = evt.data.args;
+    console.log(cmd, par)
+    if (cmd == "InsertImage") par = prompt("Image URL:", "");
+    else if (cmd == "CreateLink") {
+        par = prompt("Link URL:", "http://");
+        if (par === "" || par == "http://") cmd = "Unlink";
+    }
+    document.execCommand(cmd, false, par);
+    window.parent.postMessage({ type: "code", args: [document.querySelector("body").innerHTML] }, "*");
 });
 </script>`;
 
@@ -176,11 +209,11 @@ const makeEditor = (elEditor) => {
     const elTextarea = el(".editor-textarea", elEditor);
     if (!elTextarea) return;
 
-    const lang = elTextarea.dataset.lang;
-    elTextarea.addEventListener("keydown", (evt) => {
+    const syntax = elTextarea.dataset.syntax;
+    elTextarea.addEventListener("keydown", async (evt) => {
         if (evt.key === "Tab") {
             evt.preventDefault(); // don't switch tabindex
-            if (lang === "html" && emmetExpand(elTextarea, lang)) {
+            if (syntax === "html" && emmetExpand(elTextarea, syntax)) {
                 hilite(elEditor);
                 updateLineNumbers(elEditor);
                 preview();
@@ -191,7 +224,7 @@ const makeEditor = (elEditor) => {
         // Format on Alt + SHift + F (esthetic beautify)
         if (evt.altKey && evt.shiftKey && evt.key === "F") {
             evt.preventDefault();
-            formatPane(elTextarea, lang);
+            await formatPane(elTextarea, syntax);
         }
         hilite(elEditor);
         updateLineNumbers(elEditor);
@@ -203,11 +236,11 @@ const makeEditor = (elEditor) => {
         updateLineNumbers(elEditor);
         preview();
         // Save to LS
-        localStorage[`xode-${projectTitle}-${lang}`] = elTextarea.value;
+        localStorage[`xode-${projectTitle}-${syntax}`] = elTextarea.value;
     });
 
     // Get from LS
-    elTextarea.value = localStorage[`xode-${projectTitle}-${lang}`] ?? "";
+    elTextarea.value = localStorage[`xode-${projectTitle}-${syntax}`] ?? "";
 
     hilite(elEditor);
     updateLineNumbers(elEditor);
@@ -216,6 +249,8 @@ const makeEditor = (elEditor) => {
 // Designer mode
 const elHTMLEditor = el("#editor-HTML");
 const elConsole = el("#console");
+
+const clearElConsole = () => elConsole.innerHTML = "";
 
 const appendLogBlock = ({ type, args, line }) => {
     const elBlock = elNew('code', {
@@ -230,19 +265,22 @@ const appendLogBlock = ({ type, args, line }) => {
     elConsole.append(elBlock);
 };
 
-addEventListener("message", (evt) => {
+addEventListener("message", async (evt) => {
     if (evt.data.type === "html") return;
 
+    // Designer --to--> HTML
     if (evt.data.type === "code") {
-        const body = new DOMParser().parseFromString(evt.data.content, "text/html").body;
+        const body = new DOMParser().parseFromString(evt.data.args.join(""), "text/html").body;
         body.querySelector("#◆xode-js")?.remove();
         elHTML.value = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
+        await formatPane(elHTML, "html");
         hilite(elHTML.closest(".editor"));
         updateLineNumbers(elHTMLEditor);
     }
+
     // Console messages
     else if (evt.data.type === "clear") {
-        elConsole.innerHTML = "";
+        clearElConsole();
         appendLogBlock({ ...evt.data, args: ["Console cleared"] });
     } else {
         appendLogBlock(evt.data);
@@ -259,6 +297,16 @@ elDownload.addEventListener("click", () => {
     download(generatePreviewHTML(), `${projectName}-${timestamp}.xode.html`)
 });
 
-el("#clearConsole").addEventListener("click", () => {
-    elConsole.innerHTML = "";
+el("#clearConsole").addEventListener("click", clearElConsole);
+
+
+// Editor exec commander for designer mode
+addEventListener("click", (evt) => {
+    const elBtnCmd = evt.target.closest("[data-cmd]");
+    if (!elBtnCmd) return;
+    evt.stopPropagation();
+    elPreview.contentWindow.postMessage({
+        type: "cmd",
+        args: [elBtnCmd.dataset.cmd, elBtnCmd.dataset.par]
+    }, '*');
 });

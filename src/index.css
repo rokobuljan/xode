@@ -1,5 +1,5 @@
 :root {
-    --bg: hsl(222, 16%, 16%);
+    --bg: hsl(215, 19%, 13%);
     --fg: hsl(221 30% 98%);
     --c1: #0bf;
     --ce: #f44747;
@@ -120,6 +120,10 @@ textarea,
     padding: 0 !important;
 }
 
+.editor-highlight code {
+    padding-right: 1rem !important;
+}
+
 .editor-textarea {
     position: relative;
     display: block;
@@ -203,6 +207,10 @@ textarea,
     flex: var(--grow) 0 0;
     overflow: hidden;
 
+    &.noflex {
+        flex: none;
+    }
+
     >.splitter {
         /* Vertical splitters */
         position: relative;
@@ -246,11 +254,12 @@ textarea,
     opacity: 0.5;
 }
 
-:has(#toggleHTML:checked) .view[data-view="html"],
-:has(#toggleCSS:checked) .view[data-view="css"],
-:has(#toggleJS:checked) .view[data-view="js"],
-:has(#toggleConsole:checked) .view[data-view="console"],
-:has(#togglePreview:checked) .view[data-view="preview"] {
+:has(#toggleHTML:checked) [data-view="html"],
+:has(#toggleCSS:checked) [data-view="css"],
+:has(#toggleJS:checked) [data-view="js"],
+:has(#toggleConsole:checked) [data-view="console"],
+:has(#togglePreview:checked) [data-view="preview"],
+:has(#toggleDesigner:checked) [data-view="designer"] {
     display: none;
 }
 
@@ -288,11 +297,11 @@ input[type="text"] {
     font: 0.75rem/1.2 'Consolas', 'Courier New', monospace;
     justify-content: flex-start;
     align-content: flex-start;
-    overflow: scroll;
+    overflow: auto;
 
     &:empty {
         &::before {
-            content: "$_  Console";
+            content: "›_  Console";
             font-style: italic;
             padding: 0.5em 0.8em;
             font-size: 1.2em;
