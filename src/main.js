@@ -45,13 +45,10 @@ async function formatCode(code, language) {
  */
 
 const emmetExpand = (elTextarea, syntax = "html") => {
-    console.log(syntax);
-
     const source = elTextarea.value;
     const caretPos = elTextarea.selectionStart;
     // 2. Extract the abbreviation before the caret
     const type = { html: "markup", css: "stylesheet" }[syntax];
-    console.log(type);
 
     const extraction = extract(source, caretPos, { type });
     if (!extraction) return; // No valid abbreviation found

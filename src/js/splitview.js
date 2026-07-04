@@ -73,7 +73,6 @@ const normalizeGrow = (container) => {
         visibleViews.forEach(el => {
             const grow = getGrow(el) / sum;
             el.style.setProperty("--grow", grow);
-            console.log({ grow })
         });
     }
     triggerGlobalResizeEvent();

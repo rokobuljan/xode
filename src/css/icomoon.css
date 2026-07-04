@@ -1,0 +1,23 @@
+@font-face {
+    font-family: "xode";
+    src: url("../fonts/xode.woff2") format("woff2"),
+        url("../fonts/xode.ttf") format("truetype"),
+        url("../fonts/xode.woff") format("woff");
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+.icon {
+    /* Use !important to prevent extensions from overriding this font. */
+    font-family: "xode" !important;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+
+    /* Better Font Rendering =========== */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}

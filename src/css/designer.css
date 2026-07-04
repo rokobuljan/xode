@@ -1,34 +1,26 @@
-.buttons {
+[data-view="designer"] {
+    display: flex;
+    align-items: center;
     background: var(--bg);
-    top: 0px;
-    height: 34px;
-    width: 100%;
+    color: var(--fg);
 
     img {
         filter: invert(1);
     }
 }
 
-.buttons img,
-.cmd-group img {
-    position: relative;
-    cursor: pointer;
-    padding: 6px 5px;
-    border-radius: 3px;
-    float: left;
-}
-
-.buttons img.on {
-    background: #e6e6e6;
-    box-shadow: inset 0px 1px 1px #888, inset 0 0 8px rgba(0, 0, 0, 0.1);
-}
-
 .cmd-group {
     position: relative;
     overflow: hidden;
     padding: 4px;
-    float: left;
-    top: 0px;
-    margin: 0;
+    display: inline-flex;
+    align-items: center;
     border-right: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
+
+    >* {
+        position: relative;
+        cursor: pointer;
+        padding: 6px 5px;
+        border-radius: 3px;
+    }
 }
