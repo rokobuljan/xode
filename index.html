@@ -17,22 +17,27 @@
 <body>
     <nav id="top">
         <h1 class="logo"><b>◆</b>Xode</h1>
-        <input type="text" id="projectTitle" placeholder="Project title">
+        <label>
+            <span class="icon" data-name="folder-simple">&#xfdf9;</span>
+            <input type="text" id="projectTitle" placeholder="Project title">
+        </label>
         <button id="download" type="button" title="Download">
-            <svg style="width:1em; height: 1em;" xmlns="http://www.w3.org/2000/svg" xml:space="preserve"
-                viewBox="131 -131 512 512">
-                <path fill="currentColor"
-                    d="M362.6-88.5v240.2L265.7 54l-35.4 34.7L387 245.5 543.8 88.7 509.1 54l-97.7 97V-88.5zM131 292v46.5h512V292z" />
-            </svg>
+            <span class="icon" data-name="download">&#xf3b7;</span>
         </button>
-        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="html"><span>HTML</span></label>
-        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="css"><span>CSS</span></label>
-        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="js"><span>JS</span></label>
-        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="console"><span>›_</span></label>
-        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="preview"><span>Preview</span></label>
-        <label class="ckbtn"><input type="checkbox" data-view-toggle="designer"><span>✎</span></label>
+        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="html" class="Toggle HTML pane"><span
+                class="icon" data-name="file-html">&#xfd6c;</span> <span>HTML</span></label>
+        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="css" class="Toggle CSS pane"><span
+                class="icon" data-name="file-css">&#xf462;</span> <span>CSS</span></label>
+        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="js" class="Toggle JS pane"><span
+                class="icon" data-name="file-js">&#xf440;</span> <span>JS</span></label>
+        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="console" title="Toggle Console"><span
+                class="icon" data-name="terminal">&#xf478;</span></label>
+        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="preview" title="Live preview"><span
+                class="icon" data-name="eye--fill">&#xf31d;</span></label>
+        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="designer" title="Rich Editor"><span
+                class="icon" data-name="pencil-line">&#xf113;</span></label>
         <label class="ml-auto"><input id="autorun" type="checkbox" checked> <span>Autorun</span></label>
-        <button id="run" type="button" title="Run Xode">Run ▶</button>
+        <button id="run" type="button" title="Run Xode">Run <span class="icon" data-name="play">&#xf42d;</span></button>
     </nav>
 
     <main id="app" class="view col">
@@ -78,74 +83,68 @@
         <div class="splitter"></div>
         <div class="view col" data-view="preview">
             <div data-view="designer">
-                <div class="buttons">
-                    <div class="cmd-group">
-                        <img data-cmd="bold" alt="Bold" title="Bold"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAIdJREFUeNpi/P//PwM5gImBTMACY5iYmJwBUsY41J0F4k4gXn3mzBkMG02AuAKNzwjEs6AGrkI2mBinnkViu5Drx/ekaIQ5bw/U2aiBgwWcQWKvBuIwYqMDFjig0AwF4nekBg7MeYJA3EFu4CiRojEUi+0ogYOecs6gxeVqqH/BgJHcRA4QYACmUhxA2pSbwwAAAABJRU5ErkJggg==" />
-                        <img data-cmd="italic" alt="Italic" title="Italic"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAHRJREFUeNpi/P//PwM5gImBTMCCzDExMYEx3wGxIJLU+zNnzggRYyNIUSeUnQ7lE+1UYyi9h1Q/gjS+B+J7pGh0gfrxLKmhiteZ+DQqQWmSbXQhR6MSFN+DBg7RGl0I+Q8j5aClmDQgDsUW+SDASG4iBwgwAEfvGAr3BV51AAAAAElFTkSuQmCC" />
-                        <img data-cmd="underline" alt="Underline" title="Underline"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAIhJREFUeNpi/P//PwM5gImBTMACIkxMTEDUNiD2RJNnBOK3QCwE5W8HYq8zZ86g2OgFxA5Q9nWoJhAQlpOT+wiky6FqKHPqMNDIi8ZnBuKT+DQeBGJQipAG4hioWNmjR49A6h4RsnEplF4MNaQeiBuB+D5GAkADsVBM28AJB+L3ROI5IA0AAQYAh0si1/YkV28AAAAASUVORK5CYII=" />
-                        <img data-cmd="strikeThrough" alt="Strike Through" title="Strike Through"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAALJJREFUeNpi/P//PwM5gImBTMACY5iYmLwDUoI41K1GwgxnzpxBsVEIpB/KPgvEjEj4PRCvAuI0Up2aDjWsA+YqUvy4GqopjdzAMaYoVMnWyBgaGnoNSHMD8Q8gYHn27JkSGxvbDxkZmfvICt+/fy8MxGK8vLxfREVFXzDCUg4wHmHuPwMNQRM0S85A5cOA8biaWKeugmqqgCUCFiRJ5JQDUoSciGdBXXAW7kdyEzlAgAEAUME08Xd7b0AAAAAASUVORK5CYII=" />
-                        <img data-cmd="superscript" alt="Superscript" title="Superscript"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANZJREFUeNpi/P//PwM5gIUUxSYmJiDqLhArs6AJ9gFxDhCzQoVPALEaEAufOXMGpuk9iGZCMjAGiNOB2BWIGYFYCaqJA4vl75E1RgHxOiA+COXfB9kExO+Q1CgDsSDIgch+BAnYQxV7IYnLwhhQ54I0MyDbOBWIuYDYE4j/Q/FxIFbEFlDIGpcAcT+a0yyA+AohjSBQBHUqKHAcgPg61BWLCWlEBqBA0oJqFsan8TE0SrCBA4RsnIfmrG1ALA/EXYSS3B1oVMAS8BMg1sHmBEZyEzlAgAEAu/Ar+r4a/wAAAAAASUVORK5CYII=" />
-                        <img data-cmd="subscript" alt="Subscript" title="Subscript"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAMxJREFUeNpi/P//PwM5gImBTMACY5iYmICoPiDOAWJWqPAJIFYDYuEzZ87gtDEGiNOB2BWIGYFYCaqJg5BTo4B4HRAfhPLvg2wC4neENAoCcRAQb0NTI0tI41Qg5gJiTyD+D8XHgViRkMYlQNyP5jQLIL5CTHQUQf0FChwHIL4OdcViUuIRFEhaUM3COOMRCB4DcSXUyejgAFJc3wViZXQb56E5CxTC8kDcBeWDNL0H0SxoGu8AsRc0REHgCRDrYHHBe0ZSEjmyUwECDABSIyvS5TfHrgAAAABJRU5ErkJggg==" />
-                    </div>
-                    <div class="cmd-group cmd-sendtopanel">
-                        <img data-cmd="formatBlock" data-par="P" alt=""
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAKRJREFUeNpi/P//PwM5gAXGcHV17QBS5TjUzQLiit27d7+HCTDBGEDBCiAlBMQgydVAPiMIA9mdQJwGxGeAhgtiaIRqfo9uFdTA1UCsBDUAUyMecBZKG5OqURDNAJwalWD+AdLl0EB7Dw0kMGBEjw6gwndINsDAHiBOB/r3HkZ0oAFQqIbhczsTA5mAOhqRIliQkEZ44OBIcmFAv67Gq5FUABBgAHpkOapDG60jAAAAAElFTkSuQmCC" />
-                        <img data-cmd="formatBlock" data-par="H1" alt=""
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAGZJREFUeNpi/P//PwM5gImBTDCENLKACFdX17tASgkqVgHEHVD2PSBOB+LdUL7r7t2798BtBHKUoRLpQHYnVDGyQlfqOhUJzAQ6eyY5gQNyKiOSU6kfqoygJEdCqMIDjJHuaRUgwACBbydpqyccygAAAABJRU5ErkJggg==" />
-                        <img data-cmd="formatBlock" data-par="H2" alt=""
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAJ5JREFUeNpi/P//PwM5gImBTDCENLKACFdX17tASgkqVgHEHVD2PSA2AeLdQGwMxJ27d++ugNsI5ChDFaYD2Z0gGsp3BeI0IA4DaQLicqAlgnAb8QGoQSBX3cNwKhKYCVQwE4cZIK/MAhr0HlvggJzKiORUBqhtIOeFQp1LUqjOhAYayBCQAQyMoCRHIFQ7oRphwAToqrOMdE+rAAEGAEmZMwuh4QqKAAAAAElFTkSuQmCC" />
-                        <img data-cmd="formatBlock" data-par="H3" alt=""
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAKFJREFUeNpi/P//PwM5gImBTDCENLKACFdX17tASgkqVgHEHVD2vd27dysD5XcD2S5APAvIT4fbCJKEKkwHsjtBNJQP1OOaBjUMhNOIdirQIJAtZ4FMYyA+i0vjTKANoIidiSwIFAPxQ6FsQWwaQU5lRHIqzNZ0qFONoX4l7FSgDatAgQP1+3tQgIHEGUFJDl+ogkISiV8BNQCika4JACDAAL0uPzam1Ey7AAAAAElFTkSuQmCC" />
-                        <img data-cmd="formatBlock" data-par="H4" alt=""
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAIZJREFUeNpi/P//PwM5gImBTDCENLKACFdX17tASgkqVgHEHVD2vd27dytD1YDk7wL5jHAbYZJAkA5kd4JoKN8VyZIOkp0KtM0FSBnj0zgTqAgUsTPRxNOAeBY+jelQP6Qj2QbStJqcUAU5cRXMj0CDykE0IyjJERmqIA0dsFBlpHtaBQgwAOcfMI24ayH7AAAAAElFTkSuQmCC" />
-                    </div>
-                    <div class="cmd-group cmd-sendtopanel">
-                        <img data-cmd="removeFormat" data-par="foreColor" alt="Text Color" title="Text Color"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAMNJREFUeNpi/P//PwM5gAVEhIWFbQBS/kTq2bhq1aoAFijH/969e2fRFDwD4g4gnoQsqKSkBLaACY/JIE2ncEni03jqzJkzf4D0IlI0ghSbQdmbSdG4H+Q3ExMTPqCt96H+JagRpIgXyrZB8i9mdKAHCtCWY0DaBEnsHDEanwOdeAaJnwg06DJQbBuQ7YXNqYuACkxAfgLRUFucQJpAkkC6DkjlYbMxDmhqHJrt+4BiuJMcKBnBUgQxSQ5EMJKbyAECDADkfkK8A2Lu5wAAAABJRU5ErkJggg==" />
-                    </div>
-                    <div class="cmd-group cmd-sendtopanel">
-                        <img data-cmd="removeFormat" data-par="backColor" alt="Text Background" title="Text Background"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAVlJREFUeNqcUjuLg0AQHsMdyIHN/QubFBZyjdgkRYp7ERBSCNdJ8E8IIaWVEAiYOiTVpcmBIYWFjUVAf4KVzZkijaKw2QlRPJNckYHZ2Xl889plCCFwDz3goSjKNxXvdUe73QZZlsF1XQjDsO5aLZfLj9ZZQRBT8nQ6fev3+zCfz0HX9Z+6ryzQutHJ0LIs2O12eO/QRFwz4A+QtgDnoA6CiqKAxWLxiInQh3wVWFbDYEEQTorjOCi+/q14pk/P82A8Hiccx0EURRDHMb/f719vAtFJg14QQOlZFMWTHefFTi6eo7kU3/eh2+1WxiAIUMgXFVmWxaVM6LVHK8Jms6mY53nIsgy22+0T7WiN74vE4M+ZzWYkz3OwbbvKaJomGIYBh8OhsmHrg8EAJEliAIGqqpIkSSaUSY1R/23Y1qPRiCDmNGOapitN04bNea9svIdfrmr1HjoKMAB8abJXG098cgAAAABJRU5ErkJggg==" />
-                    </div>
-                    <div class="cmd-group">
-                        <img data-cmd="InsertImage" alt="Insert Image" title="Insert Image"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAKNJREFUeNpiDA0N/c9ABmCB0j+B+B6RepSAmB2m8d6qVau0iNEVFhZ2DUhpshChMARIuQLxXqDhq2DiTERYYgXEcUBsh82P+MAxIOYA4gMkaQS6bg2QWoMuzsRAJmDBESAzgZQtEEsC8XMgPgy0OR2nRjQNXFBhZRAfKAcSP4zhVByaYIALKm6LYSO6UwgkALhGJZgAkUkOrpEdlIxICVWAAAMAKGsnDFDj3lgAAAAASUVORK5CYII=" />
-                        <img data-cmd="CreateLink" alt="Link" title="Link"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAATlJREFUeNp0kj1LA0EQhjcaDX6S0vyEBGu/ChGEdHbhLGwCKQOCNoqI1haCGAsbFWzE62ythPgLLCzsBU0TQVQszPlMeDcsR/LCwy7czsw7M5dJksRFUeSkPCzBFDzAu/8Qx7ELldU5CTuwqfsHvMIJXLo+8oFXUNH9DTpQhDP4gtt04JDOss5dKMA2NGAYLmDZPlpLvi0fOKLMR7I6CzWowjgcDKr4k7K9D9MM5IbzFxaotMe5ng5sWlVNrmdbtuxNDlZkuxQG1qHFw/uU7WsYhU+SlmX7NAy00a9qd6Fts/YHh6retR2uw/Qs5mBNfbbgThM2JbLdqxjqGNpWRYkswbxsj5lte5SxXy6ULNkAHmECvrWijva6Rb+NfhW9bevlSQNpy/a5t511g/UCGzCjRItaW1f/AgwAHi1TfmVpu04AAAAASUVORK5CYII=" />
-                        <img data-cmd="InsertUnorderedList" data-cmdref="UL" alt="Unordered List" title="Unordered List"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAFJJREFUeNpi/P//PwM5gImBTMASFhYGtnLVqlWMIBrGJ6gRxgBqmAmk0om2EYhnoYnNIlYjui3pxGqE+YkRSv8nNVRnkhSqo37EDRjJTeQAAQYAXX4Ykn/0bc8AAAAASUVORK5CYII=" />
-                        <img data-cmd="InsertOrderedList" data-cmdref="OL" alt="Ordered List" title="Ordered List"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAIBJREFUeNpi/P//PwM5gImBTMACY4SFhb1ftWqVIJD+T7SNQMXXgBQ/OTZqAfFfKHsWMRoZQYEDtJH0wAFq+gu17TpU7D8xGOTHuVANR4CBQ5If7aHsJCBOJdaPII3qIAaSbenERgcoKv5C/UqSH0FRcZOclHMN5lyS45EcABBgABlKOXzhZFqqAAAAAElFTkSuQmCC" />
-                        <img data-cmd="insertHorizontalRule" alt="Insert Horizontal Rule" title="Insert Horizontal Rule"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAC5JREFUeNpi/P//PwM5gImBTDCqcYRrZDExMSErzbEA8TYg/keqSxnJTeQAAQYA5ZgJajtOw8gAAAAASUVORK5CYII=" />
-                    </div>
-                    <div class="cmd-group cmd-sendtopanel">
-                        <img data-cmd="justifyLeft" alt="Align left" title="Align Left"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAFRJREFUeNpi/P//PwM5gImBTMACIkxMTIiy9syZM4woGoFgC1k2AoEvAZtwaiTkVEZcGmnjVHwa8ToVGOoYoUsbp2ILTWKdykhII8lOZSQ3kQMEGAD5NBiqyHSUoAAAAABJRU5ErkJggg==" />
-                        <img data-cmd="justifyRight" alt="Align right" title="Align Right"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAGBJREFUeNqckssNwDAIQ3HFSKzRbRmDnUiPURU+wbcksuw8gLvTRA8NxftBRFrxZgb+3Wk3Eac/fslVInHwVlVGZNQrOJvelrFL81RVb+eIbHMiuhnVii4qo46qZloCDAClJxzYHSgpAwAAAABJRU5ErkJggg==" />
-                        <img data-cmd="justifyCenter" alt="Align center" title="Align Center"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAFNJREFUeNpi/P//PwM5gImBTMACY5iYmBBl9ZkzZxhRNALBFlJsZCTXj8g2EnQuzJkYGklxLmVOJTZEkZ3MQk6IUi9U8TkbOUSxaiTW2WQ7FSDAAJ3CIemVfq8UAAAAAElFTkSuQmCC" />
-                        <img data-cmd="justifyFull" alt="Align justify" title="Align Full"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADlJREFUeNpi/P//PwM5gImBTMACIkxMTEiy9syZM4wsUPYWsmwEAl9yNZIaQqNOHVxOZSQ3kQMEGACqZhDiL7ddHgAAAABJRU5ErkJggg==" />
-                    </div>
-                    <div class="cmd-group">
-                        <img data-cmd="indent" alt="Indent" title="Indent"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAH1JREFUeNqkUlEKwCAIrfBodZE8V+0g/e5eTqEgonJrgmDJe69nWiIyJ+FmlyEElQ12zRVBKcU6cxhQmROz4KSfl0gZjveeOJPU7dzqVfYeIyubXnnncRyOgO/XHntPzHYxOGseYQDh8CTUgFGUPv/jDPRrc3Ye7emSPwIMABKIVgb0CXmTAAAAAElFTkSuQmCC" />
-                        <img data-cmd="outdent" alt="Outdent" title="Outdent"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAG5JREFUeNpi/P//PwM5gImQAldXV6wms+CT3L17NyPZNuICLFB6HrEagK5LBLpkPgMocPBhFxeX/0jsuTA+0X4EqpkLpJJI8iPIeciaiPYjyE9AzTYommnuRyg/GaiWvHgEaSYrHmGAkdxEDhBgAAeIcxVqE08SAAAAAElFTkSuQmCC" />
-                    </div>
-                    <div class="cmd-group">
-                        <img data-cmd="removeFormat" alt="Remove Formattimg/Styles" title="Remove Formatting/Styles"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAH1JREFUeNpi/P//PwM5gImBTDAINJqYmJgDMTqfEV0dC7omIGUIxN5Adh2QbgLiZ1Dpk/hsBElKAXEZVFMZlH+SGD+CbOqCauo6c+ZMHUE/AhUxINkE1gx0chM2jdj8+AyqCWYTiG9OyI+ngPg8kvNA9HmoOApgHDpJDiDAAFuuJmPkWnMNAAAAAElFTkSuQmCC" />
-
-                    </div>
+                <div class="cmd-group">
+                    <span data-cmd="bold" title="Bold" class="icon" data-name="bold">&#xf320;</span>
+                    <span data-cmd="italic" alt="Italic" title="Italic" class="icon" data-name="italic">&#xf10a;</span>
+                    <span data-cmd="underline" alt="Underline" title="Underline" class="icon"
+                        data-name="text-a-underline">&#xf910;</span>
+                    <span data-cmd="underline" alt="Underline" title="Underline" class="icon"
+                        data-name="text-underline">&#xf197;</span>
+                    <span data-cmd="strikeThrough" alt="Strike Through" title="Strike Through" class="icon"
+                        data-name="text-strikethrough">&#xfa5d;</span>
+                    <span data-cmd="superscript" alt="Superscript" title="Superscript" class="icon"
+                        data-name="text-superscript">&#xfa02;</span>
+                    <span data-cmd="subscript" alt="Subscript" title="Subscript" class="icon"
+                        data-name="text-subscript">&#xf0e6;</span>
+                </div>
+                <div class="cmd-group">
+                    <span data-cmd="formatBlock" title="Paragraph" data-par="P" class="icon"
+                        data-name="paragraph">&#xfeeb;</span>
+                    <span data-cmd="formatBlock" title="H1" data-par="H1" class="icon"
+                        data-name="text-h-one">&#xfb8e;</span>
+                    <span data-cmd="formatBlock" title="H2" data-par="H2" class="icon"
+                        data-name="text-h-two">&#x10083;</span>
+                    <span data-cmd="formatBlock" title="H3" data-par="H3" class="icon"
+                        data-name="text-h-three">&#xf797;</span>
+                    <span data-cmd="formatBlock" title="H4" data-par="H4" class="icon"
+                        data-name="text-h-four">&#xfb3f;</span>
+                </div>
+                <div class="cmd-group">
+                    <span data-cmd="removeFormat" data-par="foreColor" alt="Text Color" title="Text Color" class="icon"
+                        data-name="palette">&#xf919;</span>
+                    <span data-cmd="removeFormat" data-par="backColor" alt="Text Background" title="Text Background"
+                        class="icon" data-name="text-t--fill">&#xf0d4;</span>
+                </div>
+                <div class="cmd-group">
+                    <span data-cmd="InsertImage" alt="Insert Image" title="Insert Image" class="icon"
+                        data-name="image1">&#xf6eb;</span>
+                    <span data-cmd="CreateLink" alt="Link" title="Link" class="icon" data-name="link-2">&#xf235;</span>
+                    <span data-cmd="InsertUnorderedList" data-cmdref="UL" alt="Unordered List" title="Unordered List"
+                        class="icon" data-name="list">&#xf58e;</span>
+                    <span data-cmd="InsertOrderedList" data-cmdref="OL" alt="Ordered List" title="Ordered List"
+                        class="icon" data-name="list-ordered">&#xf322;</span>
+                    <span data-cmd="insertHorizontalRule" alt="Insert Horizontal Rule" title="Insert Horizontal Rule"
+                        class="icon" data-name="minus">&#xf02f;</span>
+                </div>
+                <div class="cmd-group">
+                    <span data-cmd="justifyLeft" alt="Align left" title="Align Left" class="icon"
+                        data-name="align-left">&#xf008;</span>
+                    <span data-cmd="justifyCenter" alt="Align center" title="Align Center" class="icon"
+                        data-name="align-center">&#xf0f9;</span>
+                    <span data-cmd="justifyRight" alt="Align right" title="Align Right" class="icon"
+                        data-name="align-right">&#xf293;</span>
+                    <span data-cmd="justifyFull" alt="Align justify" title="Align Full" class="icon"
+                        data-name="align-justify">&#xf4a9;</span>
+                </div>
+                <div class="cmd-group">
+                    <span data-cmd="indent" alt="Indent" title="Indent" class="icon"
+                        data-name="indent-increase">&#xf15c;</span>
+                    <span data-cmd="outdent" alt="Outdent" title="Outdent" class="icon"
+                        data-name="indent-decrease">&#xf0b2;</span>
+                </div>
+                <div class="cmd-group">
+                    <span data-cmd="removeFormat" alt="Remove Formattimg/Styles" title="Remove Formatting/Styles"
+                        class="icon" data-name="remove-formatting">&#xf175;</span>
                 </div>
             </div>
 
