@@ -1,8 +1,11 @@
 [data-view="designer"] {
     display: flex;
+    width: 100%;
     align-items: center;
+    justify-content: center;
     background: var(--bg);
     color: var(--fg);
+    border-bottom: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
 
     img {
         filter: invert(1);
@@ -22,5 +25,10 @@
         cursor: pointer;
         padding: 6px 5px;
         border-radius: 3px;
+        transition: background 0.2s;
+
+        &:hover {
+            background: var(--c1);
+        }
     }
 }
