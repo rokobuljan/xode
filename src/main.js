@@ -1,9 +1,8 @@
-import "./index.css";
-import "./css/designer.css";
+import "./css/index.css";
 
-import hljs from "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/+esm";
+import hljs from "highlight.js";
 import "./js/splitview.js";
-import { el, els, elNew, download, LS } from "./js/utils.js";
+import { el, els, elNew, download, LS, elsSiblings } from "./js/utils.js";
 // emmet
 import expand, { extract } from 'emmet';
 
@@ -35,6 +34,7 @@ async function formatCode(code, language) {
         semi: true,
         singleQuote: true,
         tabWidth: 4,
+        htmlWhitespaceSensitivity: "ignore"
     });
 }
 
@@ -44,26 +44,21 @@ async function formatCode(code, language) {
  * @url https://roxon.hr
  */
 
-
-const elHTML = el(`[data-syntax="html"]`);
-const elCSS = el(`[data-syntax="css"]`);
-const elJS = el(`[data-syntax="js"]`);
-const elPreview = el("#preview"); // the iframe
-const elAutorun = el("#autorun");
-const elRun = el("#run");
-const elDownload = el("#download");
-
 const emmetExpand = (elTextarea, syntax = "html") => {
+    console.log(syntax);
+
     const source = elTextarea.value;
     const caretPos = elTextarea.selectionStart;
     // 2. Extract the abbreviation before the caret
-    // For HTML/JSX use type: 'markup' (default), for CSS use type: 'stylesheet'
-    const extraction = extract(source, caretPos, { type: 'markup' });
+    const type = { html: "markup", css: "stylesheet" }[syntax];
+    console.log(type);
+
+    const extraction = extract(source, caretPos, { type });
     if (!extraction) return; // No valid abbreviation found
     const { abbreviation, start, end } = extraction;
     // 3. Expand the abbreviation and replace the text
     try {
-        let expanded = expand(abbreviation, { syntax });
+        let expanded = expand(abbreviation, { syntax, type });
 
         expanded = expanded.replace(/\t/g, " ".repeat(4)); // Replace tabs with 4 spaces
 
@@ -113,64 +108,8 @@ const hilite = (elEditor) => {
  * Construct HTML page output for preview or download
  * @param {boolean} isApp set to false to get the cleanest HTML document output
  */
-let injectScript = `<script id="◆xode-inject">
-const OFFSETLINES = 6; // Fix console.log line numbering (HOW MANY LINES OF CODE ARE ABOVE THIS SCRIPT TAG IN HTML)
-document.designMode = "on";
-const serialize = (arg) => {
-    if (arg === null) return "null";
-    if (arg === undefined) return 'undefined';
-    if (arg instanceof Error) return \`\${arg.name}: \${arg.message}\`;
-    if (typeof arg === 'object') {
-        try { return JSON.stringify(arg, null, 2); }
-        catch { return Object.prototype.toString.call(arg); }
-    }
-    return String(arg);
-};
-const getLineNumber = () => {
-    const stack = new Error().stack;
-    const line = stack.split('\\n')[4]; // caller's line
-    const match = line.match(/:(\\d+):\\d+\\)?$/);
-    return match ? Number(match[1]) - OFFSETLINES : '?';
-};
-const forward = (type, args) => {
-    parent.postMessage({
-        type,
-        line: getLineNumber(),
-        args: Array.from(args).map(serialize)
-    }, '*');
-};
-["log", "warn", "error", "info", "clear"].forEach((method) => {
-    const _orig = console[method];
-    console[method] = (...args) => {
-        _orig.apply(console, args); // keep DevTools working
-        forward(method, args);
-    };
-});
-window.addEventListener("error", (evt) => {
-    window.parent.postMessage({ type: "error", line: evt.lineno - OFFSETLINES, args: [\`\${evt.message}\`] }, '*');
-});
-window.addEventListener('unhandledrejection', (evt) => {
-    window.parent.postMessage({ type: "error", line: evt.lineno ?? '?', args: [\`Unhandled Promise: \${serialize(evt.reason)}\`] }, '*');
-});
-// Designer mode on
-addEventListener("keyup", () => {
-    window.parent.postMessage({ type: "code", args: [document.querySelector("body").innerHTML] }, "*");
-});
-addEventListener("message", (evt) => {
-    if (evt.data.type !== "cmd") return;
-    let [cmd, par] = evt.data.args;
-    if (cmd == "InsertImage") par = prompt("Image URL:", "");
-    else if (cmd == "CreateLink") {
-        par = prompt("Link URL:", "http://");
-        if (par === "" || par == "http://") cmd = "Unlink";
-    }
-    document.execCommand('styleWithCSS', false, false);
-    document.execCommand(cmd, false, par);
-    window.parent.postMessage({ type: "code", args: [document.querySelector("body").innerHTML] }, "*");
-});
-</script>`;
-
 const generatePreviewHTML = (isApp, isDesignMode = true) => {
+    const injectScript = /*html*/`<script id="◆xode-inject" src="inject.js?t=${Date.now()}"></script>`;
     return /*html*/`<!DOCTYPE html>
     <html lang="en">
     <head>
@@ -187,9 +126,29 @@ const generatePreviewHTML = (isApp, isDesignMode = true) => {
     </html>`;
 };
 
+
+const elHTML = el(`[data-syntax="html"]`);
+const elCSS = el(`[data-syntax="css"]`);
+const elJS = el(`[data-syntax="js"]`);
+const elPreview = el("#preview"); // the iframe
+const elAutorun = el("#autorun");
+const elRun = el("#run");
+const elDownload = el("#download");
+
 // let ls = LS("xode");
 let previewTimeout;
 let projectTitle = localStorage["xode-projectTitle"] ?? "untitled";
+
+// Toggle views/panes
+els("[data-view-toggle]").forEach((elToggle) => {
+    // TODO: toggle checked from LS
+    const view = elToggle.dataset.viewToggle;
+    const elView = el(`[data-view="${view}"]`);
+    elView.classList.toggle("is-hidden", !elToggle.checked);
+    elToggle.addEventListener("input", () => {
+        elView.classList.toggle("is-hidden", !elToggle.checked);
+    });
+});
 
 el("#projectTitle").addEventListener("input", (ev) => {
     projectTitle = ev.target.value.trim();
@@ -213,7 +172,7 @@ const makeEditor = (elEditor) => {
     elTextarea.addEventListener("keydown", async (evt) => {
         if (evt.key === "Tab") {
             evt.preventDefault(); // don't switch tabindex
-            if (syntax === "html" && emmetExpand(elTextarea, syntax)) {
+            if ((syntax === "html" || syntax === "css") && emmetExpand(elTextarea, syntax)) {
                 hilite(elEditor);
                 updateLineNumbers(elEditor);
                 preview();

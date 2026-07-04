@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "emmet": "^2.4.11",
+    "highlight.js": "^11.11.1",
     "prettier": "^3.9.4"
   }
 }

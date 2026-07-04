@@ -25,12 +25,12 @@
                     d="M362.6-88.5v240.2L265.7 54l-35.4 34.7L387 245.5 543.8 88.7 509.1 54l-97.7 97V-88.5zM131 292v46.5h512V292z" />
             </svg>
         </button>
-        <label class="ckbtn toggleView"><input type="checkbox" id="toggleHTML"><span>HTML</span></label>
-        <label class="ckbtn toggleView"><input type="checkbox" id="toggleCSS"><span>CSS</span></label>
-        <label class="ckbtn toggleView"><input type="checkbox" id="toggleJS"><span>JS</span></label>
-        <label class="ckbtn toggleView"><input type="checkbox" id="toggleConsole"><span>›_</span></label>
-        <label class="ckbtn toggleView"><input type="checkbox" id="togglePreview"><span>Preview</span></label>
-        <label class="ckbtn toggleView"><input type="checkbox" id="toggleDesigner"><span>✎</span></label>
+        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="html"><span>HTML</span></label>
+        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="css"><span>CSS</span></label>
+        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="js"><span>JS</span></label>
+        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="console"><span>›_</span></label>
+        <label class="ckbtn"><input type="checkbox" checked data-view-toggle="preview"><span>Preview</span></label>
+        <label class="ckbtn"><input type="checkbox" data-view-toggle="designer"><span>✎</span></label>
         <label class="ml-auto"><input id="autorun" type="checkbox" checked> <span>Autorun</span></label>
         <button id="run" type="button" title="Run Xode">Run ▶</button>
     </nav>
@@ -76,9 +76,7 @@
             </div>
         </div>
         <div class="splitter"></div>
-
-
-        <div class="view" data-view="preview">
+        <div class="view col" data-view="preview">
             <div data-view="designer">
                 <div class="buttons">
                     <div class="cmd-group">
@@ -94,8 +92,6 @@
                             src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANZJREFUeNpi/P//PwM5gIUUxSYmJiDqLhArs6AJ9gFxDhCzQoVPALEaEAufOXMGpuk9iGZCMjAGiNOB2BWIGYFYCaqJA4vl75E1RgHxOiA+COXfB9kExO+Q1CgDsSDIgch+BAnYQxV7IYnLwhhQ54I0MyDbOBWIuYDYE4j/Q/FxIFbEFlDIGpcAcT+a0yyA+AohjSBQBHUqKHAcgPg61BWLCWlEBqBA0oJqFsan8TE0SrCBA4RsnIfmrG1ALA/EXYSS3B1oVMAS8BMg1sHmBEZyEzlAgAEAu/Ar+r4a/wAAAAAASUVORK5CYII=" />
                         <img data-cmd="subscript" alt="Subscript" title="Subscript"
                             src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAMxJREFUeNpi/P//PwM5gImBTMACY5iYmICoPiDOAWJWqPAJIFYDYuEzZ87gtDEGiNOB2BWIGYFYCaqJg5BTo4B4HRAfhPLvg2wC4neENAoCcRAQb0NTI0tI41Qg5gJiTyD+D8XHgViRkMYlQNyP5jQLIL5CTHQUQf0FChwHIL4OdcViUuIRFEhaUM3COOMRCB4DcSXUyejgAFJc3wViZXQb56E5CxTC8kDcBeWDNL0H0SxoGu8AsRc0REHgCRDrYHHBe0ZSEjmyUwECDABSIyvS5TfHrgAAAABJRU5ErkJggg==" />
-                        <img data-cmd="removeFormat" alt="Remove Formattimg/Styles" title="Remove Formatting/Styles"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAH1JREFUeNpi/P//PwM5gImBTDAINJqYmJgDMTqfEV0dC7omIGUIxN5Adh2QbgLiZ1Dpk/hsBElKAXEZVFMZlH+SGD+CbOqCauo6c+ZMHUE/AhUxINkE1gx0chM2jdj8+AyqCWYTiG9OyI+ngPg8kvNA9HmoOApgHDpJDiDAAFuuJmPkWnMNAAAAAElFTkSuQmCC" />
                     </div>
                     <div class="cmd-group cmd-sendtopanel">
                         <img data-cmd="formatBlock" data-par="P" alt=""
@@ -108,26 +104,6 @@
                             src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAKFJREFUeNpi/P//PwM5gImBTDCENLKACFdX17tASgkqVgHEHVD2vd27dysD5XcD2S5APAvIT4fbCJKEKkwHsjtBNJQP1OOaBjUMhNOIdirQIJAtZ4FMYyA+i0vjTKANoIidiSwIFAPxQ6FsQWwaQU5lRHIqzNZ0qFONoX4l7FSgDatAgQP1+3tQgIHEGUFJDl+ogkISiV8BNQCika4JACDAAL0uPzam1Ey7AAAAAElFTkSuQmCC" />
                         <img data-cmd="formatBlock" data-par="H4" alt=""
                             src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAIZJREFUeNpi/P//PwM5gImBTDCENLKACFdX17tASgkqVgHEHVD2vd27dytD1YDk7wL5jHAbYZJAkA5kd4JoKN8VyZIOkp0KtM0FSBnj0zgTqAgUsTPRxNOAeBY+jelQP6Qj2QbStJqcUAU5cRXMj0CDykE0IyjJERmqIA0dsFBlpHtaBQgwAOcfMI24ayH7AAAAAElFTkSuQmCC" />
-                        <img data-cmd="formatBlock" data-par="H5" alt=""
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAKVJREFUeNpi/P//PwM5gImBTDCENLKACFdX17tASgkqVgHEHVD2vd27dysD5VcB2aFQsXSg2CywRqjkf5ggkP0eyJ4JMhOq+D1QnJEkpwINMQZSaSCDgbgcJs4Ii0eojehAGerEDiQxsKvQbUyHOikdJgDkd0LFTID4LBALwgOHgFNBzksD4jAg3gPEq+FOxReqUD4oVEEBFga0fQ+KH+mWAAACDAD9lEQHz21h2AAAAABJRU5ErkJggg==" />
-                        <img data-cmd="formatBlock" data-par="H6" alt=""
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAJ9JREFUeNpi/P//PwM5gImBTDCENLKACFdX17tASgkqVgHEHVD2vd27dytD1cwEUmlAPAsolg62ESYJBOlAdieIhvJdoZpWASljEBOkiSinAjW5AKlQqMaZQL4SNo0gCVDEzkQSM4bSJlDvhGLTCHIqI5JT4QAofhbkZ1hYEBOq95CcLAjjM4KSHKFQBcrvBrJBGvcA+a5wjXRNAAABBgAdBjqeqeyj+QAAAABJRU5ErkJggg==" />
-                    </div>
-                    <div class="cmd-group cmd-sendtopanel">
-                        <img data-cmd="FontSize" data-par="3" alt="Font - Normal" title="Font - Normal"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAALxJREFUeNpi/P//PwM6MDExmQekbKDcI0CcdObMGRQ1jMgagRo4gdQ0IHYDYimo8FsgPgzEiUDNH2BqWdAsmwjECWhiwkAcAMTfgDgaJsiEpiiVATeIQuYw4VDkBXQWIwgD2V3YFLDg0LgN6F8QrYXLelw2dkFtu4FLI3qooseNFxAfBOKvIA7UMLw2cgPxEmiICpHiVHug6bFAeiUQt5MTOAzEBs5sPGqX4bMxH4hZcSS5bJyhSkoiBwgwANnJO+ArS/V7AAAAAElFTkSuQmCC" />
-                        <img data-cmd="FontSize" data-par="1" alt="Font Size 1" title="Font Size 1"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAJxJREFUeNpi/P//PwM6MDExmQekbKDcI0CcdObMGRQ1jMgagRo4gdQ0IHYDYimo8FsgPgzEiUDNH2BqWdAsmwjECWhiwkAcAMTfgDgaJsiEpigN5AocOBpZIRMDdnANiEF+2IZDHqdGLSC+zoAHMDGQCQaPRlDgaAKxJ64AYsETOCTZOAsaDdjwUnw25gMxK44kl40zrZKSyAECDAAjxS1fzlldLwAAAABJRU5ErkJggg==" />
-                        <img data-cmd="FontSize" data-par="2" alt="Font Size 2" title="Font Size 2"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAALhJREFUeNpi/P//PwM6MDExmQekbKDcI0CcdObMGRQ1jMgagRo4gdQ0IHYDYimo8FsgPgzEiUDNH2BqWdAsmwjECWhiwkAcAMTfgDgaJsiEpigN5AocOBpZIRMDdrAYiP9D8WJsClhwaHQA4u1ArABlE61RFkpvA+Ib2BTgcioI2EPpIlI0lgHxEiD2gtpKtFM7oTQocJ6QopGRgQBAd+ospGhAx0vx2ZgPxKw4klw2zrRKSiIHCDAA5FIzL1IXAT0AAAAASUVORK5CYII=" />
-                        <img data-cmd="FontSize" data-par="4" alt="Font Size 4" title="Font Size 4"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAALBJREFUeNpi/P//PwM6MDExmQekbKDcI0CcdObMGRQ1jMgagRo4gdQ0IHYDYimo8FsgPgzEiUDNH2BqWdAsmwjECWhiwkAcAMTfgDgaJsiEpigN5AocOBpZIRMDbqAIxP9wSeLTuBVqE0ka+4D4LB5DMQIHBOyBuADJtv/YbMZm40GouAMsykj1426keCTKqTDAhs+P6DbOgvoJG16Kz8Z8IGbFkeSycaZVUhI5QIABABMkLz8/W/58AAAAAElFTkSuQmCC" />
-                        <img data-cmd="FontSize" data-par="5" alt="Font Size 5" title="Font Size 5"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAALVJREFUeNpi/P//PwM6MDExmQekbKDcI0CcdObMGRQ1jMgagRo4gdQ0IHYDYimo8FsgPgzEiUDNH2BqWdAsmwjECWhiwkAcAMTfgDgaJsiEpigN5AocOBpZIRMDdrANiP9DcQw2BSwMuAEjHjmcNgpCbfuHy0ZcGi2hNp4E4nZSNIJssgfi97icisuPIJsOAPFvIHYlRaMlAwGA7tRZSNGAjpfiszEfiFlxJLlsnGmVlEQOEGAAE5sz4nS6kakAAAAASUVORK5CYII=" />
-                        <img data-cmd="FontSize" data-par="6" alt="Font Size 6" title="Font Size 6"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAALZJREFUeNpi/P//PwM6MDExmQekbKDcI0CcdObMGRQ1jMgagRo4gdQ0IHYDYimo8FsgPgzEiUDNH2BqWdAsmwjECWhiwkAcAMTfgDgaJsiEpigN5AocOBpZIRMDbrAYiH8B8TZskrg09kFtWAnEXqRoTIc6LwZqM9EaWYF4OxD3A3E4KRp/A/ENJDYGYMHj1EVQ55aTonEJFOME6E6dBcT/ceCl+GzMhwYMtiSXjTOtkpLIAQIMAL+GNHy5YCaWAAAAAElFTkSuQmCC" />
-                        <img data-cmd="FontSize" data-par="7" alt="Font Size 7" title="Font Size 7"
-                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAKxJREFUeNpi/P//PwM6MDExmQekbKDcI0CcdObMGRQ1jMgagRo4gdQ0IHYDYimo8FsgPgzEiUDNH2BqWdAsmwjECWhiwkAcAMTfgDgaJsiEpigN5AocOBpZIRMDdnAciP9D8TVsCnBpfA+1xQGId2BTwIJDoxeULkdiE2UjCCjikcOrsQmfRhY8cipAzE+ORktSnDoLKRrQ8VJ8NuYDMSuOJJeNM62SksgBAgwA374vTGDbxCoAAAAASUVORK5CYII=" />
                     </div>
                     <div class="cmd-group cmd-sendtopanel">
                         <img data-cmd="removeFormat" data-par="foreColor" alt="Text Color" title="Text Color"
@@ -159,20 +135,26 @@
                         <img data-cmd="justifyFull" alt="Align justify" title="Align Full"
                             src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADlJREFUeNpi/P//PwM5gImBTMACIkxMTEiy9syZM4wsUPYWsmwEAl9yNZIaQqNOHVxOZSQ3kQMEGACqZhDiL7ddHgAAAABJRU5ErkJggg==" />
                     </div>
-
                     <div class="cmd-group">
                         <img data-cmd="indent" alt="Indent" title="Indent"
                             src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAH1JREFUeNqkUlEKwCAIrfBodZE8V+0g/e5eTqEgonJrgmDJe69nWiIyJ+FmlyEElQ12zRVBKcU6cxhQmROz4KSfl0gZjveeOJPU7dzqVfYeIyubXnnncRyOgO/XHntPzHYxOGseYQDh8CTUgFGUPv/jDPRrc3Ye7emSPwIMABKIVgb0CXmTAAAAAElFTkSuQmCC" />
                         <img data-cmd="outdent" alt="Outdent" title="Outdent"
                             src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAG5JREFUeNpi/P//PwM5gImQAldXV6wms+CT3L17NyPZNuICLFB6HrEagK5LBLpkPgMocPBhFxeX/0jsuTA+0X4EqpkLpJJI8iPIeciaiPYjyE9AzTYommnuRyg/GaiWvHgEaSYrHmGAkdxEDhBgAAeIcxVqE08SAAAAAElFTkSuQmCC" />
                     </div>
-                </div>
+                    <div class="cmd-group">
+                        <img data-cmd="removeFormat" alt="Remove Formattimg/Styles" title="Remove Formatting/Styles"
+                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAH1JREFUeNpi/P//PwM5gImBTDAINJqYmJgDMTqfEV0dC7omIGUIxN5Adh2QbgLiZ1Dpk/hsBElKAXEZVFMZlH+SGD+CbOqCauo6c+ZMHUE/AhUxINkE1gx0chM2jdj8+AyqCWYTiG9OyI+ngPg8kvNA9HmoOApgHDpJDiDAAFuuJmPkWnMNAAAAAElFTkSuQmCC" />
 
+                    </div>
+                </div>
             </div>
-            <iframe id="preview"
+
+            <iframe id="preview"></iframe>
+
+            <!-- <iframe id="preview"
                 allow="midi; geolocation; microphone; camera; display-capture; encrypted-media; clipboard-read; clipboard-write;"
                 sandbox="allow-same-origin allow-scripts allow-modals allow-forms allow-popups allow-top-navigation-by-user-activation allow-downloads"
-                allow="fullscreen" allowpaymentrequest="" frameborder="0" src=""></iframe>
+                allow="fullscreen" allowpaymentrequest="" frameborder="0" src=""></iframe> -->
         </div>
     </main>
     <script type="module" src="/src/main.js"></script>
