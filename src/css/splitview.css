@@ -1,5 +1,5 @@
 .view {
-    --grow: 1;
+    --grow: 100;
 
     position: relative;
     display: flex;
@@ -41,7 +41,7 @@
         }
 
         &:hover {
-            background-color: color-mix(in srgb, var(--bg), var(--c1) 50%);
+            background-color: var(--c1);
         }
     }
 

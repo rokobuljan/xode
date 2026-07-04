@@ -182,6 +182,7 @@ const makeEditor = (elEditor) => {
             evt.preventDefault();
             await formatPane(elTextarea, syntax);
         }
+        if (evt.ctrlKey || evt.shiftKey || evt.key.startsWith("Arrow")) return;
         hilite(elEditor);
         updateLineNumbers(elEditor);
         preview();
@@ -265,4 +266,26 @@ addEventListener("click", (evt) => {
         type: "cmd",
         args: [elBtnCmd.dataset.cmd, elBtnCmd.dataset.par]
     }, '*');
+});
+
+
+const selectionCounter = (elTextarea) => {
+    const start = elTextarea.selectionStart;
+    const end = elTextarea.selectionEnd;
+    const selectedText = elTextarea.value.substring(start, end);
+    const charCount = selectedText.length;
+    const lineCount = selectedText.split('\n').length;
+    const hasCount = charCount > 0;
+    el(".editor-selection-stat", elTextarea.closest(".editor")).innerHTML = hasCount
+        ? `<span class="icon" data-name="text-t">&#x10125;</span> ${charCount} &nbsp; <span class="icon" data-name="wrap-text">&#xf11d;</span> ${lineCount}`
+        : "";
+};
+
+;["select", "keyup", "click", "pointermove"].forEach((evName) => {
+    addEventListener(evName, (evt) => {
+        if (evt.type === "pointermove" && evt.buttons !== 1) return;
+        const elTextarea = evt.target.closest(".editor-textarea");
+        if (!elTextarea) return;
+        selectionCounter(elTextarea);
+    });
 });

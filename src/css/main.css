@@ -20,6 +20,11 @@
     background-color: color-mix(in srgb, var(--bg), var(--fg) 15%);
 }
 
+::-webkit-scrollbar-corner {
+    background: #0000;
+}
+
+
 *,
 *::after,
 *::before {
@@ -49,6 +54,12 @@ button {
     line-height: 1em;
     font-size: 0.85rem;
     cursor: pointer;
+    transition: background 0.2s;
+
+    &:not(:disabled):hover {
+        background: var(--c1);
+        color: color-mix(in srgb, var(--fg), var(--bg) 0%);
+    }
 }
 
 #top {
@@ -70,6 +81,7 @@ button {
     .logo {
         font-weight: 400;
         font-size: 1.1rem;
+        padding-right: 1rem;
 
         b {
             color: var(--c1);
@@ -103,6 +115,16 @@ button {
     position: relative;
     width: 100%;
     container-type: size;
+}
+
+.editor-selection-stat {
+    position: absolute;
+    bottom: 0.4rem;
+    right: 0.5rem;
+    text-align: right;
+    color: color-mix(in srgb, var(--fg), var(--bg) 20%);
+    font-size: 0.7em;
+    pointer-events: none;
 }
 
 textarea,
@@ -140,13 +162,12 @@ textarea,
     }
 
     &::selection {
-        background: color-mix(in srgb, var(--fg), #0000 85%);
+        background: color-mix(in srgb, var(--c1), #0000 70%);
     }
 
     &::placeholder {
-        color: color-mix(in srgb, var(--fg), #0000 85%);
+        color: color-mix(in srgb, var(--fg), var(--bg) 80%);
         font-style: italic;
-        font-weight: bold;
     }
 }
 
@@ -177,11 +198,38 @@ iframe {
     left: 0px;
     height: max-content;
     min-height: 100%;
-    z-index: 1;
+    min-width: 3.3em;
     text-align: right;
     color: color-mix(in srgb, var(--bg), var(--fg) 30%);
     background: inherit;
     margin-bottom: 0;
+
+    &::before {
+        content: attr(data-label);
+        position: absolute;
+        top: 0.3em;
+        left: 0.2em;
+        height: 0;
+        width: min-content;
+        color: #fff;
+        font-size: 0.85em;
+        transform-origin: top right;
+        rotate: -90deg;
+        translate: -100% 10%;
+        color: color-mix(in srgb, var(--bg), var(--fg) 30%);
+    }
+
+    [data-view="html"] &::before {
+        color: hsl(39, 100%, 50%);
+    }
+
+    [data-view="css"] &::before {
+        color: hsl(196, 100%, 50%);
+    }
+
+    [data-view="js"] &::before {
+        color: hsl(54, 100%, 50%);
+    }
 
     span {
         display: block;
@@ -210,11 +258,17 @@ textarea {
 
 input[type="text"] {
     /* border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%); */
-    background: color-mix(in srgb, var(--bg), var(--fg) 5%);
     color: var(--fg);
     padding: 0.4em 0.6em;
     border-radius: 0.2em;
     font-size: 0.85rem;
+    background-color: #0000;
+
+    &:focus {
+        outline: none;
+        background-color: color-mix(in srgb, var(--bg), var(--fg) 5%);
+        box-shadow: 0 1px var(--c1);
+    }
 }
 
 .ckbtn {
@@ -225,6 +279,14 @@ input[type="text"] {
     user-select: none;
     cursor: pointer;
     border-radius: 0.2em;
+    transition: background 0.2s;
+    color: color-mix(in srgb, var(--fg), var(--bg) 20%);
+
+
+    &:hover {
+        color: color-mix(in srgb, var(--fg), var(--bg) 0%);
+        background: var(--c1);
+    }
 
     input[type="checkbox"] {
         display: none !important;
@@ -233,6 +295,8 @@ input[type="text"] {
     &:not(:has(:checked)) {
         opacity: 0.3;
     }
+
+
 }
 
 #console {
