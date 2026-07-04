@@ -29,3 +29,5 @@ export const LS = (id = "main", defaultData) => {
         }
     }
 };
+export const elsSiblings = (elem, sel) => [...els(sel, elem.parentElement)].filter(child => child !== elem);
+

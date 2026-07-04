@@ -17,7 +17,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: color-mix(in srgb, var(--bg), var(--fg) 30%);
+    background-color: color-mix(in srgb, var(--bg), var(--fg) 15%);
 }
 
 *,
@@ -40,8 +40,9 @@ body {
 
 button {
     padding: 0.4em 0.6em;
-    border: 1px solid hsl(221 0% 50% / 0.4);
-    border-radius: 0.15rem;
+    /* border: 1px solid hsl(221 0% 50% / 0.4); */
+    border: 0;
+    border-radius: 0.2em;
     background: transparent;
     color: color-mix(in srgb, var(--fg), var(--bg) 20%);
     text-align: center;
@@ -118,9 +119,6 @@ textarea,
     overflow-wrap: normal;
     overflow: hidden;
     padding: 0 !important;
-}
-
-.editor-highlight code {
     padding-right: 1rem !important;
 }
 
@@ -150,6 +148,10 @@ textarea,
         font-style: italic;
         font-weight: bold;
     }
+}
+
+iframe {
+    background: #fff;
 }
 
 .is-resizing {
@@ -199,90 +201,37 @@ textarea,
     border: 0;
 }
 
-.view {
-    --grow: 1;
 
-    position: relative;
-    display: flex;
-    flex: var(--grow) 0 0;
-    overflow: hidden;
 
-    &.noflex {
-        flex: none;
-    }
-
-    >.splitter {
-        /* Vertical splitters */
-        position: relative;
-        flex: 0 0 1px;
-        touch-action: none;
-        cursor: ew-resize;
-        background-color: color-mix(in srgb, var(--bg), var(--fg) 10%);
-        transition: background-color 0.24s;
-
-        /* Remove splitter if not followed by a view */
-        &:not(:has(~.view)) {
-            display: none;
-        }
-
-        &::before {
-            content: "";
-            position: absolute;
-            inset: -3px;
-            width: calc(100% + 6px);
-            height: calc(100% + 6px);
-            z-index: 10000;
-        }
-
-        &:hover {
-            background-color: color-mix(in srgb, var(--bg), var(--c1) 50%);
-        }
-    }
-
-    &.col {
-        flex-direction: column;
-
-        &>.splitter {
-            /* Horizontal splitters */
-            cursor: ns-resize;
-        }
-    }
-}
-
-.toggleView:has(:checked) {
-    border-color: transparent;
-    opacity: 0.5;
-}
-
-:has(#toggleHTML:checked) [data-view="html"],
-:has(#toggleCSS:checked) [data-view="css"],
-:has(#toggleJS:checked) [data-view="js"],
-:has(#toggleConsole:checked) [data-view="console"],
-:has(#togglePreview:checked) [data-view="preview"],
-:has(#toggleDesigner:checked) [data-view="designer"] {
-    display: none;
+input,
+textarea {
+    border: none;
 }
 
 input[type="text"] {
-    border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%);
-    background: hsl(221 20% 100% / 0);
-    color: hsl(221 30% 98%);
+    /* border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%); */
+    background: color-mix(in srgb, var(--bg), var(--fg) 5%);
+    color: var(--fg);
     padding: 0.4em 0.6em;
-    border-radius: 0.15rem;
+    border-radius: 0.2em;
     font-size: 0.85rem;
 }
 
 .ckbtn {
     font-size: 0.85rem;
-    border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%);
+    /* border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%); */
     padding: 0.4em 0.6em;
     line-height: 1;
     user-select: none;
     cursor: pointer;
     border-radius: 0.2em;
 
-    &>input[type="checkbox"] {
+    input[type="checkbox"] {
         display: none !important;
+    }
+
+    &:not(:has(:checked)) {
+        opacity: 0.3;
     }
 }
 
@@ -301,6 +250,7 @@ input[type="text"] {
 
     &:empty {
         &::before {
+            user-select: none;
             content: "›_  Console";
             font-style: italic;
             padding: 0.5em 0.8em;
@@ -373,6 +323,9 @@ input[type="text"] {
     opacity: 1;
 }
 
+:has([data-view-toggle="preview"]:not(:checked)) label:has([data-view-toggle="designer"]) {
+    display: none;
+}
 
 /* utils */
 .ml-auto {

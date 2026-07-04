@@ -1,20 +1,12 @@
-.view:has(.cmd-group) {
-    display: flex;
-    flex-direction: column;
-
-    .buttons {
-        background: var(--bg);
-
-        img {
-            filter: invert(1);
-        }
-    }
-}
-
 .buttons {
+    background: var(--bg);
     top: 0px;
     height: 34px;
     width: 100%;
+
+    img {
+        filter: invert(1);
+    }
 }
 
 .buttons img,
@@ -38,5 +30,5 @@
     float: left;
     top: 0px;
     margin: 0;
-    border-right: 1px solid color-mix(in srgb, var(--bg), var(--fg) 20%);
+    border-right: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
 }

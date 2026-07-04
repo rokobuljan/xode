@@ -9,21 +9,21 @@ const debouncedResize = () => {
     return () => {
         clearTimeout(timeout);
         timeout = setTimeout(() => {
-            dispatchEvent(new Event('resize'));
+            dispatchEvent(new Event("resize"));
         }, 60);
     };
 };
 const triggerGlobalResizeEvent = debouncedResize();
 const splitViewStart = (ev) => {
-    const SIZE_MIN = 8;
+    const SIZE_MIN = 10;
     const elSplitter = ev.target.closest(".splitter");
     let elPrev = elSplitter?.previousElementSibling;
-    while (elPrev && (!elPrev.classList.contains('view') || !elPrev.checkVisibility())) {
+    while (elPrev && (!elPrev.classList.contains("view") || !elPrev.checkVisibility())) {
         elPrev = elPrev.previousElementSibling;
     }
     // get next element this is not hidden
     let elNext = elSplitter?.nextElementSibling;
-    while (elNext && (!elNext.classList.contains('view') || !elNext.checkVisibility())) {
+    while (elNext && (!elNext.classList.contains("view") || !elNext.checkVisibility())) {
         elNext = elNext.nextElementSibling;
     }
 
@@ -63,4 +63,41 @@ const splitViewStart = (ev) => {
 }
 
 addEventListener("pointerdown", splitViewStart);
+
+const normalizeGrow = (container) => {
+    const visibleViews = [...container.children].filter(
+        el => el.classList.contains("view") && el.checkVisibility()
+    );
+    const sum = visibleViews.reduce((acc, el) => acc + getGrow(el), 0);
+    if (sum > 0 && sum < 1) {
+        visibleViews.forEach(el => {
+            const grow = getGrow(el) / sum;
+            el.style.setProperty("--grow", grow);
+            console.log({ grow })
+        });
+    }
+    triggerGlobalResizeEvent();
+};
+
+const viewClassObserver = new MutationObserver((mutations) => {
+    const containers = new Set();
+    for (const mutation of mutations) {
+        const el = mutation.target;
+        if (!el.matches(".view")) continue;
+        const oldClasses = (mutation.oldValue || "").split(/\s+/);
+        const wasHidden = oldClasses.includes("is-hidden");
+        const isHidden = el.classList.contains("is-hidden");
+        if (wasHidden !== isHidden && el.parentElement) {
+            containers.add(el.parentElement);
+        }
+    }
+    containers.forEach(normalizeGrow);
+});
+
+viewClassObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: ["class"],
+    attributeOldValue: true,
+    subtree: true,
+});
 

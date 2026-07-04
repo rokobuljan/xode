@@ -1,0 +1,62 @@
+.view {
+    --grow: 1;
+
+    position: relative;
+    display: flex;
+    flex: var(--grow) 0 0;
+    overflow: hidden;
+    background-color: color-mix(in srgb, var(--bg), #000 10%);
+
+    &:has(.view):not(:has(.view:not(.is-hidden))) {
+        /* Hide .view if inner .view are all hidden */
+        display: none;
+    }
+
+    &.noflex {
+        flex: none;
+    }
+
+    >.splitter {
+        /* Vertical splitters */
+        position: relative;
+        flex: 0 0 1px;
+        touch-action: none;
+        cursor: ew-resize;
+        background-color: color-mix(in srgb, var(--bg), var(--fg) 10%);
+        transition: background-color 0.24s;
+
+        /* Remove splitter if not followed by a view */
+        &:not(:has(+.view)),
+        &:has(+.view.is-hidden) {
+            display: none;
+        }
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset: -3px;
+            width: calc(100% + 6px);
+            height: calc(100% + 6px);
+            z-index: 10000;
+        }
+
+        &:hover {
+            background-color: color-mix(in srgb, var(--bg), var(--c1) 50%);
+        }
+    }
+
+    &.col {
+        flex-direction: column;
+
+        &>.splitter {
+            /* Horizontal splitters */
+            cursor: ns-resize;
+        }
+    }
+}
+
+[data-view] {
+    &.is-hidden {
+        display: none;
+    }
+}
