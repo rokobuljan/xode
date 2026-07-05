@@ -49,8 +49,8 @@ const splitViewStart = (ev) => {
         const sizeNextNew = Math.max(sizeMinNext, Math.min(sizeSum - sizeMinPrev, sizeNext - posDiff));
         const growPrevNew = (growSum * sizePrevNew / sizeSum);
         const growNextNew = (growSum * sizeNextNew / sizeSum);
-        elPrev.style.setProperty("--grow", growPrevNew);
-        elNext.style.setProperty("--grow", growNextNew);
+        elPrev.style.setProperty("--grow", growPrevNew.toFixed(1));
+        elNext.style.setProperty("--grow", growNextNew.toFixed(1));
         triggerGlobalResizeEvent();
     };
 

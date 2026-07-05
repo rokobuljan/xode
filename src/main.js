@@ -182,9 +182,9 @@ const makeEditor = (elEditor) => {
             evt.preventDefault();
             await formatPane(elTextarea, syntax);
         }
-        if (evt.ctrlKey || evt.shiftKey || evt.key.startsWith("Arrow")) return;
         hilite(elEditor);
         updateLineNumbers(elEditor);
+        if (evt.ctrlKey || evt.shiftKey || evt.metaKey || evt.altKey || evt.key.startsWith("Arrow")) return;
         preview();
     });
 
@@ -223,11 +223,9 @@ const appendLogBlock = ({ type, args, line }) => {
 };
 
 addEventListener("message", async (evt) => {
-    if (evt.data.type === "html") return;
-
-    // Designer --to--> HTML
-    if (evt.data.type === "code") {
-        const body = new DOMParser().parseFromString(evt.data.args.join(""), "text/html").body;
+    // Designer --to--> HTML pane
+    if (evt.data.type === "content-changed") {
+        const body = new DOMParser().parseFromString(evt.data.html, "text/html").body;
         body.querySelector("#◆xode-js")?.remove();
         elHTML.value = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
         await formatPane(elHTML, "html");
@@ -249,25 +247,36 @@ els(".editor").forEach(makeEditor);
 preview();
 elRun.addEventListener("click", () => preview(true));
 elDownload.addEventListener("click", () => {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const timestamp = new Date().toISOString().replace(/[:.TZ-]/g, "_").replace(/_\d+_$/, "");
     const projectName = projectTitle.trim() ? projectTitle.trim().replace(/\s+/g, "-") : "untitled";
-    download(generatePreviewHTML(), `${projectName}-${timestamp}.xode.html`)
+    download(generatePreviewHTML(), `${projectName}-${timestamp}.xode.html`);
 });
 
 el("#clearConsole").addEventListener("click", clearElConsole);
-
 
 // Editor exec commander for designer mode
 addEventListener("click", (evt) => {
     const elBtnCmd = evt.target.closest("[data-cmd]");
     if (!elBtnCmd) return;
-    evt.stopPropagation();
     elPreview.contentWindow.postMessage({
         type: "cmd",
         args: [elBtnCmd.dataset.cmd, elBtnCmd.dataset.par]
-    }, '*');
+    }, "*");
 });
 
+// Editor exec commander for designer mode
+addEventListener("click", (evt) => {
+    const elBtnAction = evt.target.closest("[data-action]");
+    if (!elBtnAction) return;
+    const action = elBtnAction.dataset.action;
+    const val = elBtnAction.matches("[type=checkbox]") ?
+        (elBtnAction.checked ? "on" : "off") :
+        elBtnAction.value ?? elBtnAction.dataset.val;
+    elPreview.contentWindow.postMessage({
+        type: "action",
+        args: [action, val]
+    }, "*");
+});
 
 const selectionCounter = (elTextarea) => {
     const start = elTextarea.selectionStart;
