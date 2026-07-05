@@ -52,7 +52,7 @@ const actions = {
         document.designMode = val;
     }
 };
-// Designer mode
+// richEditor mode
 // Inside the iframe's document
 (() => {
     let debounceTimer = null;

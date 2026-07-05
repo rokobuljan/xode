@@ -387,7 +387,7 @@ input[type="text"] {
     opacity: 1;
 }
 
-:has([data-view-toggle="preview"]:not(:checked)) label:has([data-view-toggle="designer"]) {
+:has([data-view-toggle="preview"]:not(:checked)) label:has([data-view-toggle="richEditor"]) {
     display: none;
 }
 

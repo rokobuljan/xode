@@ -1,33 +1,32 @@
 import "./css/index.css";
-
-import hljs from "highlight.js";
-import "./js/splitview.js";
-import { el, els, elNew, download, LS, elsSiblings } from "./js/utils.js";
-// emmet
 import expand, { extract } from 'emmet';
-
-// Prettier
 import * as prettier from "prettier/standalone";
 import prettierPluginBabel from "prettier/plugins/babel";
 import prettierPluginEstree from "prettier/plugins/estree";
 import prettierPluginHtml from "prettier/plugins/html";
 import prettierPluginPostcss from "prettier/plugins/postcss";
+import hljs from "highlight.js";
+import "./js/splitview.js";
+import { el, els, elNew, download, LS, elsSiblings } from "./js/utils.js";
+import { openProject, listProjects, createProject, deleteProject } from './js/storage.js';
 
-async function formatCode(code, language) {
+const recents = listProjects(); // [{id, name, description, updatedAt}, ...] — cheap, no full bodies parsed
+console.log(recents);
+let currentProject = openProject(); // loads existing or creates new
+console.log(currentProject)
+
+const formatCode = async (code, language) => {
     const parserMap = {
         js: "babel",
         html: "html",
         css: "css",
     };
-
     const pluginMap = {
         babel: [prettierPluginBabel, prettierPluginEstree],
         html: [prettierPluginHtml],
         css: [prettierPluginPostcss],
     };
-
     const parser = parserMap[language];
-
     return await prettier.format(code, {
         parser,
         plugins: pluginMap[parser],
@@ -36,7 +35,7 @@ async function formatCode(code, language) {
         tabWidth: 4,
         htmlWhitespaceSensitivity: "ignore"
     });
-}
+};
 
 /**
  * XODE Code editor (with highlight.js)
@@ -49,20 +48,16 @@ const emmetExpand = (elTextarea, syntax = "html") => {
     const caretPos = elTextarea.selectionStart;
     // 2. Extract the abbreviation before the caret
     const type = { html: "markup", css: "stylesheet" }[syntax];
-
     const extraction = extract(source, caretPos, { type });
     if (!extraction) return; // No valid abbreviation found
     const { abbreviation, start, end } = extraction;
     // 3. Expand the abbreviation and replace the text
     try {
         let expanded = expand(abbreviation, { syntax, type });
-
         expanded = expanded.replace(/\t/g, " ".repeat(4)); // Replace tabs with 4 spaces
-
         // Replace the extracted abbreviation with the expanded code
         const newValue = source.substring(0, start) + expanded + source.substring(end);
         elTextarea.value = newValue;
-
         // Move the caret to the end of the expanded code
         const newCaretPos = start + expanded.length;
         elTextarea.setSelectionRange(newCaretPos, newCaretPos);
@@ -134,24 +129,23 @@ const elDownload = el("#download");
 
 // let ls = LS("xode");
 let previewTimeout;
-let projectTitle = localStorage["xode-projectTitle"] ?? "untitled";
 
 // Toggle views/panes
 els("[data-view-toggle]").forEach((elToggle) => {
-    // TODO: toggle checked from LS
-    const view = elToggle.dataset.viewToggle;
+    const view = elToggle.dataset.viewToggle; // "html", "css",... 
+    elToggle.checked = currentProject.panes[view];
     const elView = el(`[data-view="${view}"]`);
     elView.classList.toggle("is-hidden", !elToggle.checked);
     elToggle.addEventListener("input", () => {
         elView.classList.toggle("is-hidden", !elToggle.checked);
+        currentProject.panes[view] = elToggle.checked;
     });
 });
 
-el("#projectTitle").addEventListener("input", (ev) => {
-    projectTitle = ev.target.value.trim();
-    localStorage["xode-projectTitle"] = projectTitle;
+el("#currentProject").value = currentProject.name;
+el("#currentProject").addEventListener("input", (ev) => {
+    currentProject.name = ev.target.value.trim();
 });
-el("#projectTitle").value = projectTitle;
 
 const preview = (isForce) => {
     if (!isForce && !elAutorun.checked) return;
@@ -184,8 +178,8 @@ const makeEditor = (elEditor) => {
         }
         hilite(elEditor);
         updateLineNumbers(elEditor);
-        if (evt.ctrlKey || evt.shiftKey || evt.metaKey || evt.altKey || evt.key.startsWith("Arrow")) return;
-        preview();
+        // if (evt.ctrlKey || evt.shiftKey || evt.metaKey || evt.altKey || evt.key.startsWith("Arrow")) return;
+        // preview();
     });
 
     elTextarea.addEventListener("input", () => {
@@ -193,17 +187,17 @@ const makeEditor = (elEditor) => {
         updateLineNumbers(elEditor);
         preview();
         // Save to LS
-        localStorage[`xode-${projectTitle}-${syntax}`] = elTextarea.value;
+        currentProject[syntax] = elTextarea.value;
     });
 
     // Get from LS
-    elTextarea.value = localStorage[`xode-${projectTitle}-${syntax}`] ?? "";
+    elTextarea.value = currentProject[syntax];
 
     hilite(elEditor);
     updateLineNumbers(elEditor);
 };
 
-// Designer mode
+// richEditor mode
 const elHTMLEditor = el("#editor-HTML");
 const elConsole = el("#console");
 
@@ -223,14 +217,16 @@ const appendLogBlock = ({ type, args, line }) => {
 };
 
 addEventListener("message", async (evt) => {
-    // Designer --to--> HTML pane
+    // richEditor --to--> HTML pane
     if (evt.data.type === "content-changed") {
         const body = new DOMParser().parseFromString(evt.data.html, "text/html").body;
         body.querySelector("#◆xode-js")?.remove();
-        elHTML.value = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
+        const html = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
+        elHTML.value = html;
         await formatPane(elHTML, "html");
         hilite(elHTML.closest(".editor"));
         updateLineNumbers(elHTMLEditor);
+        currentProject.html = html;
     }
 
     // Console messages
@@ -248,13 +244,13 @@ preview();
 elRun.addEventListener("click", () => preview(true));
 elDownload.addEventListener("click", () => {
     const timestamp = new Date().toISOString().replace(/[:.TZ-]/g, "_").replace(/_\d+_$/, "");
-    const projectName = projectTitle.trim() ? projectTitle.trim().replace(/\s+/g, "-") : "untitled";
+    const projectName = currentProject.name.trim() ? currentProject.name.trim().replace(/\s+/g, "-") : "untitled";
     download(generatePreviewHTML(), `${projectName}-${timestamp}.xode.html`);
 });
 
 el("#clearConsole").addEventListener("click", clearElConsole);
 
-// Editor exec commander for designer mode
+// Editor exec commander for richEditor mode
 addEventListener("click", (evt) => {
     const elBtnCmd = evt.target.closest("[data-cmd]");
     if (!elBtnCmd) return;
@@ -264,7 +260,7 @@ addEventListener("click", (evt) => {
     }, "*");
 });
 
-// Editor exec commander for designer mode
+// Editor exec commander for richEditor mode
 addEventListener("click", (evt) => {
     const elBtnAction = evt.target.closest("[data-action]");
     if (!elBtnAction) return;
