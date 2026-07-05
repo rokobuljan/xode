@@ -34,7 +34,7 @@
         &::before {
             content: "";
             position: absolute;
-            inset: -3px;
+            inset: 0px;
             width: calc(100% + 6px);
             height: calc(100% + 6px);
             z-index: 10000;

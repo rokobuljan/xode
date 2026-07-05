@@ -1,5 +1,4 @@
-const OFFSETLINES = 6;
-document.designMode = "on";
+const OFFSETLINES = 6; // Offset for console.fn line number
 const serialize = (arg) => {
     if (arg === null) return "null";
     if (arg === undefined) return 'undefined';
@@ -47,19 +46,46 @@ window.addEventListener("error", (evt) => {
 window.addEventListener('unhandledrejection', (evt) => {
     window.parent.postMessage({ type: "error", line: evt.lineno ?? '?', args: ["Unhandled Promise: " + serialize(evt.reason)] }, '*');
 });
-// Designer mode
-addEventListener("keyup", () => {
-    window.parent.postMessage({ type: "code", args: [document.querySelector("body").innerHTML] }, "*");
-});
-addEventListener("message", (evt) => {
-    if (evt.data.type !== "cmd") return;
-    let [cmd, par] = evt.data.args;
-    if (cmd == "InsertImage") par = prompt("Image URL:", "");
-    else if (cmd == "CreateLink") {
-        par = prompt("Link URL:", "http://");
-        if (par === "" || par == "http://") cmd = "Unlink";
+
+const actions = {
+    designMode: (val) => {
+        document.designMode = val;
     }
-    document.execCommand('styleWithCSS', false, false);
-    document.execCommand(cmd, false, par);
-    window.parent.postMessage({ type: "code", args: [document.querySelector("body").innerHTML] }, "*");
+};
+// Designer mode
+// Inside the iframe's document
+(() => {
+    let debounceTimer = null;
+    const notifyParent = () => {
+        window.parent.postMessage(
+            { type: 'content-changed', html: document.documentElement.outerHTML },
+            '*' // restrict to your real origin in production
+        );
+    };
+    document.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(notifyParent, 250);
+    });
+})();
+
+// Messages from parent window
+window.addEventListener("message", (evt) => {
+    // Actions
+    if (evt.data.type === "action") {
+        const [prop, val] = evt.data.args;
+        if (actions[prop]) actions[prop](val);
+        return;
+    }
+    // execcommand
+    else if (evt.data.type === "cmd") {
+        let [cmd, par] = evt.data.args;
+        if (cmd === "InsertImage") par = prompt("Image URL:", "");
+        else if (cmd === "CreateLink") {
+            par = prompt("Link URL:", "http://");
+            if (par === "" || par == "http://") cmd = "Unlink";
+        }
+        document.execCommand('styleWithCSS', false, false);
+        document.execCommand(cmd, false, par);
+        window.parent.postMessage({ type: "content-changed", html: document.querySelector("body").innerHTML }, "*");
+    }
 });
