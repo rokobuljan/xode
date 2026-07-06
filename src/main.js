@@ -97,9 +97,9 @@ const hilite = (elEditor) => {
 
 /**
  * Construct HTML page output for preview or download
- * @param {boolean} isApp set to false to get the cleanest HTML document output
+ * @param {boolean} isApp DDiffferentiate whilst in-app vs downloaded document
  */
-const generatePreviewHTML = (isApp = true, isRichEditor = currentProject.panes.richEditor) => {
+const generatePreviewHTML = (isApp = true) => {
     const injectScript = /*html*/`<script id="◆xode-inject" src="inject.js?t=${Date.now()}"></script>`;
     return /*html*/`<!DOCTYPE html>
     <html lang="en">
@@ -109,7 +109,7 @@ const generatePreviewHTML = (isApp = true, isRichEditor = currentProject.panes.r
         <title>Xode document</title>
         <script${isApp ? ' id="◆xode-js"' : ''} type="module">${elJS.value}</script>
         <style${isApp ? ' id="◆xode-css"' : ''}>${elCSS.value}</style>
-        ${isApp && isRichEditor ? injectScript : ""}
+        ${isApp ? injectScript : ""}
     </head>
     <body ${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
         ${elHTML.value}
@@ -269,9 +269,8 @@ addEventListener("click", (evt) => {
     // Else
     const action = elBtnAction.dataset.action;
     const val = elBtnAction.matches("[type=checkbox]") ?
-        (elBtnAction.checked ? "on" : "off") :
+        elBtnAction.checked :
         elBtnAction.value ?? elBtnAction.dataset.val;
-    console.log(action, val);
     elPreview.contentWindow.postMessage({
         type: "action",
         args: [action, val]
@@ -305,12 +304,8 @@ const selectionCounter = (elTextarea) => {
 
 // Activate RTE
 elPreview.addEventListener('load', () => {
-    console.log({ richEditor: currentProject.panes.richEditor });
-    setTimeout(() => {
-        elPreview.contentWindow.postMessage({
-            type: "action",
-            args: ["designMode", currentProject.panes.richEditor ? "on" : "off"]
-        }, "*");
-    }, 4000)
+    elPreview.contentWindow.postMessage({
+        type: "action",
+        args: ["designMode", currentProject.panes.richEditor]
+    }, "*");
 });
-
