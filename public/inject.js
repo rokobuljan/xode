@@ -66,21 +66,16 @@ window.addEventListener("unhandledrejection", (evt) => {
 
 const actions = {
     designMode: (val) => {
-        console.log(`setting designMode to ${val}`);
-        document.designMode = val;
+        document.designMode = val ? "on" : "off";
     }
 };
 
 // Messages from parent window
 addEventListener("message", (evt) => {
-
-    console.log("inject.js got message event", evt.data)
-
     // Actions
     if (evt.data.type === "action") {
         const [prop, val] = evt.data.args;
         if (actions[prop]) {
-            console.log(prop, val);
             actions[prop](val);
         }
         return;
@@ -95,6 +90,9 @@ addEventListener("message", (evt) => {
         }
         document.execCommand("styleWithCSS", false, false);
         document.execCommand(cmd, false, par);
-        window.parent.postMessage({ type: "content-changed", html: document.querySelector("body").innerHTML }, "*");
+        window.parent.postMessage({
+            type: "content-changed",
+            html: document.querySelector("body").innerHTML
+        }, "*");
     }
 });
