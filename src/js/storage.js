@@ -10,6 +10,11 @@
  * moving/rewriting its storage key. The index is small and cheap to
  * parse, so listing projects doesn't require loading every project's
  * full HTML/CSS/JS just to render a "recent projects" list.
+ *
+ * No autosave/Proxy magic here: the caller is responsible for calling
+ * saveProject() whenever it mutates the project (on textarea "input",
+ * on a pane toggle, on rename, etc.). This makes persistence explicit
+ * and avoids the pitfall of silently-unpersisted nested mutations.
  */
 
 const APP_PREFIX = 'xode';
@@ -70,7 +75,7 @@ export function loadProject(id) {
     return raw ? JSON.parse(raw) : null;
 }
 
-export function createProject({ name = 'Untitled', description = '' } = {}, { persist = true } = {}) {
+export function createProject({ name = "Untitled", description = "" } = {}, { persist = true } = {}) {
     const now = Date.now();
     const project = {
         id: crypto.randomUUID(),
@@ -84,14 +89,22 @@ export function createProject({ name = 'Untitled', description = '' } = {}, { pe
         updatedAt: now,
     };
     if (persist) {
-        saveProjectRaw(project);
-        updateIndexEntry(project);
+        saveProject(project);
     }
     return project;
 }
 
-export function saveProjectRaw(project) {
-    localStorage.setItem(projectKey(project.id), JSON.stringify(stripProxy(project)));
+/**
+ * Persists the full project record and refreshes its index entry.
+ * Call this explicitly after any mutation you want kept
+ * (editor input, pane toggles, rename, etc).
+ */
+export function saveProject(project) {
+    project.updatedAt = Date.now();
+    localStorage.setItem(projectKey(project.id), JSON.stringify(project));
+    updateIndexEntry(project);
+    setLastProjectId(project.id);
+    return project;
 }
 
 export function deleteProject(id) {
@@ -101,87 +114,20 @@ export function deleteProject(id) {
     saveIndex(index);
 }
 
-// strip Proxy wrapper markers before JSON.stringify (harmless no-op on plain objects)
-function stripProxy(obj) {
-    return JSON.parse(JSON.stringify(obj));
-}
-
-// ---------- debounce ----------
-
-function debounce(fn, delay = 400) {
-    let timer;
-    return (...args) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => fn(...args), delay);
-    };
-}
-
-// ---------- autosaving proxy ----------
-
 /**
- * Wraps a project object in a deep Proxy. Any mutation (top-level field,
- * or nested e.g. project.panes.console = false) triggers a debounced
- * save to localStorage, updating both the full record and the index.
- */
-export function createAutosavingProxy(project, { debounceMs = 400, onSave } = {}) {
-    let root; // set after wrap() below
-
-    const persist = debounce(() => {
-        root.updatedAt = Date.now(); // note: this itself re-triggers persist via the trap,
-        // which is fine, it just resets the debounce timer once more
-        saveProjectRaw(root);
-        updateIndexEntry(root);
-        setLastProjectId(root.id);
-        onSave?.(root);
-    }, debounceMs);
-
-    const handler = {
-        set(target, prop, value, receiver) {
-            if (value && typeof value === 'object' && !value.__isProxy) {
-                value = wrap(value);
-            }
-            const ok = Reflect.set(target, prop, value, receiver);
-            persist();
-            return ok;
-        },
-        get(target, prop, receiver) {
-            if (prop === '__isProxy') return true;
-            return Reflect.get(target, prop, receiver);
-        },
-        deleteProperty(target, prop) {
-            const ok = Reflect.deleteProperty(target, prop);
-            persist();
-            return ok;
-        },
-    };
-
-    function wrap(obj) {
-        for (const key of Object.keys(obj)) {
-            if (obj[key] && typeof obj[key] === 'object' && !obj[key].__isProxy) {
-                obj[key] = wrap(obj[key]);
-            }
-        }
-        return new Proxy(obj, handler);
-    }
-
-    root = wrap(project);
-    return root;
-}
-
-/**
- * Convenience: opens a project ready to edit, wrapped in the autosaving proxy.
+ * Convenience: opens a project ready to edit, as a plain object
+ * (no Proxy, no autosave).
  *
  * Resolution order:
  *   1. Explicit id passed in.
  *   2. The last-opened project id (so a page refresh resumes where you left off).
  *   3. A brand new "Untitled" draft — created in memory only, NOT written to
  *      localStorage yet, so simply loading the app never litters storage with
- *      empty projects. The moment the user edits anything (types in an editor,
- *      renames it, toggles a pane), the autosave proxy persists it for real.
+ *      empty projects. Call saveProject() yourself once the user actually
+ *      changes something.
  */
-export function openProject(id, options) {
+export function openProject(id) {
     const targetId = id || getLastProjectId();
     const data = targetId ? loadProject(targetId) : null;
-    const project = data || createProject({}, { persist: false });
-    return createAutosavingProxy(project, options);
+    return data || createProject({}, { persist: false });
 }

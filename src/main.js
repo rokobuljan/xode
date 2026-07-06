@@ -8,12 +8,11 @@ import prettierPluginPostcss from "prettier/plugins/postcss";
 import hljs from "highlight.js";
 import "./js/splitview.js";
 import { el, els, elNew, download, LS, elsSiblings } from "./js/utils.js";
-import { openProject, listProjects, createProject, deleteProject } from './js/storage.js';
+import { openProject, listProjects, saveProject, createProject, deleteProject } from './js/storage.js';
 
+// @TODO
 const recents = listProjects(); // [{id, name, description, updatedAt}, ...] — cheap, no full bodies parsed
-console.log(recents);
 let currentProject = openProject(); // loads existing or creates new
-console.log(currentProject)
 
 const formatCode = async (code, language) => {
     const parserMap = {
@@ -100,7 +99,7 @@ const hilite = (elEditor) => {
  * Construct HTML page output for preview or download
  * @param {boolean} isApp set to false to get the cleanest HTML document output
  */
-const generatePreviewHTML = (isApp, isDesignMode = true) => {
+const generatePreviewHTML = (isApp = true, isRichEditor = currentProject.panes.richEditor) => {
     const injectScript = /*html*/`<script id="◆xode-inject" src="inject.js?t=${Date.now()}"></script>`;
     return /*html*/`<!DOCTYPE html>
     <html lang="en">
@@ -110,7 +109,7 @@ const generatePreviewHTML = (isApp, isDesignMode = true) => {
         <title>Xode document</title>
         <script${isApp ? ' id="◆xode-js"' : ''} type="module">${elJS.value}</script>
         <style${isApp ? ' id="◆xode-css"' : ''}>${elCSS.value}</style>
-        ${isApp && isDesignMode ? injectScript : ""}
+        ${isApp && isRichEditor ? injectScript : ""}
     </head>
     <body ${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
         ${elHTML.value}
@@ -139,19 +138,21 @@ els("[data-view-toggle]").forEach((elToggle) => {
     elToggle.addEventListener("input", () => {
         elView.classList.toggle("is-hidden", !elToggle.checked);
         currentProject.panes[view] = elToggle.checked;
+        saveProject(currentProject);
     });
 });
 
 el("#currentProject").value = currentProject.name;
 el("#currentProject").addEventListener("input", (ev) => {
     currentProject.name = ev.target.value.trim();
+    saveProject(currentProject);
 });
 
 const preview = (isForce) => {
     if (!isForce && !elAutorun.checked) return;
     clearTimeout(previewTimeout);
     previewTimeout = setTimeout(() => {
-        elPreview.srcdoc = generatePreviewHTML(true);
+        elPreview.srcdoc = generatePreviewHTML();
     }, isForce ? 0 : 350);
 };
 
@@ -171,15 +172,13 @@ const makeEditor = (elEditor) => {
                 tabToSpaces(evt);
             }
         }
-        // Format on Alt + SHift + F (esthetic beautify)
+
         if (evt.altKey && evt.shiftKey && evt.key === "F") {
             evt.preventDefault();
             await formatPane(elTextarea, syntax);
         }
         hilite(elEditor);
         updateLineNumbers(elEditor);
-        // if (evt.ctrlKey || evt.shiftKey || evt.metaKey || evt.altKey || evt.key.startsWith("Arrow")) return;
-        // preview();
     });
 
     elTextarea.addEventListener("input", () => {
@@ -188,11 +187,11 @@ const makeEditor = (elEditor) => {
         preview();
         // Save to LS
         currentProject[syntax] = elTextarea.value;
+        saveProject(currentProject);
     });
 
     // Get from LS
     elTextarea.value = currentProject[syntax];
-
     hilite(elEditor);
     updateLineNumbers(elEditor);
 };
@@ -227,6 +226,7 @@ addEventListener("message", async (evt) => {
         hilite(elHTML.closest(".editor"));
         updateLineNumbers(elHTMLEditor);
         currentProject.html = html;
+        saveProject(currentProject);
     }
 
     // Console messages
@@ -242,15 +242,17 @@ addEventListener("message", async (evt) => {
 els(".editor").forEach(makeEditor);
 preview();
 elRun.addEventListener("click", () => preview(true));
+
+// Download project locally as .html
 elDownload.addEventListener("click", () => {
     const timestamp = new Date().toISOString().replace(/[:.TZ-]/g, "_").replace(/_\d+_$/, "");
     const projectName = currentProject.name.trim() ? currentProject.name.trim().replace(/\s+/g, "-") : "untitled";
-    download(generatePreviewHTML(), `${projectName}-${timestamp}.xode.html`);
+    download(generatePreviewHTML(false), `${projectName}-${timestamp}.xode.html`);
 });
 
 el("#clearConsole").addEventListener("click", clearElConsole);
 
-// Editor exec commander for richEditor mode
+// Editor exec commander for richEditor mode (text editing buttons)
 addEventListener("click", (evt) => {
     const elBtnCmd = evt.target.closest("[data-cmd]");
     if (!elBtnCmd) return;
@@ -260,18 +262,24 @@ addEventListener("click", (evt) => {
     }, "*");
 });
 
-// Editor exec commander for richEditor mode
+// Actions from parent window to #preview iframe
 addEventListener("click", (evt) => {
     const elBtnAction = evt.target.closest("[data-action]");
     if (!elBtnAction) return;
+    // Else
     const action = elBtnAction.dataset.action;
     const val = elBtnAction.matches("[type=checkbox]") ?
         (elBtnAction.checked ? "on" : "off") :
         elBtnAction.value ?? elBtnAction.dataset.val;
+    console.log(action, val);
     elPreview.contentWindow.postMessage({
         type: "action",
         args: [action, val]
     }, "*");
+    if (action === "designMode") {
+        currentProject.panes.richEditor = elBtnAction.checked;
+        saveProject(currentProject);
+    }
 });
 
 const selectionCounter = (elTextarea) => {
@@ -294,3 +302,15 @@ const selectionCounter = (elTextarea) => {
         selectionCounter(elTextarea);
     });
 });
+
+// Activate RTE
+elPreview.addEventListener('load', () => {
+    console.log({ richEditor: currentProject.panes.richEditor });
+    setTimeout(() => {
+        elPreview.contentWindow.postMessage({
+            type: "action",
+            args: ["designMode", currentProject.panes.richEditor ? "on" : "off"]
+        }, "*");
+    }, 4000)
+});
+
