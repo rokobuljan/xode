@@ -16,7 +16,7 @@
 
 <body>
     <nav id="top">
-        <h1 class="logo">
+        <h1 class="logo" data-modal="#modal-projects">
             <svg xmlns="http://www.w3.org/2000/svg" height="0.8em" viewBox="0 0 263 72">
                 <path path-name="ode" fill="#ffffff"
                     d="M262.077,59V69.872H220.482V2.8h41.6V13.663H232.005V30.9h27.074V41.768H232.005V59h30.072ZM192.8,65.61a37.345,37.345,0,0,1-18.314,4.263H152.376V2.8h22.109A37.36,37.36,0,0,1,192.8,7.058a29.356,29.356,0,0,1,11.851,11.8,35.866,35.866,0,0,1,4.122,17.472,35.858,35.858,0,0,1-4.122,17.472A29.339,29.339,0,0,1,192.8,65.61Zm1.78-41.36a18.542,18.542,0,0,0-7.822-7.822,26.711,26.711,0,0,0-12.741-2.764H163.9V59h10.118a26.694,26.694,0,0,0,12.741-2.764,18.463,18.463,0,0,0,7.822-7.869,25.634,25.634,0,0,0,2.67-12.038A25.57,25.57,0,0,0,194.579,24.249ZM130.688,61.206A33.627,33.627,0,0,1,119.634,68.7a37.213,37.213,0,0,1-27.683,0A32.981,32.981,0,0,1,80.9,61.206a35.033,35.033,0,0,1-7.307-11.195,35.557,35.557,0,0,1-2.623-13.677A35.21,35.21,0,0,1,73.589,22.7,35.753,35.753,0,0,1,80.9,11.508,32.68,32.68,0,0,1,91.951,3.967a37.214,37.214,0,0,1,27.683,0,33.65,33.65,0,0,1,11.054,7.495,34.726,34.726,0,0,1,7.354,11.195,35.585,35.585,0,0,1,2.623,13.678,35.579,35.579,0,0,1-2.623,13.677A34.694,34.694,0,0,1,130.688,61.206Zm-4.637-37.519a23.746,23.746,0,0,0-31.992-8.478,22.657,22.657,0,0,0-8.431,8.478,24.828,24.828,0,0,0-3.138,12.647,24.891,24.891,0,0,0,3.138,12.6,22.543,22.543,0,0,0,8.431,8.525,23.282,23.282,0,0,0,31.992-8.525,24.617,24.617,0,0,0,3.185-12.6A24.554,24.554,0,0,0,126.051,23.687Z" />
@@ -24,10 +24,10 @@
                     d="M70.648,8.433L43.071,36.01,70.638,63.577,62.86,71.355,35.293,43.788,8.422,70.659,0.644,62.881,27.515,36.01,0.634,9.129,8.412,1.351l26.881,26.88L62.869,0.655Z" />
             </svg>
         </h1>
-        <label title="Project Name">
+        <button type="button" data-modal="#modal-projects" title="Project Settings">
             <span class="icon" data-name="folder-simple">&#xfdf9;</span>
-            <input type="text" id="currentProject" placeholder="Project title">
-        </label>
+            <span data-rx="name" class="currentProjectName">My Project</span>
+        </button>
         <button id="download" type="button" title="Download">
             <span class="icon" data-name="download">&#xf3b7;</span>
         </button>
@@ -131,8 +131,6 @@
                         data-name="text-h-two">&#x10083;</span>
                     <span data-cmd="formatBlock" title="H3" data-par="H3" class="icon"
                         data-name="text-h-three">&#xf797;</span>
-                    <span data-cmd="formatBlock" title="H4" data-par="H4" class="icon"
-                        data-name="text-h-four">&#xfb3f;</span>
                 </div>
                 <div class="cmd-group">
                     <span data-cmd="removeFormat" data-par="foreColor" alt="Text Color" title="Text Color" class="icon"
@@ -182,6 +180,36 @@
                 allow="fullscreen" allowpaymentrequest="" frameborder="0" src=""></iframe> -->
         </div>
     </main>
+
+    <div class="modal-wrapper">
+        <div class="modal is-open" id="modal-projects">
+            <div class="modal-head">
+                <h2>Settings</h2>
+                <button type="button" data-modal>
+                    <span class="icon" data-name="x1">&#xf488;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h2>New</h2>
+                <button type="button" id="project-new">New Project</button>
+
+                <h2><span class="icon" data-name="folder">&#xf045;</span> Edit Project</h2>
+                <label>
+                    <span>Name</span>
+                    <input data-rx="name" class="currentProjectName" type="text" placeholder="Project Name" value="">
+                </label>
+                <label>
+                    <span>Description</span>
+                    <textarea placeholder="Project Description"></textarea>
+                </label>
+                <h2><span class="icon" data-name="folder-search">&#xf0a4;</span> Your projects</h2>
+                Old projects (TODO)
+            </div>
+            <div class="modal-foot">
+                &copy; 2026. XODE by roxon.hr
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="/src/main.js"></script>
 </body>
