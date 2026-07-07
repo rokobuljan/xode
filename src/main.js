@@ -7,12 +7,70 @@ import prettierPluginHtml from "prettier/plugins/html";
 import prettierPluginPostcss from "prettier/plugins/postcss";
 import hljs from "highlight.js";
 import "./js/splitview.js";
+import "./js/modal.js";
 import { el, els, elNew, download, LS, elsSiblings } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject } from './js/storage.js';
 
-// @TODO
+
 const recents = listProjects(); // [{id, name, description, updatedAt}, ...] — cheap, no full bodies parsed
-let currentProject = openProject(); // loads existing or creates new
+const projectHandlersProxy = (project) => {
+    return new Proxy({}, {
+
+    })
+};
+
+class Rx {
+    isInit = false;
+    constructor(data, on) {
+        const prox = Object.assign(
+            new Proxy(this, {
+                set(targ, prop, val, rcv) {
+                    const oldVal = targ[prop];
+                    const isSet = Reflect.set(targ, prop, val, rcv);
+                    on[prop]?.call(this, val, oldVal);
+                    // update dom elements:
+                    const elements = els(`[data-rx="${String(prop)}"]`);
+                    elements.forEach((el) => {
+                        const isInput = el.matches("input, textarea, select");
+                        if (isInput) {
+                            if (el.matches("[type=checkbox], [type=radio]")) {
+                                el.checked = Boolean(val);
+                            } else {
+                                el.value = val;
+                            }
+                        } else {
+                            el.innerHTML = val;
+                        }
+                    });
+                    return isSet;
+                },
+            }),
+            this,
+            data
+        );
+        this.isInit = true;
+        return prox;
+    }
+}
+
+addEventListener("input", (evt) => {
+    const elRx = evt.target.closest("[data-rx]");
+    if (!elRx) return;
+    const prop = elRx.dataset.rx;
+    currentProject[prop] = evt.target.value;
+});
+
+const project = openProject();
+let currentProject = new Rx(project, {
+    name() {
+        saveProject(project);
+    },
+    description() {
+        saveProject(project);
+    },
+}); // loads existing or creates new
+
+console.log(currentProject);
 
 const formatCode = async (code, language) => {
     const parserMap = {
@@ -142,11 +200,19 @@ els("[data-view-toggle]").forEach((elToggle) => {
     });
 });
 
-el("#currentProject").value = currentProject.name;
-el("#currentProject").addEventListener("input", (ev) => {
-    currentProject.name = ev.target.value.trim();
-    saveProject(currentProject);
-});
+// els(".currentProjectName").forEach((elProjectName) => {
+//     const isInput = elProjectName.matches("input");
+//     if (isInput) {
+//         elProjectName.value = currentProject.name;
+//         elProjectName.addEventListener("input", (ev) => {
+//             currentProject.name = ev.target.value.trim();
+//             saveProject(currentProject);
+//         });
+//     } else {
+//         elProjectName.textContent = currentProject.name;
+//     }
+// });
+
 
 const preview = (isForce) => {
     if (!isForce && !elAutorun.checked) return;
