@@ -190,7 +190,7 @@ const projectInit = (isNew = true, id) => {
         createProject({ panes: currentProject.panes }) :
         openProject(id); // Open latest project or a specific one (by ID)
 
-    currentProject = new Rx(project).on("rx:change", rxChangeHandler).state;
+    currentProject = new Rx(project, {}).on("rx:change", rxChangeHandler).state;
 
     // Force-clear editors highlight if new project
     panes.html.highlight();
@@ -310,7 +310,8 @@ const drawProjects = () => {
         const elPreviewThumbnail = elNew("iframe", {
             className: "iframe-thumbnail",
             srcdoc: generatePreviewHTML(false, openProject(project.id)),
-            sandbox: "allow-scripts"
+            sandbox: "allow-scripts",
+            loading: "lazy",
         });
         const elProject = elNew("div", {
             id: `project-${project.id}`,

@@ -468,3 +468,10 @@ input[type="text"] {
 .hljs {
     background: none;
 }
+
+blockquote {
+    border-left: 3px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
+    padding-left: 1rem;
+    margin-left: 1rem;
+    font-size: 0.85rem;
+}

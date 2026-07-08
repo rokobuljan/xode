@@ -28,7 +28,7 @@
         border-radius: 0rem;
         display: flex;
         flex-direction: column;
-        box-shadow: 0 0.5rem 8rem #0002;
+        box-shadow: 0 0.5rem 3rem -1rem #000d;
 
         h2 {
             padding: 1rem 0;
@@ -40,7 +40,7 @@
         }
 
         >* {
-            padding: 1rem;
+            padding: 0.5rem 1rem;
         }
 
         .modal-head {
@@ -76,7 +76,7 @@
         }
 
         .modal-body {
-            border-top: 1px solid color-mix(in srgb, var(--fg), var(--bg) 90%);
+            /* border-top: 1px solid color-mix(in srgb, var(--fg), var(--bg) 90%); */
             flex: 0 1 auto;
             overflow: scroll;
         }
