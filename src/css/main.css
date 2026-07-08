@@ -176,6 +176,7 @@ textarea,
     &::placeholder {
         color: color-mix(in srgb, var(--fg), var(--bg) 80%);
         font-style: italic;
+        text-transform: uppercase;
     }
 }
 
@@ -226,6 +227,7 @@ iframe {
         rotate: -90deg;
         translate: -100% 10%;
         color: color-mix(in srgb, var(--bg), var(--fg) 30%);
+        text-transform: uppercase;
     }
 
     [data-view="html"] &::before {
@@ -311,11 +313,14 @@ input[type="text"] {
     &:not(:has(:checked)) {
         opacity: 0.3;
     }
-
-
 }
 
-#console {
+.buttons-panels {
+    display: flex;
+    flex: 1;
+}
+
+.console {
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
@@ -388,7 +393,7 @@ input[type="text"] {
     }
 }
 
-#clearConsole {
+.console-clear {
     position: absolute;
     top: 0.3em;
     right: 0.3em;
@@ -399,12 +404,55 @@ input[type="text"] {
     background-color: color-mix(in srgb, var(--bg), #0000 50%);
 }
 
-[data-view="console"]:hover #clearConsole {
+[data-view="console"]:hover .console-clear {
     opacity: 1;
 }
 
 :has([data-view-toggle="preview"]:not(:checked)) label:has([data-view-toggle="richEditor"]) {
     display: none;
+}
+
+
+#projects-select {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+    gap: 1rem;
+    padding: 1rem 0;
+
+    &:empty {
+        &::before {
+            user-select: none;
+            content: "No saved Projects";
+            font-style: italic;
+            padding: 0.5em 0;
+            font-size: 0.9em;
+            opacity: 0.2;
+        }
+    }
+
+    .project {
+        overflow: hidden;
+        cursor: pointer;
+        transition: scale 0.25s;
+
+        &:hover {
+            scale: 1.02;
+        }
+
+        iframe {
+            border: 0;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            zoom: 0.3;
+            pointer-events: none;
+            overflow: hidden;
+        }
+    }
+}
+
+.accent {
+    background-color: var(--c1);
+    color: var(--bg);
 }
 
 /* utils */

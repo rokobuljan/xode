@@ -1,4 +1,5 @@
 import "./css/index.css";
+
 import expand, { extract } from 'emmet';
 import * as prettier from "prettier/standalone";
 import prettierPluginBabel from "prettier/plugins/babel";
@@ -8,69 +9,197 @@ import prettierPluginPostcss from "prettier/plugins/postcss";
 import hljs from "highlight.js";
 import "./js/splitview.js";
 import "./js/modal.js";
-import { el, els, elNew, download, LS, elsSiblings } from "./js/utils.js";
+import Rx from "./js/Rx.js";
+import { el, elNew, download } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject } from './js/storage.js';
 
+// const recents = listProjects(); // [{id, name, description, updatedAt}, ...] — cheap, no full bodies parsed
 
-const recents = listProjects(); // [{id, name, description, updatedAt}, ...] — cheap, no full bodies parsed
-const projectHandlersProxy = (project) => {
-    return new Proxy({}, {
+// New Project
+let currentProject = {};
 
-    })
-};
+class Pane {
+    constructor(elParent, syntax, value) {
+        this.elParent = elParent
+        this.syntax = syntax;
+        this.value = value;
+        this.init();
+    }
+    init() {
+        this.elSplitter = elNew("div", { className: "splitter" });
+        this.el = elNew("div", {
+            className: `view`,
+            innerHTML: `<div class="editor" id="editor-${this.syntax}">
+                    <pre class="editor-lines" data-label="${this.syntax}"></pre>
+                    <div class="editor-area">
+                        <pre class="editor-highlight" inert><code class="language-${this.syntax}"></code></pre>
+                        <textarea data-rx="${this.syntax}" placeholder="${this.syntax}" class="editor-textarea" data-syntax="${this.type}"
+                            spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+                    </div>
+                    <div class="editor-selection-stat"></div>
+                </div>`
+        });
+        this.el.dataset.view = this.syntax;
+        this.el.dataset.open = "{{panes." + this.syntax + "}}";
+        this.elTextarea = el(".editor-textarea", this.el);
+        this.elCode = el(".editor-highlight code", this.el);
+        this.elLines = el(".editor-lines", this.el);
+        this.elParent.append(this.elSplitter, this.el);
+        // Init value
+        this.elTextarea.value = this.value;
+        // Events
+        this.elTextarea.addEventListener("keydown", async (evt) => {
+            if (evt.key === "Tab") {
+                evt.preventDefault(); // don't switch tabindex
+                if ((this.syntax === "html" || this.syntax === "css") && this.emmetExpand()) {
+                    this.highlight();
+                    preview();
+                } else {
+                    tabToSpaces(evt);
+                }
+            }
 
-class Rx {
-    isInit = false;
-    constructor(data, on) {
-        const prox = Object.assign(
-            new Proxy(this, {
-                set(targ, prop, val, rcv) {
-                    const oldVal = targ[prop];
-                    const isSet = Reflect.set(targ, prop, val, rcv);
-                    on[prop]?.call(this, val, oldVal);
-                    // update dom elements:
-                    const elements = els(`[data-rx="${String(prop)}"]`);
-                    elements.forEach((el) => {
-                        const isInput = el.matches("input, textarea, select");
-                        if (isInput) {
-                            if (el.matches("[type=checkbox], [type=radio]")) {
-                                el.checked = Boolean(val);
-                            } else {
-                                el.value = val;
-                            }
-                        } else {
-                            el.innerHTML = val;
-                        }
-                    });
-                    return isSet;
-                },
-            }),
-            this,
-            data
-        );
-        this.isInit = true;
-        return prox;
+            if (evt.altKey && evt.shiftKey && evt.key === "F") {
+                const oldCaretPosition = this.elTextarea.selectionStart;
+                evt.preventDefault();
+                await this.format();
+                // Try as best to reset caret position to where it was - but at the end of line:
+                let newCaretPosition = Math.min(this.elTextarea.value.length, oldCaretPosition);
+                // push cater to the end of current line
+                while (this.elTextarea.value[newCaretPosition] !== "\n") {
+                    newCaretPosition++;
+                }
+                this.elTextarea.setSelectionRange(newCaretPosition, newCaretPosition);
+            }
+            this.highlight();
+        });
+
+        this.highlight();
+    }
+    async format() {
+        const formatted = await formatCode(this.elTextarea.value, this.syntax);
+        this.elTextarea.value = formatted;
+    }
+    emmetExpand() {
+        const source = this.elTextarea.value;
+        const caretPos = this.elTextarea.selectionStart;
+        // 2. Extract the abbreviation before the caret
+        const type = { html: "markup", css: "stylesheet" }[this.syntax];
+        const extraction = extract(source, caretPos, { type });
+        if (!extraction) return; // No valid abbreviation found
+        const { abbreviation, start, end } = extraction;
+        // 3. Expand the abbreviation and replace the text
+        try {
+            let expanded = expand(abbreviation, { syntax: this.syntax, type });
+            expanded = expanded.replace(/\t/g, " ".repeat(4)); // Replace tabs with 4 spaces
+            // Replace the extracted abbreviation with the expanded code
+            const newValue = source.substring(0, start) + expanded + source.substring(end);
+            this.elTextarea.value = newValue;
+            // Move the caret to the end of the expanded code
+            const newCaretPos = start + expanded.length;
+            this.elTextarea.setSelectionRange(newCaretPos, newCaretPos);
+            return true;
+        } catch (error) {
+            console.warn('Failed to expand abbreviation:', error);
+        }
+    }
+    highlight() {
+        if (!this.elCode) return;
+        this.elCode.textContent = this.elTextarea.value;
+        delete this.elCode.dataset.highlighted;
+        this.updateLineNumbers();
+        hljs.highlightElement(this.elCode);
+    }
+    updateLineNumbers() {
+        if (!this.elTextarea || !this.elLines) return;
+        const totLines = this.elTextarea.value.split(/\n/).length;
+        this.elLines.innerHTML = "<span></span>".repeat(totLines);
+    }
+    destroy() {
+        this.elSplitter.remove();
+        this.el.remove();
     }
 }
 
-addEventListener("input", (evt) => {
-    const elRx = evt.target.closest("[data-rx]");
-    if (!elRx) return;
-    const prop = elRx.dataset.rx;
-    currentProject[prop] = evt.target.value;
-});
+class PaneConsole {
+    constructor(elParent, syntax) {
+        this.elParent = elParent;
+        this.syntax = syntax;
+        this.init();
+    }
+    init() {
+        this.elSplitter = elNew("div", { className: "splitter" });
+        this.el = elNew("div", {
+            className: `view`,
+            innerHTML: `<div class="console"></div>
+                <button class="console-clear" type="button" title="Clear Console">Clear</button>`
+        });
+        this.el.dataset.view = "console";
+        this.el.dataset.open = "{{panes.console}}";
+        this.elConsole = el(".console", this.el);
+        this.elBtnClear = el(".console-clear", this.el);
+        this.elParent.append(this.elSplitter, this.el);
 
-const project = openProject();
-let currentProject = new Rx(project, {
-    name() {
-        saveProject(project);
-    },
-    description() {
-        saveProject(project);
-    },
-}); // loads existing or creates new
+        this.elBtnClear.addEventListener("click", () => this.clear());
+    }
+    print({ type, args, line }) {
+        const elBlock = elNew('code', {
+            className: `log ${type}`,
+            textContent: args.join("\n").trimStart(),
+        });
+        const elLine = elNew('span', {
+            className: 'log-line',
+            textContent: `js:${line}`,
+        });
+        elBlock.append(elLine);
+        this.elConsole.append(elBlock);
+    }
+    clear() {
+        this.elConsole.innerHTML = "";
+    }
+    destroy() {
+        this.elSplitter.remove();
+        this.el.remove();
+    }
+}
 
-console.log(currentProject);
+const rxChangeHandler = ({ detail }) => {
+    // SAVE PROJECT if edited:
+    if (/^(name|description)$/.test(detail.prop)) {
+        if (detail.oldValue !== detail.value) {
+            saveProject(currentProject);
+        }
+    }
+    else if (/^(html|css|js)$/.test(detail.prop)) {
+        if (detail.oldValue !== detail.value) {
+            saveProject(currentProject);
+            panes[detail.prop]?.highlight();
+            preview(); // Update changes in iframe
+        }
+    }
+    else if (/^(panes\.)/.test(detail.prop)) {
+        if (detail.oldValue !== detail.value) {
+            saveProject(currentProject);
+        }
+    }
+};
+
+const projectInit = (isNew = true, id) => {
+    const project = isNew ?
+        // Create new project with the currently open panes
+        createProject({ panes: currentProject.panes }) :
+        openProject(id); // Open latest project or a specific one (by ID)
+
+    currentProject = new Rx(project).on("rx:change", rxChangeHandler).state;
+
+    // Force-clear editors highlight if new project
+    panes.html.highlight();
+    panes.css.highlight();
+    panes.js.highlight();
+    panes.console.clear();
+    // Preview the project
+    preview();
+};
 
 const formatCode = async (code, language) => {
     const parserMap = {
@@ -100,119 +229,52 @@ const formatCode = async (code, language) => {
  * @url https://roxon.hr
  */
 
-const emmetExpand = (elTextarea, syntax = "html") => {
-    const source = elTextarea.value;
-    const caretPos = elTextarea.selectionStart;
-    // 2. Extract the abbreviation before the caret
-    const type = { html: "markup", css: "stylesheet" }[syntax];
-    const extraction = extract(source, caretPos, { type });
-    if (!extraction) return; // No valid abbreviation found
-    const { abbreviation, start, end } = extraction;
-    // 3. Expand the abbreviation and replace the text
-    try {
-        let expanded = expand(abbreviation, { syntax, type });
-        expanded = expanded.replace(/\t/g, " ".repeat(4)); // Replace tabs with 4 spaces
-        // Replace the extracted abbreviation with the expanded code
-        const newValue = source.substring(0, start) + expanded + source.substring(end);
-        elTextarea.value = newValue;
-        // Move the caret to the end of the expanded code
-        const newCaretPos = start + expanded.length;
-        elTextarea.setSelectionRange(newCaretPos, newCaretPos);
-        return true;
-    } catch (error) {
-        console.warn('Failed to expand abbreviation:', error);
-    }
-};
-
-const formatPane = async (el, syntax) => {
-    const formatted = await formatCode(el.value, syntax);
-    el.value = formatted;
-};
-
-const updateLineNumbers = (elEditor) => {
-    if (!elEditor) return;
-    const elTextarea = el(".editor-textarea", elEditor);
-    const elLines = el(".editor-lines", elEditor);
-    if (!elTextarea || !elLines) return;
-    const totLines = elTextarea.value.split(/\n/).length;
-    elLines.innerHTML = "<span></span>".repeat(totLines);
-};
-
 const tabToSpaces = (evt) => {
     if (evt.key !== "Tab") return;
     evt.preventDefault();  // this will prevent us from tabbing out of the editor
     document.execCommand("insertHTML", false, " ".repeat(4));
 };
 
-const hilite = (elEditor) => {
-    const elTextarea = el(".editor-textarea", elEditor);
-    const elCode = el(".editor-highlight code", elEditor);
-    if (!elCode) return;
-    elCode.textContent = elTextarea.value;
-    delete elCode.dataset.highlighted;
-    hljs.highlightElement(elCode);
+const panes = {};
+const elPreview = el("#preview"); // the iframe
+const elAutorun = el("#autorun");
+const elRun = el("#run");
+const elDownload = el("#download");
+let previewTimeout;
+
+/**
+ * One-time call to generate UI panes
+ */
+const generatePanes = () => {
+    const elPanes = el("#panes");
+    ["html", "css", "js"].forEach(syntax => {
+        panes[syntax] = new Pane(elPanes, syntax, currentProject[syntax]);
+        panes[syntax]?.highlight();
+    });
+    panes.console = new PaneConsole(elPanes, "console");
 };
 
 /**
  * Construct HTML page output for preview or download
  * @param {boolean} isApp DDiffferentiate whilst in-app vs downloaded document
  */
-const generatePreviewHTML = (isApp = true) => {
+const generatePreviewHTML = (isApp = true, data = currentProject) => {
     const injectScript = /*html*/`<script id="◆xode-inject" src="inject.js?t=${Date.now()}"></script>`;
     return /*html*/`<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Xode document</title>
-        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${elJS.value}</script>
-        <style${isApp ? ' id="◆xode-css"' : ''}>${elCSS.value}</style>
+        <title>${data.name}</title>
+        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${data.js}</script>
+        <style${isApp ? ' id="◆xode-css"' : ''}>${data.css}</style>
         ${isApp ? injectScript : ""}
     </head>
-    <body ${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
-        ${elHTML.value}
+    <body${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
+        ${data.html}
     </body>
     </html>`;
 };
-
-
-const elHTML = el(`[data-syntax="html"]`);
-const elCSS = el(`[data-syntax="css"]`);
-const elJS = el(`[data-syntax="js"]`);
-const elPreview = el("#preview"); // the iframe
-const elAutorun = el("#autorun");
-const elRun = el("#run");
-const elDownload = el("#download");
-
-// let ls = LS("xode");
-let previewTimeout;
-
-// Toggle views/panes
-els("[data-view-toggle]").forEach((elToggle) => {
-    const view = elToggle.dataset.viewToggle; // "html", "css",... 
-    elToggle.checked = currentProject.panes[view];
-    const elView = el(`[data-view="${view}"]`);
-    elView.classList.toggle("is-hidden", !elToggle.checked);
-    elToggle.addEventListener("input", () => {
-        elView.classList.toggle("is-hidden", !elToggle.checked);
-        currentProject.panes[view] = elToggle.checked;
-        saveProject(currentProject);
-    });
-});
-
-// els(".currentProjectName").forEach((elProjectName) => {
-//     const isInput = elProjectName.matches("input");
-//     if (isInput) {
-//         elProjectName.value = currentProject.name;
-//         elProjectName.addEventListener("input", (ev) => {
-//             currentProject.name = ev.target.value.trim();
-//             saveProject(currentProject);
-//         });
-//     } else {
-//         elProjectName.textContent = currentProject.name;
-//     }
-// });
-
 
 const preview = (isForce) => {
     if (!isForce && !elAutorun.checked) return;
@@ -222,101 +284,70 @@ const preview = (isForce) => {
     }, isForce ? 0 : 350);
 };
 
-const makeEditor = (elEditor) => {
-    const elTextarea = el(".editor-textarea", elEditor);
-    if (!elTextarea) return;
-
-    const syntax = elTextarea.dataset.syntax;
-    elTextarea.addEventListener("keydown", async (evt) => {
-        if (evt.key === "Tab") {
-            evt.preventDefault(); // don't switch tabindex
-            if ((syntax === "html" || syntax === "css") && emmetExpand(elTextarea, syntax)) {
-                hilite(elEditor);
-                updateLineNumbers(elEditor);
-                preview();
-            } else {
-                tabToSpaces(evt);
-            }
-        }
-
-        if (evt.altKey && evt.shiftKey && evt.key === "F") {
-            evt.preventDefault();
-            await formatPane(elTextarea, syntax);
-        }
-        hilite(elEditor);
-        updateLineNumbers(elEditor);
-    });
-
-    elTextarea.addEventListener("input", () => {
-        hilite(elEditor);
-        updateLineNumbers(elEditor);
-        preview();
-        // Save to LS
-        currentProject[syntax] = elTextarea.value;
-        saveProject(currentProject);
-    });
-
-    // Get from LS
-    elTextarea.value = currentProject[syntax];
-    hilite(elEditor);
-    updateLineNumbers(elEditor);
-};
-
-// richEditor mode
-const elHTMLEditor = el("#editor-HTML");
-const elConsole = el("#console");
-
-const clearElConsole = () => elConsole.innerHTML = "";
-
-const appendLogBlock = ({ type, args, line }) => {
-    const elBlock = elNew('code', {
-        className: `log ${type}`,
-        textContent: args.join("\n").trimStart(),
-    });
-    const elLine = elNew('span', {
-        className: 'log-line',
-        textContent: `js:${line}`,
-    });
-    elBlock.append(elLine);
-    elConsole.append(elBlock);
-};
-
+// Rich Editor --to--> HTML
 addEventListener("message", async (evt) => {
-    // richEditor --to--> HTML pane
     if (evt.data.type === "content-changed") {
         const body = new DOMParser().parseFromString(evt.data.html, "text/html").body;
         body.querySelector("#◆xode-js")?.remove();
         const html = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
-        elHTML.value = html;
-        await formatPane(elHTML, "html");
-        hilite(elHTML.closest(".editor"));
-        updateLineNumbers(elHTMLEditor);
-        currentProject.html = html;
-        saveProject(currentProject);
+        panes.html.elTextarea.value = html;
+        await panes.html.format();
+        panes.html.highlight();
+        currentProject.html = html; // Update with new value + save project
     }
-
     // Console messages
     else if (evt.data.type === "clear") {
-        clearElConsole();
-        appendLogBlock({ ...evt.data, args: ["Console cleared"] });
+        panes.console.clear();
+        panes.console.print({ ...evt.data, args: ["Console cleared"] });
     } else {
-        appendLogBlock(evt.data);
+        panes.console.print(evt.data);
     }
 });
 
-// Initialize editor
-els(".editor").forEach(makeEditor);
-preview();
+const drawProjects = () => {
+    el("#projects-select").innerHTML = "";
+    listProjects().forEach((project) => {
+        const elPreviewThumbnail = elNew("iframe", {
+            className: "iframe-thumbnail",
+            srcdoc: generatePreviewHTML(false, openProject(project.id)),
+            sandbox: "allow-scripts"
+        });
+        const elProject = elNew("div", {
+            id: `project-${project.id}`,
+            className: "project",
+            innerHTML: `
+                <span>${project.name}</span>
+                <span>${new Date(project.updatedAt).toLocaleString()}</span>
+            `,
+            title: `${project.name} - ${project.description || "No description"}\n(Right click to delete)`,
+        });
+        elProject.dataset.modal = "";
+        elProject.addEventListener("contextmenu", (evt) => {
+            evt.preventDefault();
+            if (confirm(`Delete project: "${project.name}"?`)) {
+                deleteProject(project.id);
+                drawProjects();
+            }
+        })
+        elProject.prepend(elPreviewThumbnail);
+        elProject.addEventListener("click", () => {
+            projectInit(false, project.id);
+        });
+        el("#projects-select").append(elProject);
+    });
+};
+
+drawProjects();
+
+// EVENTS
 elRun.addEventListener("click", () => preview(true));
 
 // Download project locally as .html
 elDownload.addEventListener("click", () => {
     const timestamp = new Date().toISOString().replace(/[:.TZ-]/g, "_").replace(/_\d+_$/, "");
     const projectName = currentProject.name.trim() ? currentProject.name.trim().replace(/\s+/g, "-") : "untitled";
-    download(generatePreviewHTML(false), `${projectName}-${timestamp}.xode.html`);
+    download(generatePreviewHTML(false), `${projectName} - ${timestamp}.xode.html`);
 });
-
-el("#clearConsole").addEventListener("click", clearElConsole);
 
 // Editor exec commander for richEditor mode (text editing buttons)
 addEventListener("click", (evt) => {
@@ -355,10 +386,11 @@ const selectionCounter = (elTextarea) => {
     const lineCount = selectedText.split('\n').length;
     const hasCount = charCount > 0;
     el(".editor-selection-stat", elTextarea.closest(".editor")).innerHTML = hasCount
-        ? `<span class="icon" data-name="text-t">&#x10125;</span> ${charCount} &nbsp; <span class="icon" data-name="wrap-text">&#xf11d;</span> ${lineCount}`
+        ? `< span class= "icon" data - name="text-t" >& #x10125;</span > ${charCount} & nbsp; <span class="icon" data-name="wrap-text">&#xf11d;</span> ${lineCount} `
         : "";
 };
 
+// Selection counter
 ;["select", "keyup", "click", "pointermove"].forEach((evName) => {
     addEventListener(evName, (evt) => {
         if (evt.type === "pointermove" && evt.buttons !== 1) return;
@@ -375,3 +407,13 @@ elPreview.addEventListener('load', () => {
         args: ["designMode", currentProject.panes.richEditor]
     }, "*");
 });
+
+// NEW PROJECT
+el("#project-new").addEventListener("click", () => {
+    projectInit(); // Create new project
+    drawProjects(); // redraw aold ones
+});
+
+// INIT
+generatePanes();
+projectInit(false); // Load latest old project
