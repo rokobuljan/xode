@@ -149,8 +149,8 @@
             <div class="modal-head">
                 <h2>
                     <span class="icon" data-name="folder">&#xf045;</span>
-                    <span>Project</span> &nbsp;
-                    <button class="accent" type="button" id="project-new">+ Create New Project</button>
+                    <span>Project</span>
+                    <button class="accent" type="button" id="project-new">+ Create New</button>
                 </h2>
                 <button type="button" data-modal>
                     <span class="icon" data-name="x1">&#xf488;</span>
@@ -158,15 +158,19 @@
             </div>
             <div class="row">
                 <label>
-                    <span>Name</span>
+                    <span><span class="icon" data-name="folder">&#xf045;</span> Name</span>
                     <input data-rx="name" class="currentProjectName" type="text" placeholder="Project Name" value=""
                         maxlength="20" minlength="3">
                 </label>
                 <label>
-                    <span>Description</span>
+                    <span><span class="icon" data-name="info">&#xf2e0;</span> Description</span>
                     <textarea data-rx="description" placeholder="Project Description"></textarea>
                 </label>
             </div>
+            <blockquote>
+                HTML &amp; CSS support expandable <b>Emmet</b> syntax.<br>
+                Format using <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>
+            </blockquote>
             <div class="modal-body">
 
                 <h2>
