@@ -31,10 +31,12 @@ const formatCode = async (code, language) => {
 };
 
 export class Pane {
-    constructor(elParent, syntax, value) {
+    constructor(elParent, options) {
         this.elParent = elParent
-        this.syntax = syntax;
-        this.value = value;
+        Object.assign(this, {
+            syntax: "", // "html", "css", "js
+            value: "",
+        }, options);
         this.elSplitter = elNew("div", { className: "splitter" });
         this.init();
     }
@@ -84,16 +86,19 @@ export class PaneEditor extends Pane {
                 }
             }
             else if (evt.altKey && evt.shiftKey && evt.key === "F") {
-                const oldCaretPosition = this.elTextarea.selectionStart;
                 evt.preventDefault();
+                const oldCaretPosition = this.elTextarea.selectionStart;
                 await this.format();
-                // Try as best to reset caret position to where it was - but at the end of line:
-                let newCaretPosition = Math.min(this.elTextarea.value.length, oldCaretPosition);
-                // push cater to the end of current line
-                while (this.elTextarea.value[newCaretPosition] !== "\n") {
-                    newCaretPosition++;
-                }
+                // // Try as best to reset caret position to where it was - but at the end of line:
+                // let newCaretPosition = Math.min(this.elTextarea.value.length, oldCaretPosition);
+                // // push cater to the end of current line
+                // while (this.elTextarea.value[newCaretPosition] !== "\n") {
+                //     newCaretPosition++;
+                // }
+                let newCaretPosition = oldCaretPosition;
                 this.elTextarea.setSelectionRange(newCaretPosition, newCaretPosition);
+                // Trigger input event
+                this.elTextarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
             // Always highlight after the above changes
             this.highlight();
@@ -110,6 +115,7 @@ export class PaneEditor extends Pane {
     async format() {
         const formatted = await formatCode(this.elTextarea.value, this.syntax);
         this.elTextarea.value = formatted;
+        return formatted;
     }
     selectionCounter() {
         const start = this.elTextarea.selectionStart;
