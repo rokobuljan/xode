@@ -36,10 +36,10 @@ const DEFAULT_PANES = {
     css: true,
     console: true,
     preview: true,
-    richEditor: false,
+    richEditor: false, // hide by default
 };
 
-// ---------- low-level index helpers ----------
+// low-level index helpers
 
 function loadIndex() {
     try {
@@ -64,7 +64,7 @@ function updateIndexEntry(project) {
     saveIndex(index);
 }
 
-// ---------- CRUD ----------
+//  CRUD 
 
 export function listProjects() {
     return Object.values(loadIndex()).sort((a, b) => b.updatedAt - a.updatedAt);
@@ -87,6 +87,8 @@ export function createProject({ name = "Untitled", description = "", panes = {},
         panes: { ...DEFAULT_PANES, ...panes },
         createdAt: now,
         updatedAt: now,
+        isAutorun: true,
+        tabSpaces: 4,
     };
     if (persist) {
         saveProject(project);

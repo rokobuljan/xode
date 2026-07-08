@@ -28,9 +28,6 @@
             <span class="icon" data-name="folder-simple">&#xfdf9;</span>
             <span data-rx="name">Untitled</span>
         </button>
-        <button id="download" type="button" title="Download">
-            <span class="icon" data-name="download">&#xf3b7;</span>
-        </button>
         <div class="buttons-panels">
             <label class="ckbtn" title="Toggle HTML panel">
                 <input type="checkbox" checked data-view-toggle="html" data-rx="panes.html">
@@ -58,8 +55,10 @@
                 <span class="icon" data-name="pencil-line">&#xf113;</span>
             </label>
         </div>
-
-        <label class="ml-auto">
+        <button class="ml-auto" id="download" type="button" title="Download">
+            <span class="icon" data-name="download">&#xf3b7;</span>
+        </button>
+        <label>
             <input id="autorun" type="checkbox" checked>
             <span>Autorun</span>
         </label>
@@ -145,7 +144,7 @@
     </main>
 
     <div class="modal-wrapper">
-        <div class="modal is-open" id="modal-projects">
+        <div class="modal" id="modal-projects">
             <div class="modal-head">
                 <h2>
                     <span class="icon" data-name="folder">&#xf045;</span>
@@ -169,7 +168,7 @@
             </div>
             <blockquote>
                 HTML &amp; CSS support expandable <b>Emmet</b> syntax.<br>
-                Format using <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>
+                Format using <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd>
             </blockquote>
             <div class="modal-body">
 
