@@ -66,7 +66,7 @@ const projectInit = (isNew = true, id) => {
 const generatePanes = () => {
     const elPanes = el("#panes");
     ["html", "css", "js"].forEach(syntax => {
-        panes[syntax] = new PaneEditor(elPanes, syntax, currentProject[syntax]);
+        panes[syntax] = new PaneEditor(elPanes, { syntax, value: currentProject[syntax] });
         panes[syntax]?.highlight();
     });
     panes.console = new PaneConsole(elPanes, "console");
@@ -95,6 +95,8 @@ const generatePreviewHTML = (isApp = true, data = currentProject) => {
 };
 
 const preview = (isForce) => {
+    // If richEditor and iframe has focus - do NOT update preview
+    if (currentProject.panes.richEditor && document.activeElement === elPreview) return;
     if (!isForce && !elAutorun.checked) return;
     clearTimeout(previewTimeout);
     previewTimeout = setTimeout(() => {
@@ -110,6 +112,10 @@ addEventListener("message", async (evt) => {
         const html = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
         panes.html.elTextarea.value = html;
         await panes.html.format();
+        console.log("formatted");
+
+
+
         panes.html.highlight();
         currentProject.html = html; // Update with new value + save project
     }
