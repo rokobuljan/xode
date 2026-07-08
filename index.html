@@ -26,35 +26,39 @@
         </h1>
         <button type="button" data-modal="#modal-projects" title="Project Settings">
             <span class="icon" data-name="folder-simple">&#xfdf9;</span>
-            <span data-rx="name" class="currentProjectName">My Project</span>
+            <span data-rx="name">Untitled</span>
         </button>
         <button id="download" type="button" title="Download">
             <span class="icon" data-name="download">&#xf3b7;</span>
         </button>
-        <label class="ckbtn" title="Toggle HTML panel">
-            <input type="checkbox" checked data-view-toggle="html">
-            <span>HTML</span>
-        </label>
-        <label class="ckbtn" title="Toggle CSS panel">
-            <input type="checkbox" checked data-view-toggle="css">
-            <span>CSS</span>
-        </label>
-        <label class="ckbtn" title="Toggle JS panel">
-            <input type="checkbox" checked data-view-toggle="js">
-            <span>JS</span>
-        </label>
-        <label class="ckbtn" title="Toggle Console">
-            <input type="checkbox" checked data-view-toggle="console">
-            <span class="icon" data-name="terminal">&#xf478;</span>
-        </label>
-        <label class="ckbtn" title="Live preview">
-            <input type="checkbox" checked data-view-toggle="preview">
-            <span>View</span>
-        </label>
-        <label class="ckbtn" title="Toggle Rich Editor">
-            <input type="checkbox" data-view-toggle="richEditor" data-action="designMode">
-            <span class="icon" data-name="pencil-line">&#xf113;</span>
-        </label>
+        <div class="buttons-panels">
+            <label class="ckbtn" title="Toggle HTML panel">
+                <input type="checkbox" checked data-view-toggle="html" data-rx="panes.html">
+                <span>HTML</span>
+            </label>
+            <label class="ckbtn" title="Toggle CSS panel">
+                <input type="checkbox" checked data-view-toggle="css" data-rx="panes.css">
+                <span>CSS</span>
+            </label>
+            <label class="ckbtn" title="Toggle JS panel">
+                <input type="checkbox" checked data-view-toggle="js" data-rx="panes.js">
+                <span>JS</span>
+            </label>
+            <label class="ckbtn" title="Toggle Console">
+                <input type="checkbox" checked data-view-toggle="console" data-rx="panes.console">
+                <span class="icon" data-name="terminal">&#xf478;</span>
+            </label>
+            <label class="ckbtn" title="Live preview">
+                <input type="checkbox" checked data-view-toggle="preview" data-rx="panes.preview">
+                <span>View</span>
+            </label>
+            <label class="ckbtn" title="Toggle Rich Editor">
+                <input type="checkbox" data-view-toggle="richEditor" data-action="designMode"
+                    data-rx="panes.richEditor">
+                <span class="icon" data-name="pencil-line">&#xf113;</span>
+            </label>
+        </div>
+
         <label class="ml-auto">
             <input id="autorun" type="checkbox" checked>
             <span>Autorun</span>
@@ -63,51 +67,10 @@
     </nav>
 
     <main id="app" class="view col">
-        <div class="view">
-            <div class="view" data-view="html">
-                <div class="editor" id="editor-HTML">
-                    <pre class="editor-lines" data-label="HTML"></pre>
-                    <div class="editor-area">
-                        <pre class="editor-highlight" inert><code class="language-html"></code></pre>
-                        <textarea placeholder="HTML" class="editor-textarea" data-syntax="html" spellcheck="false"
-                            autocorrect="off" autocapitalize="off"></textarea>
-                    </div>
-                    <div class="editor-selection-stat"></div>
-                </div>
-            </div>
-            <div class="splitter"></div>
-            <div class="view" data-view="css">
-                <div class="editor">
-                    <pre class="editor-lines" data-label="CSS"></pre>
-                    <div class="editor-area">
-                        <pre class="editor-highlight" inert><code class="language-css"></code></pre>
-                        <textarea placeholder="CSS" class="editor-textarea" data-syntax="css" spellcheck="false"
-                            autocorrect="off" autocapitalize="off"></textarea>
-                    </div>
-                    <div class="editor-selection-stat"></div>
-                </div>
-            </div>
-            <div class="splitter"></div>
-            <div class="view" data-view="js">
-                <div class="editor">
-                    <pre class="editor-lines" data-label="JS"></pre>
-                    <div class="editor-area">
-                        <pre class="editor-highlight" inert><code class="language-js"></code></pre>
-                        <textarea placeholder="JavaScript" class="editor-textarea" data-syntax="js" spellcheck="false"
-                            autocorrect="off" autocapitalize="off"></textarea>
-                    </div>
-                    <div class="editor-selection-stat"></div>
-                </div>
-            </div>
-            <div class="splitter"></div>
-            <div class="view" data-view="console">
-                <div id="console"></div>
-                <button id="clearConsole" type="button" title="Clear Console">Clear</button>
-            </div>
-        </div>
+        <div class="view" id="panes"></div>
         <div class="splitter"></div>
-        <div class="view col" data-view="preview">
-            <div data-view="richEditor">
+        <div class="view col" data-view="preview" data-open="{{panes.preview}}">
+            <div data-view="richEditor" data-open="{{panes.richEditor}}">
                 <div class="cmd-group">
                     <span data-cmd="bold" title="Bold" class="icon" data-name="bold">&#xf320;</span>
                     <span data-cmd="italic" alt="Italic" title="Italic" class="icon" data-name="italic">&#xf10a;</span>
@@ -184,29 +147,36 @@
     <div class="modal-wrapper">
         <div class="modal is-open" id="modal-projects">
             <div class="modal-head">
-                <h2>Settings</h2>
+                <h2>
+                    <span class="icon" data-name="folder">&#xf045;</span>
+                    <span>Project</span> &nbsp;
+                    <button class="accent" type="button" id="project-new">+ Create New Project</button>
+                </h2>
                 <button type="button" data-modal>
                     <span class="icon" data-name="x1">&#xf488;</span>
                 </button>
             </div>
-            <div class="modal-body">
-                <h2>New</h2>
-                <button type="button" id="project-new">New Project</button>
-
-                <h2><span class="icon" data-name="folder">&#xf045;</span> Edit Project</h2>
+            <div class="row">
                 <label>
                     <span>Name</span>
-                    <input data-rx="name" class="currentProjectName" type="text" placeholder="Project Name" value="">
+                    <input data-rx="name" class="currentProjectName" type="text" placeholder="Project Name" value=""
+                        maxlength="20" minlength="3">
                 </label>
                 <label>
                     <span>Description</span>
-                    <textarea placeholder="Project Description"></textarea>
+                    <textarea data-rx="description" placeholder="Project Description"></textarea>
                 </label>
-                <h2><span class="icon" data-name="folder-search">&#xf0a4;</span> Your projects</h2>
-                Old projects (TODO)
+            </div>
+            <div class="modal-body">
+
+                <h2>
+                    <span class="icon" data-name="folder-search">&#xf0a4;</span>
+                    Projects
+                </h2>
+                <div id="projects-select"></div>
             </div>
             <div class="modal-foot">
-                &copy; 2026. XODE by roxon.hr
+                &copy; XODE — roxon.hr
             </div>
         </div>
     </div>

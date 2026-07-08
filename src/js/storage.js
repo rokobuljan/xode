@@ -75,7 +75,7 @@ export function loadProject(id) {
     return raw ? JSON.parse(raw) : null;
 }
 
-export function createProject({ name = "Untitled", description = "" } = {}, { persist = true } = {}) {
+export function createProject({ name = "Untitled", description = "", panes = {}, persist = true } = {}) {
     const now = Date.now();
     const project = {
         id: crypto.randomUUID(),
@@ -84,7 +84,7 @@ export function createProject({ name = "Untitled", description = "" } = {}, { pe
         html: '',
         css: '',
         js: '',
-        panes: { ...DEFAULT_PANES },
+        panes: { ...DEFAULT_PANES, ...panes },
         createdAt: now,
         updatedAt: now,
     };
@@ -129,5 +129,5 @@ export function deleteProject(id) {
 export function openProject(id) {
     const targetId = id || getLastProjectId();
     const data = targetId ? loadProject(targetId) : null;
-    return data || createProject({}, { persist: false });
+    return data || createProject({ persist: false });
 }

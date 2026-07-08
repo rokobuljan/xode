@@ -7,7 +7,7 @@
     overflow: hidden;
     background-color: color-mix(in srgb, var(--bg), #000 10%);
 
-    &:has(.view):not(:has(.view:not(.is-hidden))) {
+    &:has(.view):not(:has(.view:not([data-open="false"]))) {
         /* Hide .view if inner .view are all hidden */
         display: none;
     }
@@ -27,7 +27,7 @@
 
         /* Remove splitter if not followed by a view */
         &:not(:has(+.view)),
-        &:has(+.view.is-hidden) {
+        &:has(+.view[data-open="false"]) {
             display: none;
         }
 
@@ -43,6 +43,10 @@
         &:hover {
             background-color: var(--c1);
         }
+
+        &:first-child {
+            display: none;
+        }
     }
 
     &.col {
@@ -56,7 +60,7 @@
 }
 
 [data-view] {
-    &.is-hidden {
+    &[data-open="false"] {
         display: none;
     }
 }
