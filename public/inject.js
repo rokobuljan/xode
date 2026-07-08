@@ -49,20 +49,17 @@ window.addEventListener("unhandledrejection", (evt) => {
 
 // richEditor mode
 // Inside the iframe"s document
-(() => {
-    let debounceTimer = null;
-    const notifyParent = () => {
-        window.parent.postMessage(
-            { type: "content-changed", html: document.documentElement.outerHTML },
-            "*" // restrict to your real origin in production
-        );
-    };
-    document.addEventListener("input", () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(notifyParent, 250);
-    });
-})();
-
+let debounceTimer = null;
+const notifyParent = () => {
+    window.parent.postMessage(
+        { type: "content-changed", html: document.documentElement.outerHTML },
+        "*" // restrict to your real origin in production
+    );
+};
+document.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(notifyParent, 250);
+});
 
 const actions = {
     designMode: (val) => {
