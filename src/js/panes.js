@@ -34,7 +34,7 @@ export class Pane {
     constructor(elParent, options) {
         this.elParent = elParent
         Object.assign(this, {
-            syntax: "", // "html", "css", "js
+            syntax: "", // "html", "css", ...
             value: "",
         }, options);
         this.elSplitter = elNew("div", { className: "splitter" });
@@ -167,6 +167,7 @@ export class PaneEditor extends Pane {
 
 export class PaneConsole extends Pane {
     init() {
+        this.syntax = "console";
         super.init();
         this.el.innerHTML = `<div class="console"></div>
             <button class="console-clear" type="button" title="Clear Console">Clear</button>`;
@@ -175,13 +176,14 @@ export class PaneConsole extends Pane {
         this.elBtnClear.addEventListener("click", () => this.clear());
     }
     print({ type, args, line }) {
+        const logType = type.split(":")[1] || "log";
         const elBlock = elNew("code", {
-            className: `log ${type}`,
+            className: `log ${logType}`,
             textContent: args.join("\n").trimStart(),
         });
         const elLine = elNew("span", {
             className: "log-line",
-            textContent: `js:${line}`,
+            textContent: line,
         });
         elBlock.append(elLine);
         this.elConsole.append(elBlock);

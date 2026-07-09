@@ -1,4 +1,5 @@
-const OFFSETLINES = 6; // Offset for console.fn line number
+const OFFSETLINES_JS = 0; // Offset for console.fn line number
+const OFFSETLINES_HTML = 10;
 const serialize = (arg) => {
     if (arg === null) return "null";
     if (arg === undefined) return "undefined";
@@ -9,18 +10,13 @@ const serialize = (arg) => {
     }
     return String(arg);
 };
-const getLineNumber = () => {
-    const stack = new Error().stack;
-    const line = stack.split("\n")[4]; // caller"s line
-    const match = line.match(/:(\d+):\d+\)?$/);
-    return match ? Number(match[1]) - OFFSETLINES : "?";
-};
-const forward = (type, args) => {
-    parent.postMessage({
-        type,
-        line: getLineNumber(),
-        args: Array.from(args).map(serialize)
-    }, "*");
+const getLineNumber = (stack = new Error().stack) => {
+    const callerLine = stack.split("\n").pop().replace(/ *at */, "");
+    let [file, line, _column] = callerLine.split(/:(?=\d+)/);
+    line = Number(line) - OFFSETLINES_JS;
+    file = file.replace("about:srcdoc", "html");
+    if (file === "html") line -= OFFSETLINES_HTML;
+    return `${file}:${line}`;
 };
 const getAllMethods = (obj) => {
     const methods = new Set();
@@ -33,22 +29,39 @@ const getAllMethods = (obj) => {
     }
     return [...methods];
 }
-getAllMethods(console).forEach((method) => {
-    const _orig = console[method].bind(console);
+
+// let i = 0;
+getAllMethods(window.console).forEach((method) => {
+    // const _orig = console[method].bind(console);
     console[method] = (...args) => {
-        _orig(...args);
-        forward(method, args);
+        // if (++i > 2) return;
+        // _orig(...args);
+        window.parent.postMessage({
+            type: `console:${method}`,
+            args: Array.from(args).map(serialize),
+            line: getLineNumber(),
+        }, "*");
     };
 });
 window.addEventListener("error", (evt) => {
-    window.parent.postMessage({ type: "error", line: evt.lineno - OFFSETLINES, args: [evt.message] }, "*");
+    window.parent.postMessage({
+        type: "console:error",
+        args: [evt.message],
+        line: evt.lineno ? evt.lineno - OFFSETLINES_JS : "",
+    }, "*");
 });
 window.addEventListener("unhandledrejection", (evt) => {
-    window.parent.postMessage({ type: "error", line: evt.lineno ?? "?", args: ["Unhandled Promise: " + serialize(evt.reason)] }, "*");
+    let [line, col] = evt.reason.stack.split(/:(?=\d+:\d+$)/)[1].split(":");
+    line = Number(line) - OFFSETLINES_JS;
+    window.parent.postMessage({
+        type: "console:error",
+        args: [`Uncaught (in promise): at ${line}:${col}`],
+        line,
+    }, "*");
 });
 
-// richEditor mode
-// Inside the iframe"s document
+// Rich Editor mode
+// Inside the iframe's document
 let debounceTimer = null;
 const notifyParent = () => {
     window.parent.postMessage(
@@ -60,15 +73,13 @@ document.addEventListener("input", () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(notifyParent, 250);
 });
-
 const actions = {
     designMode: (val) => {
         document.designMode = val ? "on" : "off";
     }
 };
-
 // Messages from parent window
-addEventListener("message", (evt) => {
+window.addEventListener("message", (evt) => {
     // Actions
     if (evt.data.type === "action") {
         const [prop, val] = evt.data.args;
