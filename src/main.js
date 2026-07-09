@@ -15,6 +15,7 @@ import { PaneEditor, PaneConsole } from "./js/panes.js";
 
 let currentProject = {};
 const panes = {};
+const elPanes = el("#panes");
 const elPreview = el("#preview"); // the iframe
 const elAutorun = el("#autorun");
 const elRun = el("#run");
@@ -32,7 +33,6 @@ const rxHandler = ({ detail }) => {
         if (detail.oldValue !== detail.value) {
             saveProject(currentProject);
             panes[detail.prop]?.highlight();
-            console.log(detail)
             preview(); // Update changes in iframe
         }
     }
@@ -60,17 +60,6 @@ const projectInit = (isNew = true, id) => {
     preview();
 };
 
-/**
- * One-time call to generate UI panes
- */
-const generatePanes = () => {
-    const elPanes = el("#panes");
-    ["html", "css", "js"].forEach(syntax => {
-        panes[syntax] = new PaneEditor(elPanes, { syntax, value: currentProject[syntax] });
-        panes[syntax]?.highlight();
-    });
-    panes.console = new PaneConsole(elPanes, "console");
-};
 
 /**
  * Construct HTML page output for preview or download
@@ -84,12 +73,12 @@ const generatePreviewHTML = (isApp = true, data = currentProject) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${data.name}</title>
-        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${data.js}</script>
         <style${isApp ? ' id="◆xode-css"' : ''}>${data.css}</style>
         ${isApp ? injectScript : ""}
     </head>
     <body${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
         ${data.html}
+        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${data.js}//# sourceURL=js</script>
     </body>
     </html>`;
 };
@@ -112,19 +101,17 @@ addEventListener("message", async (evt) => {
         const html = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
         panes.html.elTextarea.value = html;
         await panes.html.format();
-        console.log("formatted");
-
-
-
         panes.html.highlight();
         currentProject.html = html; // Update with new value + save project
     }
     // Console messages
-    else if (evt.data.type === "clear") {
-        panes.console.clear();
-        panes.console.print({ ...evt.data, args: ["Console cleared"] });
-    } else {
-        panes.console.print(evt.data);
+    else if (evt.data.type.startsWith("console:")) {
+        if (evt.data.type === "console:clear") {
+            panes.console.clear();
+            panes.console.print({ ...evt.data, args: ["Console cleared"] });
+        } else {
+            panes.console.print(evt.data);
+        }
     }
 });
 
@@ -217,6 +204,17 @@ el("#project-new").addEventListener("click", () => {
     projectInit(); // Create new project
     drawProjects(); // redraw aold ones
 });
+
+/**
+ * One-time call to generate UI panes
+ */
+const generatePanes = () => {
+    ["html", "css", "js"].forEach(syntax => {
+        panes[syntax] = new PaneEditor(elPanes, { syntax });
+        panes[syntax]?.highlight();
+    });
+    panes.console = new PaneConsole(elPanes, "console");
+};
 
 // INIT
 generatePanes();

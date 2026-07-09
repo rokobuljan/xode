@@ -408,6 +408,7 @@ input[type="text"] {
     opacity: 1;
 }
 
+/* Hide rich editor button if preview is hidden */
 :has([data-view-toggle="preview"]:not(:checked)) label:has([data-view-toggle="richEditor"]) {
     display: none;
 }
