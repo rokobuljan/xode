@@ -1,5 +1,5 @@
 import hljs from "highlight.js";
-import expand, { extract } from 'emmet';
+import expand, { extract } from "emmet";
 import * as prettier from "prettier/standalone";
 import prettierPluginBabel from "prettier/plugins/babel";
 import prettierPluginEstree from "prettier/plugins/estree";
@@ -65,10 +65,10 @@ export class PaneEditor extends Pane {
             <div class="editor-selection-stat"></div>
         </div>`;
 
-        this.elSelectionStat = el(".editor-selection-stat", this.el);
+        this.elLines = el(".editor-lines", this.el);
         this.elTextarea = el(".editor-textarea", this.el);
         this.elCode = el(".editor-highlight code", this.el);
-        this.elLines = el(".editor-lines", this.el);
+        this.elSelectionStat = el(".editor-selection-stat", this.el);
 
         // Init value
         this.elTextarea.value = this.value;
@@ -98,7 +98,7 @@ export class PaneEditor extends Pane {
                 let newCaretPosition = oldCaretPosition;
                 this.elTextarea.setSelectionRange(newCaretPosition, newCaretPosition);
                 // Trigger input event
-                this.elTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
             }
             // Always highlight after the above changes
             this.highlight();
@@ -122,7 +122,7 @@ export class PaneEditor extends Pane {
         const end = this.elTextarea.selectionEnd;
         const selectedText = this.elTextarea.value.substring(start, end);
         const charCount = selectedText.length;
-        const lineCount = selectedText.split('\n').length;
+        const lineCount = selectedText.split("\n").length;
         const hasCount = charCount > 0;
         this.elSelectionStat.innerHTML = hasCount
             ? `<span class= "icon" data-name="text-t">&#x10125;</span> ${charCount} &nbsp; <span class="icon" data-name="wrap-text">&#xf11d;</span> ${lineCount}`
@@ -175,12 +175,12 @@ export class PaneConsole extends Pane {
         this.elBtnClear.addEventListener("click", () => this.clear());
     }
     print({ type, args, line }) {
-        const elBlock = elNew('code', {
+        const elBlock = elNew("code", {
             className: `log ${type}`,
             textContent: args.join("\n").trimStart(),
         });
-        const elLine = elNew('span', {
-            className: 'log-line',
+        const elLine = elNew("span", {
+            className: "log-line",
             textContent: `js:${line}`,
         });
         elBlock.append(elLine);
