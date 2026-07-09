@@ -146,7 +146,7 @@ const drawProjects = () => {
                 <button data-download-id="${project.id}" type="button"><span class="icon" data-name="download">&#xf3b7;</span></button>
                 <button data-delete-id="${project.id}" type="button"><span class="icon" data-name="trash">&#xf202;</span></button>
             </div>`,
-            title: `${project.name} - ${project.description || "No description"}\n(Right click to delete)`,
+            title: `${project.name} — ${project.description || "No description"}`,
         });
         elProject.dataset.modal = "";
         elProject.addEventListener("contextmenu", (evt) => {
