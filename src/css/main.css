@@ -180,14 +180,14 @@ textarea,
     }
 }
 
-iframe {
+#preview {
     background: #fff;
 }
 
 .is-resizing {
     user-select: none;
 
-    iframe {
+    #preview {
         pointer-events: none;
     }
 }
@@ -231,7 +231,7 @@ iframe {
     }
 
     [data-view="html"] &::before {
-        color: #e36242;
+        color: #f57454;
     }
 
     [data-view="css"] &::before {
@@ -242,13 +242,23 @@ iframe {
         color: hsl(54, 100%, 50%);
     }
 
-    span {
+    >span {
+        position: relative;
         display: block;
         padding: 0 0.5rem;
         counter-increment: lineNumber;
 
         &::before {
             content: counter(lineNumber);
+        }
+
+        .color {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(var(--color), var(--color)), repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 6px 6px;
         }
     }
 }
@@ -449,6 +459,23 @@ input[type="text"] {
             zoom: 0.3;
             pointer-events: none;
             overflow: hidden;
+        }
+
+        .bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            br+* {
+                margin-left: auto;
+            }
+        }
+
+        .project-name {}
+
+        .project-date {
+            opacity: 0.5;
+            font-size: 0.8em;
         }
     }
 }
