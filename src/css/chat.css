@@ -1,8 +1,52 @@
 .chat {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: color-mix(in srgb, var(--bg), #000 23%);
+    background: color-mix(in srgb, var(--bg), #000 0%);
+    color: var(--fg);
+
+    &>* {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* The two moving radial gradients, as pseudo-elements */
+    &::before,
+    &::after {
+        content: "";
+        position: absolute;
+        width: min(20rem, 70%);
+        aspect-ratio: 1;
+        left: 0;
+        right: 0;
+        margin: 0 auto;
+        bottom: -10%;
+        /* oversize so movement never reveals hard edges */
+        z-index: 0;
+        filter: blur(80px);
+        opacity: 0.5;
+        mix-blend-mode: screen;
+        pointer-events: none;
+    }
+
+    &::before {
+        background: radial-gradient(circle at 50% 50%,
+                var(--c1) 0%,
+                var(--c1) 10%,
+                color-mix(in srgb, var(--c1), transparent 60%) 35%,
+                transparent 70%);
+        animation: drift1 14s ease-in-out infinite;
+    }
+
+    &::after {
+        background: radial-gradient(circle at 50% 50%,
+                var(--c2) 0%,
+                var(--c2) 10%,
+                color-mix(in srgb, var(--c2), transparent 60%) 35%,
+                transparent 70%);
+        animation: drift2 18s ease-in-out infinite;
+    }
 }
 
 .chat-output {
@@ -11,16 +55,24 @@
     flex-direction: column;
     gap: 0.5rem;
     overflow: auto;
-    padding: 1rem 0;
+    padding: 0 0 1rem;
     width: 100%;
-    max-width: 50rem;
+    max-width: 46rem;
     margin: 0 auto;
+    padding: 1rem;
 
     .chat-message {
         position: relative;
-        background: color-mix(in srgb, var(--bg), #000 35%);
         padding: 1rem;
         font-size: 0.92rem;
+        transition: scale 0.3s, opacity 0.3s, translate 0.3s;
+        max-width: calc(100% - 2rem);
+
+        @starting-style {
+            opacity: 0;
+            scale: 0.9;
+            translate: 0 2rem;
+        }
 
         /* The shimmer effect: a gradient text-clip that sweeps left to right */
         .thinking {
@@ -68,12 +120,15 @@
 
         &.role-user {
             margin-left: 2rem;
-            color: color-mix(in srgb, var(--fg), var(--bg) 35%);
+            background-color: #0003;
+            max-width: 30rem;
+            align-self: flex-end;
+            color: color-mix(in srgb, var(--fg), var(--bg) 30%);
 
             &::after {
                 left: auto;
                 right: 0;
-                border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 70%);
+                border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 10%);
                 border-width: 1px 1px 0 0;
             }
         }
@@ -85,17 +140,18 @@
     flex-direction: column;
     gap: 0.5rem;
     width: 100%;
-    max-width: 50rem;
+    max-width: 46rem;
     margin: 0 auto;
+    padding: 1rem;
 
     .chat-input {
         display: block;
         resize: none;
         field-sizing: content;
         max-height: calc(35cqh);
+        min-height: 4lh;
         width: 100%;
-        min-height: 3lh;
-        background: var(--bg);
+        background-color: color-mix(in srgb, var(--bg), #000 15%);
         z-index: 1;
         font-size: 1rem;
 
@@ -135,7 +191,7 @@
     border-radius: 0.5rem;
     padding: 2px;
     /* this 2px IS the border thickness */
-    background: var(--bg);
+    background: #0000;
 
 
     /* The rotating gradient, clipped to a 2px ring */
@@ -191,5 +247,60 @@
 @keyframes spin {
     to {
         --angle: 360deg;
+    }
+}
+
+
+/* Irregular keyframe stops (non-uniform %s and offsets) read as "random"
+     rather than a mechanical back-and-forth bounce */
+@keyframes drift1 {
+    0% {
+        transform: translate(-10%, -5%) scale(1);
+    }
+
+    22% {
+        transform: translate(15%, 10%) scale(1.15);
+    }
+
+    41% {
+        transform: translate(5%, 25%) scale(0.95);
+    }
+
+    63% {
+        transform: translate(-20%, 15%) scale(1.1);
+    }
+
+    80% {
+        transform: translate(-8%, -15%) scale(1);
+    }
+
+    100% {
+        transform: translate(-10%, -5%) scale(1);
+    }
+}
+
+@keyframes drift2 {
+    0% {
+        transform: translate(10%, 15%) scale(1);
+    }
+
+    18% {
+        transform: translate(-15%, -10%) scale(1.1);
+    }
+
+    37% {
+        transform: translate(-5%, 20%) scale(0.9);
+    }
+
+    55% {
+        transform: translate(20%, -5%) scale(1.2);
+    }
+
+    77% {
+        transform: translate(8%, 10%) scale(1);
+    }
+
+    100% {
+        transform: translate(10%, 15%) scale(1);
     }
 }

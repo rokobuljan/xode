@@ -297,7 +297,7 @@ input[type="text"] {
     border-radius: 0.2em;
     background-color: color-mix(in srgb, var(--bg), var(--fg) 5%);
     font: inherit;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
 
     &:focus {
         outline: none;
@@ -536,11 +536,4 @@ blockquote {
 /* Hide rich editor button if preview is hidden */
 :has([data-view-toggle="chat"]:not(:checked)) [data-view="chat"] {
     display: none;
-}
-
-[data-view="chat"] {
-    display: none;
-    background: var(--bg);
-    color: var(--fg);
-    padding: 1rem;
 }
