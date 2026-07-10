@@ -164,6 +164,7 @@ textarea,
     /* 1* but keep caret visible */
     caret-color: var(--fg);
     border: 0;
+    padding-bottom: 50cqh !important;
 
     &:focus {
         outline: transparent;
