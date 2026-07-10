@@ -8,7 +8,7 @@ import "./css/index.css";
 import "./js/splitview.js";
 import "./js/modal.js";
 import Rx from "./js/Rx.js";
-import { el, elNew, download } from "./js/utils.js";
+import { el, els, elNew, download } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject } from './js/storage.js';
 import { PaneEditor, PaneConsole } from "./js/panes.js";
 
@@ -19,7 +19,6 @@ const elPanes = el("#panes");
 const elPreview = el("#preview"); // the iframe
 const elAutorun = el("#autorun");
 const elRun = el("#run");
-const elDownload = el("#download");
 let previewTimeout;
 
 const rxHandler = ({ detail }) => {
@@ -52,7 +51,11 @@ const projectInit = (isNew = true, id) => {
 
     currentProject = new Rx(project, {}).on("rx:change", rxHandler).state;
 
-    console.log(currentProject.panes);
+    //  Update UI: Toggle open/close panes
+    els("[data-view][data-open]").forEach(elView => {
+        const isOpen = currentProject.panes[elView.dataset.view];
+        elView.dataset.open = isOpen;
+    });
 
     // Force-clear editors highlight
     ["html", "css", "js"].forEach(syntax => panes[syntax]?.highlight());
@@ -61,7 +64,6 @@ const projectInit = (isNew = true, id) => {
     // Preview the project
     preview();
 };
-
 
 /**
  * Construct HTML page output for preview or download
@@ -120,33 +122,44 @@ addEventListener("message", async (evt) => {
 const drawProjects = () => {
     el("#projects-select").innerHTML = "";
     listProjects().forEach((project) => {
-        const elTHumbnailIframe = elNew("iframe", {
+        const elThumbnailIframe = elNew("iframe", {
             className: "iframe-thumbnail",
             srcdoc: generatePreviewHTML(false, openProject(project.id)),
-            sandbox: "allow-scripts",
+            sandbox: "allow-scripts", // allow-scripts, allow-same-origin
             loading: "lazy",
+            scrolling: "no"
         });
+        const elThumbnail = elNew("div", { className: "thumbnail" });
+        elThumbnail.dataset.modal = "";
+        elThumbnail.append(elThumbnailIframe);
+
         const elProject = elNew("div", {
             id: `project-${project.id}`,
             className: "project",
             innerHTML: `<div class="bar">
-                <span>${project.name}</span>
-                <span>${new Date(project.updatedAt).toLocaleString()}</span>
-                <button data-download-id="${project.id}" type="button"><span class="icon" data-name="download">&#xf3b7;</span></button>
-                <button data-delete-id="${project.id}" type="button"><span class="icon" data-name="trash">&#xf202;</span></button>
+                <span class="project-name">${project.name}</span>
+                <span class="project-date">${new Date(project.updatedAt).toLocaleString()}</span>
+                <br>
+                <span>
+                    <button data-download-id="${project.id}" type="button"><span class="icon" data-name="download">&#xf3b7;</span></button>
+                    <button data-delete-id="${project.id}" type="button"><span class="icon" data-name="trash">&#xf202;</span></button>
+                </span>
             </div>`,
             title: `${project.name} — ${project.description || "No description"}`,
         });
-        elProject.dataset.modal = "";
-        elProject.addEventListener("contextmenu", (evt) => {
-            evt.preventDefault();
+        elProject.prepend(elThumbnail);
+
+        el(`[data-delete-id]`, elProject).addEventListener("click", () => {
             if (confirm(`Delete project: "${project.name}"?`)) {
                 deleteProject(project.id);
                 drawProjects();
             }
-        })
-        elProject.prepend(elTHumbnailIframe);
-        elProject.addEventListener("click", () => {
+        });
+        el(`[data-download-id]`, elProject).addEventListener("click", () => {
+            downloadProject(project.id);
+        });
+        // Close modal on iframe click:
+        elThumbnail.addEventListener("click", () => {
             projectInit(false, project.id);
         });
         el("#projects-select").append(elProject);
@@ -158,10 +171,16 @@ const drawProjects = () => {
 // RUN --> Preview
 elRun.addEventListener("click", () => preview(true));
 
-// Download project locally as .html
-elDownload.addEventListener("click", () => {
-    const projectName = currentProject.name.trim() ? currentProject.name.trim().replace(/\W/g, "-") : "untitled";
-    download(generatePreviewHTML(false), `${projectName}.xode.html`);
+// Download project by ID
+const downloadProject = (id) => {
+    const project = openProject(id);
+    const projectName = project.name.trim() ? project.name.trim().replace(/\W/g, "-") : "untitled";
+    download(generatePreviewHTML(false, project), `${projectName}.xode.html`);
+};
+
+// Download current project
+el("#download").addEventListener("click", () => {
+    downloadProject(currentProject.id);
 });
 
 // Editor exec commander for richEditor mode (text editing buttons)

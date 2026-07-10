@@ -7,6 +7,7 @@ import prettierPluginHtml from "prettier/plugins/html";
 import prettierPluginPostcss from "prettier/plugins/postcss";
 
 import { el, elNew } from "./utils.js";
+import { extractColors } from "./colorExtract.js";
 
 const formatCode = async (code, language) => {
     const parserMap = {
@@ -60,7 +61,7 @@ export class PaneEditor extends Pane {
             <pre class="editor-lines" data-label="${this.syntax}"></pre>
             <div class="editor-area">
                 <pre class="editor-highlight" inert><code class="language-${this.syntax}"></code></pre>
-                <textarea data-rx="${this.syntax}" placeholder="${this.syntax}" class="editor-textarea" data-syntax="${this.type}"
+                <textarea data-rx="${this.syntax}" placeholder="${this.syntax}" class="editor-textarea" data-syntax="${this.syntax}"
                     spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
             </div>
             <div class="editor-selection-stat"></div>
@@ -78,7 +79,7 @@ export class PaneEditor extends Pane {
         // Events
         this.elTextarea.addEventListener("keydown", async (evt) => {
             if (evt.key === "Tab") {
-                evt.preventDefault(); // don't switch tabindex
+                evt.preventDefault();
                 if ((this.syntax === "html" || this.syntax === "css") && this.emmetExpand()) {
                     preview();
                 } else {
@@ -163,6 +164,20 @@ export class PaneEditor extends Pane {
         if (!this.elTextarea || !this.elLines) return;
         const totLines = this.elTextarea.value.split(/\n/).length;
         this.elLines.innerHTML = "<span></span>".repeat(totLines);
+
+        // Color swatches in lines
+        if (this.syntax === "css") {
+            const colors = extractColors(this.elTextarea.value);
+            colors.forEach((color) => {
+                const elLine = this.elLines.children[color.line - 1];
+                const elColor = elNew("span", {
+                    className: "color",
+                    title: color.raw
+                });
+                elColor.style.setProperty("--color", color.css);
+                elLine.append(elColor);
+            })
+        }
     }
 }
 
