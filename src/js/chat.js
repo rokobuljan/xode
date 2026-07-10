@@ -1,6 +1,4 @@
-// import el, els
 import { el, elNew, LS } from "./utils.js";
-
 const ls = LS("xode.settings", { apiKey: "" });
 
 const geminiModels = ["gemini-3.5-flash", "gemini-3-flash", "gemini-3.1-flash-lite"];
