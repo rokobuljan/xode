@@ -52,6 +52,8 @@ const projectInit = (isNew = true, id) => {
 
     currentProject = new Rx(project, {}).on("rx:change", rxHandler).state;
 
+    console.log(currentProject.panes);
+
     // Force-clear editors highlight
     ["html", "css", "js"].forEach(syntax => panes[syntax]?.highlight());
     panes.console.clear();
@@ -211,9 +213,9 @@ el("#project-new").addEventListener("click", () => {
 const generatePanes = () => {
     ["html", "css", "js"].forEach(syntax => {
         panes[syntax] = new PaneEditor(elPanes, { syntax });
-        panes[syntax]?.highlight();
+        panes[syntax].highlight();
     });
-    panes.console = new PaneConsole(elPanes, "console");
+    panes.console = new PaneConsole(elPanes, { syntax: "console" });
 };
 
 // INIT

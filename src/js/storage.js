@@ -81,14 +81,13 @@ export function createProject({ name = "Untitled", description = "", panes = {},
         id: crypto.randomUUID(),
         name,
         description,
-        html: '',
-        css: '',
-        js: '',
+        html: "",
+        css: "",
+        js: "",
         panes: { ...DEFAULT_PANES, ...panes },
         createdAt: now,
         updatedAt: now,
-        isAutorun: true,
-        tabSpaces: 4,
+        isAutorun: true
     };
     if (persist) {
         saveProject(project);

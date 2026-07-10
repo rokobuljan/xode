@@ -162,7 +162,7 @@ export default class Rx {
         );
 
         let node;
-        while (node = walker.nextNode()) {
+        while ((node = walker.nextNode()) !== null) {
             if (node.nodeType === Node.ELEMENT_NODE) {
                 this.scanElementAttributes(node);
             } else if (node.nodeType === Node.TEXT_NODE) {

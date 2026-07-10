@@ -37,6 +37,7 @@ export class Pane {
             syntax: "", // "html", "css", ...
             value: "",
         }, options);
+        this.placeholder = options.palceholder ?? this.syntax;
         this.elSplitter = elNew("div", { className: "splitter" });
         this.init();
     }
