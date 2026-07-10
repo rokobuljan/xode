@@ -1,13 +1,14 @@
 // import el, els
-import { el, elNew } from "./utils.js";
+import { el, elNew, LS } from "./utils.js";
 
+const ls = LS("xode.settings", { apiKey: "" });
 
 const geminiModels = ["gemini-3.5-flash", "gemini-3-flash", "gemini-3.1-flash-lite"];
 
 
 const getAIConfig = () => {
     return {
-        apiKey: el("#chat-apiKey").value,
+        apiKey: ls.get().apiKey,
         provider: "gemini",
         model: geminiModels[2],
     };
@@ -163,6 +164,7 @@ function removeThinkingMessage(id) {
 
 // const elApiKey = el("#chat-apiKey");
 
+const elApiKey = el("#chat-apiKey");
 const elInput = el(".chat-input");
 const elOutput = el(".chat-output");
 const elSend = el(".chat-send");
@@ -180,3 +182,11 @@ elSend.addEventListener("click", sendMessage);
 
 // Hello message:
 addMessage("system", `<h3>✨&#xfe0e; Hi, I'm <b>Xody</b></h3>your Xode's AI assistant.<br>Enter your API key, ask a question to get started.`);
+
+// Save API key to LS xode.apiKey
+elApiKey.addEventListener("change", () => {
+    ls.set({ apiKey: elApiKey.value });
+});
+// REady API key if any
+const apiKey = ls.get().apiKey;
+elApiKey.value = apiKey;
