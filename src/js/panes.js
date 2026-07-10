@@ -167,16 +167,19 @@ export class PaneEditor extends Pane {
 
         // Color swatches in lines
         if (this.syntax === "css") {
-            const colors = extractColors(this.elTextarea.value);
-            colors.forEach((color) => {
-                const elLine = this.elLines.children[color.line - 1];
-                const elColor = elNew("span", {
-                    className: "color",
-                    title: color.raw
+            clearTimeout(this.colorTimeout);
+            this.colorTimeout = setTimeout(() => {
+                const colors = extractColors(this.elTextarea.value);
+                colors.forEach((color) => {
+                    const elLine = this.elLines.children[color.line - 1];
+                    const elColor = elNew("span", {
+                        className: "color",
+                        title: color.raw
+                    });
+                    elColor.style.setProperty("--color", color.css);
+                    elLine.append(elColor);
                 });
-                elColor.style.setProperty("--color", color.css);
-                elLine.append(elColor);
-            })
+            }, 300);
         }
     }
 }

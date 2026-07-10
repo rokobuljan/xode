@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Xode</title>
+    <title>XODE</title>
     <link rel="shortcut icon"
         href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22>%3Ctext y=%22.87em%22 font-size=%2290%22>🔷%3C/text>%3C/svg>"
         type="image/x-icon" />
@@ -30,23 +30,23 @@
         </button>
         <div class="buttons-panels">
             <label class="ckbtn" title="Toggle HTML panel">
-                <input type="checkbox" checked data-view-toggle="html" data-rx="panes.html">
+                <input type="checkbox" checked data-rx="panes.html">
                 <span>HTML</span>
             </label>
             <label class="ckbtn" title="Toggle CSS panel">
-                <input type="checkbox" checked data-view-toggle="css" data-rx="panes.css">
+                <input type="checkbox" checked data-rx="panes.css">
                 <span>CSS</span>
             </label>
             <label class="ckbtn" title="Toggle JS panel">
-                <input type="checkbox" checked data-view-toggle="js" data-rx="panes.js">
+                <input type="checkbox" checked data-rx="panes.js">
                 <span>JS</span>
             </label>
             <label class="ckbtn" title="Toggle Console">
-                <input type="checkbox" checked data-view-toggle="console" data-rx="panes.console">
+                <input type="checkbox" checked data-rx="panes.console">
                 <span class="icon" data-name="terminal">&#xf478;</span>
             </label>
             <label class="ckbtn" title="Live preview">
-                <input type="checkbox" checked data-view-toggle="preview" data-rx="panes.preview">
+                <input type="checkbox" checked data-rx="panes.preview">
                 <span>View</span>
             </label>
             <label class="ckbtn" title="Toggle Rich Editor">
@@ -54,88 +54,123 @@
                     data-rx="panes.richEditor">
                 <span class="icon" data-name="pencil-line">&#xf113;</span>
             </label>
+            <label class="ckbtn" title="Toggle AI Chat">
+                <input type="checkbox" checked data-view-toggle="chat">
+                <span>AI</span>
+            </label>
         </div>
         <button class="ml-auto" id="download" type="button" title="Download">
             <span class="icon" data-name="download">&#xf3b7;</span>
         </button>
         <label>
-            <input id="autorun" type="checkbox" checked>
+            <input id="autorun" type="checkbox" data-rx="isAutorun">
             <span>Autorun</span>
         </label>
         <button id="run" type="button" title="Run Xode">Run <span class="icon" data-name="play">&#xf42d;</span></button>
     </nav>
 
-    <main id="app" class="view col">
-        <div class="view" id="panes"></div>
-        <div class="splitter"></div>
-        <div class="view col" data-view="preview" data-open="{{panes.preview}}">
-            <div data-view="richEditor" data-open="{{panes.richEditor}}">
-                <div class="cmd-group">
-                    <span data-cmd="bold" title="Bold" class="icon" data-name="bold">&#xf320;</span>
-                    <span data-cmd="italic" alt="Italic" title="Italic" class="icon" data-name="italic">&#xf10a;</span>
-                    <span data-cmd="underline" alt="Underline" title="Underline" class="icon"
-                        data-name="text-a-underline">&#xf910;</span>
-                    <span data-cmd="underline" alt="Underline" title="Underline" class="icon"
-                        data-name="text-underline">&#xf197;</span>
-                    <span data-cmd="strikeThrough" alt="Strike Through" title="Strike Through" class="icon"
-                        data-name="text-strikethrough">&#xfa5d;</span>
-                    <span data-cmd="superscript" alt="Superscript" title="Superscript" class="icon"
-                        data-name="text-superscript">&#xfa02;</span>
-                    <span data-cmd="subscript" alt="Subscript" title="Subscript" class="icon"
-                        data-name="text-subscript">&#xf0e6;</span>
-                </div>
-                <div class="cmd-group">
-                    <span data-cmd="formatBlock" title="Paragraph" data-par="P" class="icon"
-                        data-name="paragraph">&#xfeeb;</span>
-                    <span data-cmd="formatBlock" title="H1" data-par="H1" class="icon"
-                        data-name="text-h-one">&#xfb8e;</span>
-                    <span data-cmd="formatBlock" title="H2" data-par="H2" class="icon"
-                        data-name="text-h-two">&#x10083;</span>
-                    <span data-cmd="formatBlock" title="H3" data-par="H3" class="icon"
-                        data-name="text-h-three">&#xf797;</span>
-                </div>
-                <!-- <div class="cmd-group">
+    <main id="app" class="view">
+        <div class="view col">
+            <div class="view" id="panes"></div>
+            <div class="splitter"></div>
+            <div class="view col" data-view="preview" data-open="{{panes.preview}}">
+                <div data-view="richEditor" data-open="{{panes.richEditor}}">
+                    <div class="cmd-group">
+                        <span data-cmd="bold" title="Bold" class="icon" data-name="bold">&#xf320;</span>
+                        <span data-cmd="italic" alt="Italic" title="Italic" class="icon"
+                            data-name="italic">&#xf10a;</span>
+                        <span data-cmd="underline" alt="Underline" title="Underline" class="icon"
+                            data-name="text-a-underline">&#xf910;</span>
+                        <span data-cmd="underline" alt="Underline" title="Underline" class="icon"
+                            data-name="text-underline">&#xf197;</span>
+                        <span data-cmd="strikeThrough" alt="Strike Through" title="Strike Through" class="icon"
+                            data-name="text-strikethrough">&#xfa5d;</span>
+                        <span data-cmd="superscript" alt="Superscript" title="Superscript" class="icon"
+                            data-name="text-superscript">&#xfa02;</span>
+                        <span data-cmd="subscript" alt="Subscript" title="Subscript" class="icon"
+                            data-name="text-subscript">&#xf0e6;</span>
+                    </div>
+                    <div class="cmd-group">
+                        <span data-cmd="formatBlock" title="Paragraph" data-par="P" class="icon"
+                            data-name="paragraph">&#xfeeb;</span>
+                        <span data-cmd="formatBlock" title="H1" data-par="H1" class="icon"
+                            data-name="text-h-one">&#xfb8e;</span>
+                        <span data-cmd="formatBlock" title="H2" data-par="H2" class="icon"
+                            data-name="text-h-two">&#x10083;</span>
+                        <span data-cmd="formatBlock" title="H3" data-par="H3" class="icon"
+                            data-name="text-h-three">&#xf797;</span>
+                    </div>
+                    <!-- <div class="cmd-group">
                     <span data-cmd="removeFormat" data-par="foreColor" alt="Text Color" title="Text Color" class="icon"
                         data-name="palette">&#xf919;</span>
                     <span data-cmd="removeFormat" data-par="backColor" alt="Text Background" title="Text Background"
                         class="icon" data-name="text-t--fill">&#xf0d4;</span>
                 </div> -->
-                <div class="cmd-group">
-                    <span data-cmd="InsertImage" alt="Insert Image" title="Insert Image" class="icon"
-                        data-name="image1">&#xf6eb;</span>
-                    <span data-cmd="CreateLink" alt="Link" title="Link" class="icon" data-name="link-2">&#xf235;</span>
-                    <span data-cmd="InsertUnorderedList" data-cmdref="UL" alt="Unordered List" title="Unordered List"
-                        class="icon" data-name="list">&#xf58e;</span>
-                    <span data-cmd="InsertOrderedList" data-cmdref="OL" alt="Ordered List" title="Ordered List"
-                        class="icon" data-name="list-ordered">&#xf322;</span>
-                    <span data-cmd="insertHorizontalRule" alt="Insert Horizontal Rule" title="Insert Horizontal Rule"
-                        class="icon" data-name="minus">&#xf02f;</span>
+                    <div class="cmd-group">
+                        <span data-cmd="InsertImage" alt="Insert Image" title="Insert Image" class="icon"
+                            data-name="image1">&#xf6eb;</span>
+                        <span data-cmd="CreateLink" alt="Link" title="Link" class="icon"
+                            data-name="link-2">&#xf235;</span>
+                        <span data-cmd="InsertUnorderedList" data-cmdref="UL" alt="Unordered List"
+                            title="Unordered List" class="icon" data-name="list">&#xf58e;</span>
+                        <span data-cmd="InsertOrderedList" data-cmdref="OL" alt="Ordered List" title="Ordered List"
+                            class="icon" data-name="list-ordered">&#xf322;</span>
+                        <span data-cmd="insertHorizontalRule" alt="Insert Horizontal Rule"
+                            title="Insert Horizontal Rule" class="icon" data-name="minus">&#xf02f;</span>
+                    </div>
+                    <div class="cmd-group">
+                        <span data-cmd="justifyLeft" alt="Align left" title="Align Left" class="icon"
+                            data-name="align-left">&#xf008;</span>
+                        <span data-cmd="justifyCenter" alt="Align center" title="Align Center" class="icon"
+                            data-name="align-center">&#xf0f9;</span>
+                        <span data-cmd="justifyRight" alt="Align right" title="Align Right" class="icon"
+                            data-name="align-right">&#xf293;</span>
+                        <span data-cmd="justifyFull" alt="Align justify" title="Align Full" class="icon"
+                            data-name="align-justify">&#xf4a9;</span>
+                    </div>
+                    <div class="cmd-group">
+                        <span data-cmd="indent" alt="Indent" title="Indent" class="icon"
+                            data-name="indent-increase">&#xf15c;</span>
+                        <span data-cmd="outdent" alt="Outdent" title="Outdent" class="icon"
+                            data-name="indent-decrease">&#xf0b2;</span>
+                    </div>
+                    <div class="cmd-group">
+                        <span data-cmd="removeFormat" alt="Remove Formattimg/Styles" title="Remove Formatting/Styles"
+                            class="icon" data-name="remove-formatting">&#xf175;</span>
+                    </div>
                 </div>
-                <div class="cmd-group">
-                    <span data-cmd="justifyLeft" alt="Align left" title="Align Left" class="icon"
-                        data-name="align-left">&#xf008;</span>
-                    <span data-cmd="justifyCenter" alt="Align center" title="Align Center" class="icon"
-                        data-name="align-center">&#xf0f9;</span>
-                    <span data-cmd="justifyRight" alt="Align right" title="Align Right" class="icon"
-                        data-name="align-right">&#xf293;</span>
-                    <span data-cmd="justifyFull" alt="Align justify" title="Align Full" class="icon"
-                        data-name="align-justify">&#xf4a9;</span>
+                <iframe id="preview" sandbox="allow-modals allow-forms allow-pointer-lock allow-popups allow-scripts"
+                    frameborder="0"></iframe>
+            </div>
+        </div>
+        <div class="splitter"></div>
+        <aside class="view chat" data-view="chat" style="--grow: 25;">
+            <div class="chat-output"></div>
+            <div class="chat-question">
+                <div class="glow-input">
+                    <div class="glow-border"></div>
+                    <textarea class="chat-input" placeholder="✨&#xfe0e; Ask Xody"></textarea>
                 </div>
-                <div class="cmd-group">
-                    <span data-cmd="indent" alt="Indent" title="Indent" class="icon"
-                        data-name="indent-increase">&#xf15c;</span>
-                    <span data-cmd="outdent" alt="Outdent" title="Outdent" class="icon"
-                        data-name="indent-decrease">&#xf0b2;</span>
-                </div>
-                <div class="cmd-group">
-                    <span data-cmd="removeFormat" alt="Remove Formattimg/Styles" title="Remove Formatting/Styles"
-                        class="icon" data-name="remove-formatting">&#xf175;</span>
+                <div class="chat-actions">
+                    <button type="button">
+                        <span class="icon" data-name="settings">&#xf3dc;</span>
+                    </button>
+                    <select name="model" id="model">
+                        <option value="gemini-3.1-flash-lite">Gemini 3.1 flash lite</option>
+                        <option value="gemini-3.5-flash">Gemini 3.5 flash</option>
+                        <option value="gemini-3-flash">Gemini 3 flash</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5</option>
+                    </select>
+                    <input type="text" id="chat-apiKey" placeholder="Api key" value="">
+
+                    <button type="button" class="chat-send accent"><span class="icon"
+                            data-name="arrow-up">&#xf129;</span></button>
                 </div>
             </div>
-            <iframe id="preview" sandbox="allow-modals allow-forms allow-pointer-lock allow-popups allow-scripts"
-                frameborder="0"></iframe>
-        </div>
+        </aside>
     </main>
+
 
     <div class="modal-wrapper">
         <div class="modal" id="modal-projects">

@@ -1,0 +1,190 @@
+.chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: color-mix(in srgb, var(--bg), #000 23%);
+}
+
+.chat-output {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow: auto;
+    padding: 1rem 0;
+    margin: 0 auto;
+
+    .chat-message {
+        position: relative;
+        background: color-mix(in srgb, var(--bg), #000 35%);
+        padding: 1rem;
+        font-size: 0.92rem;
+        max-width: 50rem;
+
+        /* The shimmer effect: a gradient text-clip that sweeps left to right */
+        .thinking {
+            font-family: -apple-system, system-ui, sans-serif;
+            font-weight: 500;
+
+            background: linear-gradient(90deg,
+                    #5a5a60 0%,
+                    #5a5a60 35%,
+                    #ffffff 50%,
+                    #5a5a60 65%,
+                    #5a5a60 100%);
+            background-size: 200% 100%;
+            background-position: 100% 0;
+
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+
+            animation: shimmer 1.8s linear infinite;
+        }
+
+        &.role-ai,
+        &.role-system,
+        &.role-user {
+            &::after {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 1rem;
+                aspect-ratio: 1;
+                border: 1px solid var(--c1);
+                border-width: 1px 0 0 1px;
+                border-left-color: var(--c2);
+                pointer-events: none;
+            }
+        }
+
+        &.role-ai,
+        &.role-system {
+            margin-right: 2rem;
+        }
+
+        &.role-user {
+            margin-left: 2rem;
+            color: color-mix(in srgb, var(--fg), var(--bg) 35%);
+
+            &::after {
+                left: auto;
+                right: 0;
+                border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 70%);
+                border-width: 1px 1px 0 0;
+            }
+        }
+    }
+}
+
+.chat-question {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 50rem;
+    margin: 0 auto;
+
+    .chat-input {
+        display: block;
+        resize: none;
+        field-sizing: content;
+        max-height: calc(35cqh);
+        width: 100%;
+        min-height: 3lh;
+        background: var(--bg);
+        z-index: 1;
+        font-size: 1rem;
+
+        &::placeholder {
+            text-align: right;
+        }
+    }
+}
+
+.chat-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+
+    >* {
+        flex: 0 0 auto;
+        width: auto;
+        min-width: 0;
+        field-sizing: content;
+    }
+
+    .chat-send {
+        margin-left: auto;
+        min-width: 5ch;
+    }
+}
+
+
+
+.glow-input {
+    position: relative;
+    width: 100%;
+    border-radius: 0.5rem;
+    padding: 2px;
+    /* this 2px IS the border thickness */
+    background: var(--bg);
+
+
+    /* The rotating gradient, clipped to a 2px ring */
+    .glow-border {
+        position: absolute;
+        pointer-events: none;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1px;
+        background: conic-gradient(from var(--angle),
+                #0000,
+                #0000,
+                #0000,
+                #0000,
+                #0000,
+                #0000,
+                #0000,
+                var(--c2),
+                #00bbff,
+                #61d5ff,
+                #00bbff,
+                var(--c2),
+                #0000,
+                #0000,
+                #0000,
+                #0000,
+                #0000,
+                #0000,
+                #0000,
+                #0000);
+        animation: spin 4s linear infinite;
+        /* mask trick: only show the ring, not the fill */
+        -webkit-mask: linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+    }
+
+}
+
+@keyframes shimmer {
+    to {
+        background-position: -100% 0;
+    }
+}
+
+@property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes spin {
+    to {
+        --angle: 360deg;
+    }
+}

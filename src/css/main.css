@@ -2,6 +2,7 @@
     --bg: hsl(215, 19%, 13%);
     --fg: hsl(221 30% 98%);
     --c1: #0bf;
+    --c2: #7c6cff;
     --ce: #f44747;
 
     accent-color: var(--c1);
@@ -260,6 +261,12 @@ textarea,
             width: 5px;
             height: 100%;
             background: linear-gradient(var(--color), var(--color)), repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 6px 6px;
+            opacity: 1;
+            transition: opacity 0.2s;
+
+            @starting-style {
+                opacity: 0;
+            }
         }
     }
 }
@@ -275,20 +282,22 @@ textarea {
     min-height: 1.9lh;
 }
 
+select,
 input,
 textarea {
     border: none;
 }
 
+select,
 textarea,
 input[type="text"] {
     /* border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%); */
     color: var(--fg);
     padding: 0.4em 0.6em;
     border-radius: 0.2em;
-    font-size: 0.85rem;
     background-color: color-mix(in srgb, var(--bg), var(--fg) 5%);
     font: inherit;
+    font-size: 0.85rem;
 
     &:focus {
         outline: none;
@@ -496,6 +505,20 @@ input[type="text"] {
     margin-right: auto;
 }
 
+.col {
+    display: flex;
+    flex-direction: column;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
 /* highlight.js customizations: */
 .hljs {
     background: none;
@@ -506,4 +529,18 @@ blockquote {
     padding-left: 1rem;
     margin-left: 1rem;
     font-size: 0.85rem;
+}
+
+
+/* AI CHAT */
+/* Hide rich editor button if preview is hidden */
+:has([data-view-toggle="chat"]:not(:checked)) [data-view="chat"] {
+    display: none;
+}
+
+[data-view="chat"] {
+    display: none;
+    background: var(--bg);
+    color: var(--fg);
+    padding: 1rem;
 }
