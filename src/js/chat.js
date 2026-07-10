@@ -1,14 +1,18 @@
 import { el, elNew, LS } from "./utils.js";
 const ls = LS("xode.settings", { apiKey: "" });
 
-const geminiModels = ["gemini-3.5-flash", "gemini-3-flash", "gemini-3.1-flash-lite"];
+const geminiModels = [
+    "gemini-3-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+];
 
 
 const getAIConfig = () => {
     return {
         apiKey: ls.get().apiKey,
         provider: "gemini",
-        model: geminiModels[2],
+        model: elModel.value,
     };
 };
 
@@ -48,12 +52,10 @@ async function callAI(userPrompt) {
         return null;
     }
 
-    const currentCode = { /* ... your code */ };
-
-    const fullPrompt = `${systemPrompt}\n\nUser request: ${userPrompt}\n\nCurrent code:\n${JSON.stringify(currentCode)}`;
+    const fullPrompt = `${systemPrompt()}\n\nUser request: ${userPrompt}`;
 
     try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${config.apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
 
         const response = await fetch(url, {
             method: "POST",
@@ -124,6 +126,8 @@ async function sendMessage() {
         // Remove thinking message
         removeThinkingMessage(thinkingId);
 
+        console.log({ aiResponse });
+
         if (aiResponse) {
             addMessage('ai', aiResponse.explanation || 'Code updated successfully');
 
@@ -133,7 +137,6 @@ async function sendMessage() {
         } else {
             addMessage('ai', "Sorry, I couldn't process that request.");
         }
-
     } catch (err) {
         removeThinkingMessage(thinkingId);
         addMessage('ai', `❌ ${err.message || "Something went wrong. Please try again."}`);
@@ -160,9 +163,8 @@ function removeThinkingMessage(id) {
 
 // Init
 
-// const elApiKey = el("#chat-apiKey");
-
 const elApiKey = el("#chat-apiKey");
+const elModel = el("#chat-model");
 const elInput = el(".chat-input");
 const elOutput = el(".chat-output");
 const elSend = el(".chat-send");
@@ -185,6 +187,16 @@ addMessage("system", `<h3>✨&#xfe0e; Hi, I'm <b>Xody</b></h3>your Xode's AI ass
 elApiKey.addEventListener("change", () => {
     ls.set({ apiKey: elApiKey.value });
 });
-// REady API key if any
+// Ready API key if any
 const apiKey = ls.get().apiKey;
 elApiKey.value = apiKey;
+
+// Create <option> models
+
+geminiModels.forEach(model => {
+    const option = elNew("option", {
+        value: model,
+        textContent: model.replace(/-/g, " "),
+    });
+    elModel.append(option);
+});
