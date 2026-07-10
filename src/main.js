@@ -7,6 +7,7 @@
 import "./css/index.css";
 import "./js/splitview.js";
 import "./js/modal.js";
+import "./js/chat.js";
 import Rx from "./js/Rx.js";
 import { el, els, elNew, download } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject } from './js/storage.js';
