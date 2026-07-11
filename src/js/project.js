@@ -1,5 +1,5 @@
 /**
- * xode-storage.js
+ * Project (+ storage) management.
  * localStorage-backed persistence for a jsfiddle/jsbin-style app.
  *
  * Storage layout:

@@ -73,19 +73,20 @@ export class PaneEditor extends Pane {
         this.elSelectionStat = el(".editor-selection-stat", this.el);
 
         // Init value
-        this.elTextarea.value = this.value;
-        this.highlight();
+        this.setValue(this.value);
 
         // Events
         this.elTextarea.addEventListener("keydown", async (evt) => {
             if (evt.key === "Tab") {
                 evt.preventDefault();
                 if ((this.syntax === "html" || this.syntax === "css") && this.emmetExpand()) {
-                    preview();
+                    // Trigger input event
+                    this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
                 } else {
                     // convert Tab to spaces
                     document.execCommand("insertHTML", false, " ".repeat(4));
                 }
+                this.highlight();
             }
             else if (evt.altKey && evt.shiftKey && evt.key === "F") {
                 evt.preventDefault();
@@ -102,8 +103,6 @@ export class PaneEditor extends Pane {
                 // Trigger input event
                 this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
             }
-            // Always highlight after the above changes
-            this.highlight();
         });
 
         // Selection counter
@@ -114,9 +113,14 @@ export class PaneEditor extends Pane {
             });
         });
     }
+    setValue(value) {
+        this.value = value;
+        this.elTextarea.value = value;
+        this.highlight();
+    }
     async format() {
         const formatted = await formatCode(this.elTextarea.value, this.syntax);
-        this.elTextarea.value = formatted;
+        this.setValue(formatted);
         return formatted;
     }
     selectionCounter() {
@@ -144,7 +148,7 @@ export class PaneEditor extends Pane {
             expanded = expanded.replace(/\t/g, " ".repeat(4)); // Replace tabs with 4 spaces
             // Replace the extracted abbreviation with the expanded code
             const newValue = source.substring(0, start) + expanded + source.substring(end);
-            this.elTextarea.value = newValue;
+            this.setValue(newValue);
             // Move the caret to the end of the expanded code
             const newCaretPos = start + expanded.length;
             this.elTextarea.setSelectionRange(newCaretPos, newCaretPos);
