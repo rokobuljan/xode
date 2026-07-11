@@ -274,7 +274,7 @@ function renderSuggestion(aiResponse) {
     const msgEl = addMessage('ai', `
         <p>${aiResponse.explanation || 'Change applied.'}</p>
         <div class="suggestion-actions">
-            <span class="suggestion-panes">✓ Applied to: ${changedPanes.join(', ')}</span>
+            <span class="suggestion-panes">✓ Applied to: ${changedPanes.join(', ').toUpperCase()}</span>
             <button class="btn-discard">Discard</button>
         </div>
     `);

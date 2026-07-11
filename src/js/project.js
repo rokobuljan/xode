@@ -37,6 +37,7 @@ const DEFAULT_PANES = {
     console: true,
     preview: true,
     richEditor: false, // hide by default
+    chat: true
 };
 
 // low-level index helpers
@@ -130,5 +131,6 @@ export function deleteProject(id) {
 export function openProject(id) {
     const targetId = id || getLastProjectId();
     const data = targetId ? loadProject(targetId) : null;
+    if (targetId) setLastProjectId(targetId);
     return data || createProject({ persist: false });
 }

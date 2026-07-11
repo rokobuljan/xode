@@ -11,18 +11,42 @@ import "./js/chat.js";
 import Rx from "./js/Rx.js";
 import { el, els, elNew, download } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject } from './js/project.js';
-import { PaneEditor, PaneConsole } from "./js/panes.js";
+import { Editor } from "./js/editor.js";
 
 
 let currentProject = {};
 const panes = {};
-const elPanes = el("#panes");
 const elPreview = el("#preview"); // the iframe
 const elAutorun = el("#autorun");
 const elRun = el("#run");
 let previewTimeout;
 
+const paneConsole = {
+    init() {
+        this.el = el(`[data-view="console"] .console`);
+        this.elBtnClear = el(`[data-view="console"] .console-clear`);
+        this.elBtnClear.addEventListener("click", () => this.clear());
+    },
+    print({ type, args, line }) {
+        const logType = type.split(":")[1] || "log";
+        const elBlock = elNew("code", {
+            className: `log ${logType}`,
+            textContent: args.join("\n").trimStart(),
+        });
+        const elLine = elNew("span", {
+            className: "log-line",
+            textContent: line,
+        });
+        elBlock.append(elLine);
+        this.el.append(elBlock);
+    },
+    clear() {
+        this.el.innerHTML = "";
+    }
+};
+
 const rxHandler = ({ detail }) => {
+    console.log(detail);
     // SAVE PROJECT if edited:
     if (/^(name|description)$/.test(detail.prop)) {
         if (detail.oldValue !== detail.value) {
@@ -53,14 +77,14 @@ const projectInit = (isNew = true, id) => {
     currentProject = new Rx(project, {}).on("rx:change", rxHandler).state;
 
     //  Update UI: Toggle open/close panes
-    els("[data-view][data-open]").forEach(elView => {
+    els("[data-view]").forEach(elView => {
         const isOpen = currentProject.panes[elView.dataset.view];
         elView.dataset.open = isOpen;
     });
 
     // Force-clear editors highlight
     ["html", "css", "js"].forEach(syntax => panes[syntax]?.highlight());
-    panes.console.clear();
+    paneConsole.clear();
 
     // Preview the project
     preview();
@@ -113,10 +137,10 @@ addEventListener("message", async (evt) => {
     // Console messages
     else if (evt.data.type.startsWith("console:")) {
         if (evt.data.type === "console:clear") {
-            panes.console.clear();
-            panes.console.print({ ...evt.data, args: ["Console cleared"] });
+            paneConsole.clear();
+            paneConsole.print({ ...evt.data, args: ["Console cleared"] });
         } else {
-            panes.console.print(evt.data);
+            paneConsole.print(evt.data);
         }
     }
 });
@@ -127,7 +151,7 @@ const drawProjects = () => {
         const elThumbnailIframe = elNew("iframe", {
             className: "iframe-thumbnail",
             srcdoc: generatePreviewHTML(false, openProject(project.id)),
-            sandbox: "allow-scripts", // allow-scripts, allow-same-origin
+            sandbox: "allow-same-origin", // allow-scripts, allow-same-origin
             loading: "lazy",
             scrolling: "no"
         });
@@ -209,6 +233,7 @@ addEventListener("click", (evt) => {
         args: [action, val]
     }, "*");
     if (action === "designMode") {
+        // Toggle rich editor
         currentProject.panes.richEditor = elBtnAction.checked;
         saveProject(currentProject);
     }
@@ -232,13 +257,14 @@ el("#project-new").addEventListener("click", () => {
  * One-time call to generate UI panes
  */
 const generatePanes = () => {
-    ["html", "css", "js"].forEach(syntax => {
-        panes[syntax] = new PaneEditor(elPanes, { syntax });
-    });
-    panes.console = new PaneConsole(elPanes, { syntax: "console" });
+    panes.html = new Editor(el("#editor-html"), { syntax: "html" });
+    panes.css = new Editor(el("#editor-css"), { syntax: "css" });
+    panes.js = new Editor(el("#editor-js"), { syntax: "js" });
 };
 
 // INIT
 generatePanes();
+paneConsole.init();
 projectInit(false); // Load latest project
 drawProjects();
+
