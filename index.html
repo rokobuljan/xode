@@ -149,22 +149,35 @@
             <div class="chat-question">
                 <div class="glow-input">
                     <div class="glow-border"></div>
-                    <textarea class="chat-input" placeholder="✨&#xfe0e; Ask Xody"></textarea>
+                    <textarea class="chat-input" placeholder="✨&#xfe0e; ask Xody"></textarea>
                 </div>
                 <div class="chat-actions">
-                    <button type="button">
-                        <span class="icon" data-name="settings">&#xf3dc;</span>
-                    </button>
-                    <select id="chat-model"></select>
-                    <input type="text" id="chat-apiKey" placeholder="Api key" value="">
-
+                    <details>
+                        <summary>
+                            <span class="icon" data-name="settings">&#xf3dc;</span>
+                            Options
+                        </summary>
+                        <div class="details-body">
+                            <label>
+                                <span><span class="icon" data-name="cloud">&#xf0d1;</span> Provider</span>
+                                <select class="chat-provider"></select>
+                            </label>
+                            <label>
+                                <span><span class="icon" data-name="library">&#xf4ff;</span> Model</span>
+                                <select class="chat-model"></select>
+                            </label>
+                            <label>
+                                <span><span class="icon" data-name="key-round">&#xf12c;</span> API Key</span>
+                                <input type="text" class="chat-apiKey" placeholder="Api key" value="">
+                            </label>
+                        </div>
+                    </details>
                     <button type="button" class="chat-send accent"><span class="icon"
                             data-name="arrow-up">&#xf129;</span></button>
                 </div>
             </div>
         </aside>
     </main>
-
 
     <div class="modal-wrapper">
         <div class="modal" id="modal-projects">

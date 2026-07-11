@@ -138,11 +138,10 @@
 .chat-question {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
     width: 100%;
     max-width: 46rem;
     margin: 0 auto;
-    padding: 1rem;
+    padding: 0 1rem;
 
     .chat-input {
         display: block;
@@ -166,24 +165,38 @@
     gap: 0.5rem;
     margin: 0.5rem 0;
 
-    >* {
-        flex: 0 0 auto;
-        width: auto;
-        min-width: 0;
-    }
-
-    input {
-        flex: 1;
-        max-width: 10ch;
-    }
-
     .chat-send {
         margin-left: auto;
         min-width: 5ch;
+        min-height: 2.3lh;
+        align-self: flex-start;
+        background-image: linear-gradient(145deg, var(--c1), var(--c2));
+        box-shadow: 0 0.1rem 1rem color-mix(in srgb, var(--c1), #0000 50%);
+    }
+
+    .chat-apiKey {
+        max-width: 10ch;
+    }
+
+    .details-body {
+        /* 2 columns grid */
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        max-width: 30em;
+    }
+
+    label {
+        display: contents;
+
+        span {
+            white-space: nowrap;
+            color: color-mix(in srgb, var(--fg), var(--bg) 30%);
+            font-size: 0.9rem;
+            align-self: center;
+        }
     }
 }
-
-
 
 .glow-input {
     position: relative;
@@ -229,8 +242,9 @@
         -webkit-mask-composite: xor;
         mask-composite: exclude;
     }
-
 }
+
+
 
 @keyframes shimmer {
     to {

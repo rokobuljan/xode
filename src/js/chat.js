@@ -1,22 +1,87 @@
 import { el, elNew, LS } from "./utils.js";
-const ls = LS("xode.settings", { apiKey: "" });
 
-const geminiModels = [
-    "gemini-3-flash",
-    "gemini-3.1-flash-lite",
-    "gemini-3.5-flash",
-];
+// Provider registry
+const PROVIDERS = {
+    gemini: {
+        label: "Google Gemini",
+        kind: "gemini",
+        keyPlaceholder: "AIza...",
+        keyHelp: `Create one at <a href="https://aistudio.google.com/app/api-keys" target="_blank">aistudio.google.com/app/api-keys</a>`,
+        models: ["gemini-3-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash"]
+    },
+    openai: {
+        label: "OpenAI",
+        kind: "openai-compatible",
+        baseUrl: "https://api.openai.com/v1/chat/completions",
+        keyPlaceholder: "sk-...",
+        keyHelp: `Create one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>`,
+        models: ["gpt-5.5", "gpt-5.5-mini"]
+    },
+    anthropic: {
+        label: "Anthropic Claude",
+        kind: "anthropic",
+        keyPlaceholder: "sk-ant-...",
+        keyHelp: `Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>`,
+        models: ["claude-sonnet-5", "claude-haiku-4-5-20251001"]
+    },
+    xai: {
+        label: "xAI Grok",
+        kind: "openai-compatible",
+        baseUrl: "https://api.x.ai/v1/chat/completions",
+        keyPlaceholder: "xai-...",
+        keyHelp: `Create one at <a href="https://console.x.ai" target="_blank">console.x.ai</a>`,
+        models: ["grok-4.3", "grok-4-fast"]
+    },
+    mistral: {
+        label: "Mistral",
+        kind: "openai-compatible",
+        baseUrl: "https://api.mistral.ai/v1/chat/completions",
+        keyPlaceholder: "...",
+        keyHelp: `Create one at <a href="https://console.mistral.ai/api-keys" target="_blank">console.mistral.ai</a>`,
+        models: ["mistral-large-latest", "mistral-small-latest"]
+    },
+    deepseek: {
+        label: "DeepSeek",
+        kind: "openai-compatible",
+        baseUrl: "https://api.deepseek.com/chat/completions",
+        keyPlaceholder: "sk-...",
+        keyHelp: `Create one at <a href="https://platform.deepseek.com/api_keys" target="_blank">platform.deepseek.com</a>`,
+        models: ["deepseek-chat", "deepseek-coder"]
+    }
+};
 
+// Storage: keyed by provider so keys don't collide
+const ls = LS("xode.settings", {
+    provider: "gemini",
+    model: "gemini-3.5-flash",
+    apiKeys: {}   // { gemini: "...", openai: "...", anthropic: "...", ... }
+});
+
+function setApiKey(provider, key) {
+    const settings = ls.get();
+    settings.apiKeys = settings.apiKeys || {};
+    settings.apiKeys[provider] = key;
+    ls.set(settings);
+}
 
 const getAIConfig = () => {
+    const settings = ls.get();
     return {
-        apiKey: ls.get().apiKey,
-        provider: "gemini",
+        provider: settings.provider,
         model: elModel.value,
+        apiKey: (settings.apiKeys || {})[settings.provider] || ""
     };
 };
 
+// DOM refs
+const elProvider = el(".chat-provider");
+const elApiKey = el(".chat-apiKey");
+const elModel = el(".chat-model");
+const elInput = el(".chat-input");
+const elOutput = el(".chat-output");
+const elSend = el(".chat-send");
 
+// Prompt
 const systemPrompt = () => `You are an expert web developer helping edit an HTML/CSS/JS prototype.
 Current code:
 HTML:
@@ -34,6 +99,14 @@ JS:
 ${el(`[data-rx="js"]`).value}
 \`\`\`
 
+The user has NOT approved any change yet — you are proposing a change for them to review and apply themselves.
+Write "explanation" as a suggestion, not a completed action. Use phrasing like:
+- "Here's what you could do: ..."
+- "This would add a hover effect to the button by ..."
+- "I'd suggest changing X to Y because ..."
+**Never say** "I've updated," "Done," "Fixed," or otherwise imply the code has already been changed in the editor.
+Keep the explanation to 1-3 sentences, plain language, no code fences inside "explanation".
+
 Respond **only** with valid JSON (no extra text, no markdown):
 {
   "html": "full new html or null if unchanged",
@@ -44,54 +117,88 @@ Respond **only** with valid JSON (no extra text, no markdown):
 
 Only return changed panes as full strings. Keep the code functional.`;
 
+// ADAPTERS
 
+async function callGemini(config, fullPrompt) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
+    const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: fullPrompt }] }],
+            generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+        })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "Gemini request failed");
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
+async function callOpenAICompatible(config, fullPrompt) {
+    const { baseUrl } = PROVIDERS[config.provider];
+    const res = await fetch(baseUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${config.apiKey}`
+        },
+        body: JSON.stringify({
+            model: config.model,
+            temperature: 0.1,
+            response_format: { type: "json_object" },
+            messages: [{ role: "user", content: fullPrompt }]
+        })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `${config.provider} request failed`);
+    return data.choices?.[0]?.message?.content || "";
+}
+
+async function callAnthropic(config, fullPrompt) {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": config.apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+            model: config.model,
+            max_tokens: 4096,
+            messages: [{ role: "user", content: fullPrompt }]
+        })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "Anthropic request failed");
+    return data.content?.find(b => b.type === "text")?.text || "";
+}
+
+// Main AI call, dispatches by provider kind
 async function callAI(userPrompt) {
     const config = getAIConfig();
+    const providerInfo = PROVIDERS[config.provider];
+
     if (!config.apiKey) {
-        alert("Please set your Gemini API key first.");
+        addMessage("ai", `❌ Error<br>Please set your ${providerInfo.label} API key first.<br>${providerInfo.keyHelp}`);
         return null;
     }
 
     const fullPrompt = `${systemPrompt()}\n\nUser request: ${userPrompt}`;
 
     try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
+        let text;
+        if (providerInfo.kind === "gemini") text = await callGemini(config, fullPrompt);
+        else if (providerInfo.kind === "anthropic") text = await callAnthropic(config, fullPrompt);
+        else text = await callOpenAICompatible(config, fullPrompt);
 
-        const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: fullPrompt }] }],
-                generationConfig: {
-                    temperature: 0.1,        // Lower = more consistent
-                    responseMimeType: "application/json"   // ← Very important!
-                }
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.error("API Error:", data);
-            throw new Error(data.error?.message || "API request failed");
-        }
-
-        let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-        // === Improved JSON extraction ===
         text = text.trim();
-
-        // Remove markdown code blocks if present
         text = text.replace(/```json\s*/i, '').replace(/```\s*$/, '').trim();
 
-        // Try to find JSON object in the text
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("No JSON found in response");
 
-        const cleanJson = jsonMatch[0];
-        const aiResponse = JSON.parse(cleanJson);
-
-        return aiResponse;
+        return JSON.parse(jsonMatch[0]);
 
     } catch (err) {
         console.error("Error in callAI:", err);
@@ -100,15 +207,14 @@ async function callAI(userPrompt) {
     }
 }
 
-
+// Chat flow
 async function sendMessage() {
     const userText = elInput.value.trim();
     if (!userText) return;
 
     addMessage('user', userText);
-    elInput.value = '';
+    elInput.value = "";
 
-    // Show Thinking message
     const thinkingId = 'thinking-msg-' + Date.now();
     addMessage('ai', '<em class="thinking">Thinking...</em>', thinkingId);
 
@@ -118,30 +224,71 @@ async function sendMessage() {
             css: el(`[data-rx="css"]`).value,
             js: el(`[data-rx="js"]`).value
         };
-
         const aiResponse = await callAI(
             userText + `\n\nCurrent code: ${JSON.stringify(currentCode)}`
         );
-
-        // Remove thinking message
-        removeThinkingMessage(thinkingId);
-
-        console.log({ aiResponse });
-
         if (aiResponse) {
-            addMessage('ai', aiResponse.explanation || 'Code updated successfully');
-
-            if (aiResponse.html !== null) el(`[data-rx="html"]`).value = aiResponse.html;
-            if (aiResponse.css !== null) el(`[data-rx="css"]`).value = aiResponse.css;
-            if (aiResponse.js !== null) el(`[data-rx="js"]`).value = aiResponse.js;
+            renderSuggestion(aiResponse);
         } else {
             addMessage('ai', "Sorry, I couldn't process that request.");
         }
     } catch (err) {
-        removeThinkingMessage(thinkingId);
         addMessage('ai', `❌ ${err.message || "Something went wrong. Please try again."}`);
         console.error(err);
+    } finally {
+        removeThinkingMessage(thinkingId);
     }
+}
+
+// Tracks the most recent auto-applied suggestion's message element,
+// so we can invalidate its Discard button once a newer change lands on top of it.
+let lastAppliedMsgEl = null;
+
+function renderSuggestion(aiResponse) {
+    const changedPanes = ['html', 'css', 'js'].filter(k => aiResponse[k] !== null && aiResponse[k] !== undefined);
+
+    if (!changedPanes.length) {
+        addMessage('ai', `<p>${aiResponse.explanation || 'No changes needed.'}</p>`);
+        return;
+    }
+
+    // 0. Snapshot current pane values BEFORE applying
+    const snapshot = {};
+    changedPanes.forEach(pane => {
+        snapshot[pane] = el(`[data-rx="${pane}"]`).value;
+    });
+
+    // 1. Apply immediately
+    changedPanes.forEach(pane => {
+        el(`[data-rx="${pane}"]`).value = aiResponse[pane];
+    });
+
+    // A newer change just landed on top of any previous pending one — freeze its Discard button
+    if (lastAppliedMsgEl) {
+        const prevActions = lastAppliedMsgEl.querySelector('.suggestion-actions');
+        if (prevActions) {
+            prevActions.innerHTML = `<span class="suggestion-superseded">Superseded by a later change</span>`;
+        }
+    }
+
+    const msgEl = addMessage('ai', `
+        <p>${aiResponse.explanation || 'Change applied.'}</p>
+        <div class="suggestion-actions">
+            <span class="suggestion-panes">✓ Applied to: ${changedPanes.join(', ')}</span>
+            <button class="btn-discard">Discard</button>
+        </div>
+    `);
+
+    msgEl.querySelector('.btn-discard')?.addEventListener('click', () => {
+        changedPanes.forEach(pane => {
+            el(`[data-rx="${pane}"]`).value = snapshot[pane];
+        });
+        msgEl.querySelector('.suggestion-actions').innerHTML = `<span class="suggestion-discarded">Discarded — reverted to previous version</span>`;
+
+        if (lastAppliedMsgEl === msgEl) lastAppliedMsgEl = null;
+    });
+
+    lastAppliedMsgEl = msgEl;
 }
 
 function addMessage(role, content, customId = null) {
@@ -161,42 +308,68 @@ function removeThinkingMessage(id) {
     if (thinkingMsg) thinkingMsg.remove();
 }
 
-// Init
-
-const elApiKey = el("#chat-apiKey");
-const elModel = el("#chat-model");
-const elInput = el(".chat-input");
-const elOutput = el(".chat-output");
-const elSend = el(".chat-send");
-
 // Events
 elInput.addEventListener('keydown', function (evt) {
     if (evt.key === 'Enter' && !evt.shiftKey) {
         evt.preventDefault();
-        if (elInput.value.trim() !== '') {
+        if (elInput.value.trim()) {
             sendMessage();
         }
     }
 });
 elSend.addEventListener("click", sendMessage);
 
-// Hello message:
-addMessage("system", `<h3>✨&#xfe0e; Hi, I'm <b>Xody</b></h3>your Xode's AI assistant.<br>Enter your API key, ask a question to get started.`);
+// Provider / model / key wiring
 
-// Save API key to LS xode.apiKey
-elApiKey.addEventListener("change", () => {
-    ls.set({ apiKey: elApiKey.value });
+// Populate provider <select> once
+Object.entries(PROVIDERS).forEach(([key, p]) => {
+    elProvider.append(elNew("option", { value: key, textContent: p.label }));
 });
-// Ready API key if any
-const apiKey = ls.get().apiKey;
-elApiKey.value = apiKey;
 
-// Create <option> models
-
-geminiModels.forEach(model => {
-    const option = elNew("option", {
-        value: model,
-        textContent: model.replace(/-/g, " "),
+function refreshModelOptions(providerKey) {
+    elModel.innerHTML = "";
+    PROVIDERS[providerKey].models.forEach(model => {
+        elModel.append(elNew("option", {
+            value: model,
+            textContent: model.replace(/-/g, " ")
+        }));
     });
-    elModel.append(option);
+}
+
+function loadProviderIntoUI(providerKey) {
+    refreshModelOptions(providerKey);
+
+    const settings = ls.get();
+    // restore last-used model for this provider if it's still valid, else default to first
+    const savedModel = settings.model;
+    if (savedModel && PROVIDERS[providerKey].models.includes(savedModel)) {
+        elModel.value = savedModel;
+    } else {
+        elModel.value = PROVIDERS[providerKey].models[0];
+    }
+
+    elApiKey.placeholder = PROVIDERS[providerKey].keyPlaceholder;
+    elApiKey.value = (settings.apiKeys || {})[providerKey] || "";
+}
+
+elProvider.addEventListener("change", () => {
+    const settings = ls.get();
+    settings.provider = elProvider.value;
+    ls.set(settings);
+    loadProviderIntoUI(elProvider.value);
 });
+
+elModel.addEventListener("change", () => {
+    const settings = ls.get();
+    settings.model = elModel.value;
+    ls.set(settings);
+});
+
+elApiKey.addEventListener("change", () => setApiKey(elProvider.value, elApiKey.value));
+
+// === Init ================================================================
+const initialSettings = ls.get();
+elProvider.value = initialSettings.provider || "gemini";
+loadProviderIntoUI(elProvider.value);
+
+addMessage("system", `<h3>✨&#xfe0e; Hi, I'm <b>Xody</b></h3>your AI assistant.<br>Choose a provider, enter your API key, and ask a question to get started.`);

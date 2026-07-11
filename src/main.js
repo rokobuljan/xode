@@ -23,6 +23,7 @@ const elRun = el("#run");
 let previewTimeout;
 
 const rxHandler = ({ detail }) => {
+    console.log(detail);
     // SAVE PROJECT if edited:
     if (/^(name|description)$/.test(detail.prop)) {
         if (detail.oldValue !== detail.value) {
@@ -31,9 +32,9 @@ const rxHandler = ({ detail }) => {
     }
     else if (/^(html|css|js)$/.test(detail.prop)) {
         if (detail.oldValue !== detail.value) {
-            saveProject(currentProject);
             panes[detail.prop]?.highlight();
             preview(); // Update changes in iframe
+            saveProject(currentProject);
         }
     }
     else if (detail.prop.startsWith("panes.")) {
@@ -64,6 +65,9 @@ const projectInit = (isNew = true, id) => {
 
     // Preview the project
     preview();
+
+    console.log(currentProject, panes);
+
 };
 
 /**
