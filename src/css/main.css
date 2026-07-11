@@ -442,7 +442,7 @@ input[type="text"] {
 }
 
 /* Hide rich editor button if preview is hidden */
-:has([data-view-toggle="preview"]:not(:checked)) label:has([data-view-toggle="richEditor"]) {
+:has([data-rx="panes.preview"]:not(:checked)) label:has([data-rx="panes.richEditor"]) {
     display: none;
 }
 
@@ -571,10 +571,3 @@ details {
         padding: 1rem;
     }
 }
-
-
-/* AI CHAT */
-/* Hide rich editor button if preview is hidden */
-/* :has([data-view-toggle="chat"]:not(:checked)) [data-view="chat"] {
-    display: none;
-} */
