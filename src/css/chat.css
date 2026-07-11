@@ -24,8 +24,8 @@
         bottom: -10%;
         /* oversize so movement never reveals hard edges */
         z-index: 0;
-        filter: blur(80px);
-        opacity: 0.5;
+        filter: blur(20px);
+        opacity: 0.3;
         mix-blend-mode: screen;
         pointer-events: none;
     }
@@ -100,15 +100,15 @@
         &.role-system,
         &.role-user {
             &::after {
+                --thick: 1px;
                 content: "";
                 position: absolute;
                 top: 0;
                 left: 0;
                 width: 1rem;
                 aspect-ratio: 1;
-                border: 1px solid var(--c1);
-                border-width: 1px 0 0 1px;
-                border-left-color: var(--c2);
+                background-image: linear-gradient(45deg, var(--c2), var(--c1));
+                clip-path: polygon(100% 0, 0 0, 0 100%, var(--thick) 100%, var(--thick) var(--thick), 100% var(--thick));
                 pointer-events: none;
             }
         }
@@ -128,8 +128,8 @@
             &::after {
                 left: auto;
                 right: 0;
-                border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 10%);
-                border-width: 1px 1px 0 0;
+                background-image: linear-gradient(45deg, var(--fg), var(--bg));
+                rotate: 90deg;
             }
         }
     }
