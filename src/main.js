@@ -10,7 +10,7 @@ import "./js/modal.js";
 import "./js/chat.js";
 import Rx from "./js/Rx.js";
 import { el, els, elNew, download } from "./js/utils.js";
-import { openProject, listProjects, saveProject, createProject, deleteProject } from './js/storage.js';
+import { openProject, listProjects, saveProject, createProject, deleteProject } from './js/project.js';
 import { PaneEditor, PaneConsole } from "./js/panes.js";
 
 
@@ -23,7 +23,6 @@ const elRun = el("#run");
 let previewTimeout;
 
 const rxHandler = ({ detail }) => {
-    console.log(detail);
     // SAVE PROJECT if edited:
     if (/^(name|description)$/.test(detail.prop)) {
         if (detail.oldValue !== detail.value) {
@@ -108,9 +107,7 @@ addEventListener("message", async (evt) => {
         const body = new DOMParser().parseFromString(evt.data.html, "text/html").body;
         body.querySelector("#◆xode-js")?.remove();
         const html = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
-        panes.html.elTextarea.value = html;
-        await panes.html.format();
-        panes.html.highlight();
+        panes.html.setValue(html);
         currentProject.html = html; // Update with new value + save project
     }
     // Console messages
