@@ -124,6 +124,7 @@
             max-width: 30rem;
             align-self: flex-end;
             color: color-mix(in srgb, var(--fg), var(--bg) 30%);
+            border-radius: 0.5rem 0 0.5rem 0.5rem;
 
             &::after {
                 left: auto;

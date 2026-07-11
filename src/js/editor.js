@@ -31,46 +31,29 @@ const formatCode = async (code, language) => {
     });
 };
 
-export class Pane {
+export class Editor {
     constructor(elParent, options) {
         this.elParent = elParent
         Object.assign(this, {
             syntax: "", // "html", "css", ...
             value: "",
         }, options);
-        this.placeholder = options.palceholder ?? this.syntax;
-        this.elSplitter = elNew("div", { className: "splitter" });
         this.init();
     }
     init() {
-        this.el = elNew("div", { className: "view" });
-        this.el.dataset.view = this.syntax;
-        this.el.dataset.open = "{{panes." + this.syntax + "}}";
-        this.elParent.append(this.elSplitter, this.el);
-    }
-    destroy() {
-        this.elSplitter.remove();
-        this.el.remove();
-    }
-}
+        this.elLines = elNew("div", { className: "editor-lines" });
+        this.elLines.dataset.label = this.syntax;
+        this.elArea = elNew("div", { className: "editor-area" });
+        this.elArea.innerHTML = `<pre class="editor-highlight" inert><code class="language-${this.syntax}"></code></pre>
+            <textarea class="editor-textarea" data-rx="${this.syntax}" placeholder="${this.syntax}" data-syntax="${this.syntax}"
+                    spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>`;
+        this.elSelectionStat = elNew("div", { className: "editor-selection-stat" });
 
-export class PaneEditor extends Pane {
-    init() {
-        super.init();
-        this.el.innerHTML = `<div class="editor" id="editor-${this.syntax}">
-            <pre class="editor-lines" data-label="${this.syntax}"></pre>
-            <div class="editor-area">
-                <pre class="editor-highlight" inert><code class="language-${this.syntax}"></code></pre>
-                <textarea data-rx="${this.syntax}" placeholder="${this.syntax}" class="editor-textarea" data-syntax="${this.syntax}"
-                    spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
-            </div>
-            <div class="editor-selection-stat"></div>
-        </div>`;
+        // Insert into DOM
+        this.elParent.append(this.elLines, this.elArea, this.elSelectionStat);
 
-        this.elLines = el(".editor-lines", this.el);
-        this.elTextarea = el(".editor-textarea", this.el);
-        this.elCode = el(".editor-highlight code", this.el);
-        this.elSelectionStat = el(".editor-selection-stat", this.el);
+        this.elTextarea = el(".editor-textarea", this.elParent);
+        this.elCode = el(".editor-highlight code", this.elParent);
 
         // Init value
         this.setValue(this.value);
@@ -112,6 +95,8 @@ export class PaneEditor extends Pane {
                 this.selectionCounter();
             });
         });
+
+
     }
     setValue(value) {
         this.value = value;
@@ -171,47 +156,19 @@ export class PaneEditor extends Pane {
 
         // Color swatches in lines
         if (this.syntax === "css") {
-            clearTimeout(this.colorTimeout);
-            this.colorTimeout = setTimeout(() => {
+            clearTimeout(this.swatchTimeout);
+            this.swatchTimeout = setTimeout(() => {
                 const colors = extractColors(this.elTextarea.value);
                 colors.forEach((color) => {
                     const elLine = this.elLines.children[color.line - 1];
                     const elColor = elNew("span", {
-                        className: "color",
+                        className: "swatch",
                         title: color.raw
                     });
-                    elColor.style.setProperty("--color", color.css);
+                    elColor.style.setProperty("--swatch", color.css);
                     elLine.append(elColor);
                 });
             }, 300);
         }
-    }
-}
-
-export class PaneConsole extends Pane {
-    init() {
-        this.syntax = "console";
-        super.init();
-        this.el.innerHTML = `<div class="console"></div>
-            <button class="console-clear" type="button" title="Clear Console">Clear</button>`;
-        this.elConsole = el(".console", this.el);
-        this.elBtnClear = el(".console-clear", this.el);
-        this.elBtnClear.addEventListener("click", () => this.clear());
-    }
-    print({ type, args, line }) {
-        const logType = type.split(":")[1] || "log";
-        const elBlock = elNew("code", {
-            className: `log ${logType}`,
-            textContent: args.join("\n").trimStart(),
-        });
-        const elLine = elNew("span", {
-            className: "log-line",
-            textContent: line,
-        });
-        elBlock.append(elLine);
-        this.elConsole.append(elBlock);
-    }
-    clear() {
-        this.elConsole.innerHTML = "";
     }
 }

@@ -6,10 +6,6 @@
     background: var(--bg);
     color: var(--fg);
     border-bottom: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
-
-    img {
-        filter: invert(1);
-    }
 }
 
 .cmd-group {

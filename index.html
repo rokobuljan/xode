@@ -30,32 +30,32 @@
         </button>
         <div class="buttons-panels">
             <label class="ckbtn" title="Toggle HTML panel">
-                <input type="checkbox" checked data-rx="panes.html">
+                <input type="checkbox" data-view-toggle="console" data-rx="panes.html" checked>
                 <span>HTML</span>
             </label>
             <label class="ckbtn" title="Toggle CSS panel">
-                <input type="checkbox" checked data-rx="panes.css">
+                <input type="checkbox" data-view-toggle="css" data-rx="panes.css" checked>
                 <span>CSS</span>
             </label>
             <label class="ckbtn" title="Toggle JS panel">
-                <input type="checkbox" checked data-rx="panes.js">
+                <input type="checkbox" data-view-toggle="js" data-rx="panes.js" checked>
                 <span>JS</span>
             </label>
             <label class="ckbtn" title="Toggle Console">
-                <input type="checkbox" checked data-rx="panes.console">
+                <input type="checkbox" data-view-toggle="console" data-rx="panes.console" checked>
                 <span class="icon" data-name="terminal">&#xf478;</span>
             </label>
             <label class="ckbtn" title="Live preview">
-                <input type="checkbox" checked data-rx="panes.preview">
+                <input type="checkbox" data-view-toggle="preview" data-rx="panes.preview" checked>
                 <span>View</span>
             </label>
             <label class="ckbtn" title="Toggle Rich Editor">
-                <input type="checkbox" data-view-toggle="richEditor" data-action="designMode"
-                    data-rx="panes.richEditor">
+                <input type="checkbox" data-view-toggle="richEditor" data-rx="panes.richEditor"
+                    data-action="designMode">
                 <span class="icon" data-name="pencil-line">&#xf113;</span>
             </label>
             <label class="ckbtn" title="Toggle AI Chat">
-                <input type="checkbox" checked data-view-toggle="chat">
+                <input type="checkbox" data-view-toggle="chat" data-rx="panes.chat" checked>
                 <span>AI</span>
             </label>
         </div>
@@ -71,7 +71,25 @@
 
     <main id="app" class="view">
         <div class="view col">
-            <div class="view" id="panes"></div>
+            <div class="view" id="panes">
+                <div class="splitter"></div>
+                <div class="view" data-view="html" data-open="{{panes.html}}">
+                    <div class="editor" id="editor-html"></div>
+                </div>
+                <div class="splitter"></div>
+                <div class="view" data-view="css" data-open="{{panes.css}}">
+                    <div class="editor" id="editor-css"></div>
+                </div>
+                <div class="splitter"></div>
+                <div class="view" data-view="js" data-open="{{panes.js}}">
+                    <div class="editor" id="editor-js"></div>
+                </div>
+                <div class="splitter"></div>
+                <div class="view" data-view="console" data-open="{{panes.console}}">
+                    <div class="console"></div>
+                    <button class="console-clear" type="button" title="Clear Console">Clear</button>
+                </div>
+            </div>
             <div class="splitter"></div>
             <div class="view col" data-view="preview" data-open="{{panes.preview}}">
                 <div data-view="richEditor" data-open="{{panes.richEditor}}">
@@ -144,7 +162,7 @@
             </div>
         </div>
         <div class="splitter"></div>
-        <aside class="view chat" data-view="chat" style="--grow: 25;">
+        <aside class="view chat" data-view="chat" data-open="{{panes.chat}}" style="--grow: 25;">
             <div class="chat-output"></div>
             <div class="chat-question">
                 <div class="glow-input">
