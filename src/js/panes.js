@@ -26,7 +26,7 @@ const formatCode = async (code, language) => {
         plugins: pluginMap[parser],
         semi: true,
         singleQuote: true,
-        tabWidth: 4,
+        tabWidth: 2,
         htmlWhitespaceSensitivity: "ignore"
     });
 };

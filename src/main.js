@@ -234,7 +234,6 @@ el("#project-new").addEventListener("click", () => {
 const generatePanes = () => {
     ["html", "css", "js"].forEach(syntax => {
         panes[syntax] = new PaneEditor(elPanes, { syntax });
-        panes[syntax].highlight();
     });
     panes.console = new PaneConsole(elPanes, { syntax: "console" });
 };

@@ -5,7 +5,7 @@ const PROVIDERS = {
     gemini: {
         label: "Google Gemini",
         kind: "gemini",
-        keyPlaceholder: "AIza...",
+        keyPlaceholder: "Key",
         keyHelp: `Create one at <a href="https://aistudio.google.com/app/api-keys" target="_blank">aistudio.google.com/app/api-keys</a>`,
         models: ["gemini-3-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash"]
     },
@@ -13,14 +13,14 @@ const PROVIDERS = {
         label: "OpenAI",
         kind: "openai-compatible",
         baseUrl: "https://api.openai.com/v1/chat/completions",
-        keyPlaceholder: "sk-...",
+        keyPlaceholder: "Key",
         keyHelp: `Create one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>`,
         models: ["gpt-5.5", "gpt-5.5-mini"]
     },
     anthropic: {
         label: "Anthropic Claude",
         kind: "anthropic",
-        keyPlaceholder: "sk-ant-...",
+        keyPlaceholder: "Key",
         keyHelp: `Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>`,
         models: ["claude-sonnet-5", "claude-haiku-4-5-20251001"]
     },
@@ -28,7 +28,7 @@ const PROVIDERS = {
         label: "xAI Grok",
         kind: "openai-compatible",
         baseUrl: "https://api.x.ai/v1/chat/completions",
-        keyPlaceholder: "xai-...",
+        keyPlaceholder: "Key",
         keyHelp: `Create one at <a href="https://console.x.ai" target="_blank">console.x.ai</a>`,
         models: ["grok-4.3", "grok-4-fast"]
     },
@@ -36,7 +36,7 @@ const PROVIDERS = {
         label: "Mistral",
         kind: "openai-compatible",
         baseUrl: "https://api.mistral.ai/v1/chat/completions",
-        keyPlaceholder: "...",
+        keyPlaceholder: "Key",
         keyHelp: `Create one at <a href="https://console.mistral.ai/api-keys" target="_blank">console.mistral.ai</a>`,
         models: ["mistral-large-latest", "mistral-small-latest"]
     },
@@ -44,7 +44,7 @@ const PROVIDERS = {
         label: "DeepSeek",
         kind: "openai-compatible",
         baseUrl: "https://api.deepseek.com/chat/completions",
-        keyPlaceholder: "sk-...",
+        keyPlaceholder: "Key",
         keyHelp: `Create one at <a href="https://platform.deepseek.com/api_keys" target="_blank">platform.deepseek.com</a>`,
         models: ["deepseek-chat", "deepseek-coder"]
     }
