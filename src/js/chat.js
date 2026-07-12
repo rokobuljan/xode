@@ -1,4 +1,6 @@
 import { el, elNew, LS } from "./utils.js";
+import { bus } from './bus.js';
+import DOMPurify from 'dompurify';
 
 // Provider registry
 const PROVIDERS = {
@@ -260,7 +262,7 @@ function renderSuggestion(aiResponse) {
 
     // 1. Apply immediately
     changedPanes.forEach(pane => {
-        el(`[data-rx="${pane}"]`).value = aiResponse[pane];
+        bus.emit('ai:update', { syntax: pane, content: aiResponse[pane] });
     });
 
     // A newer change just landed on top of any previous pending one — freeze its Discard button
@@ -281,7 +283,7 @@ function renderSuggestion(aiResponse) {
 
     msgEl.querySelector('.btn-discard')?.addEventListener('click', () => {
         changedPanes.forEach(pane => {
-            el(`[data-rx="${pane}"]`).value = snapshot[pane];
+            bus.emit('ai:update', { syntax: pane, content: snapshot[pane] });
         });
         msgEl.querySelector('.suggestion-actions').innerHTML = `<span class="suggestion-discarded">Discarded — reverted to previous version</span>`;
 
@@ -294,7 +296,7 @@ function renderSuggestion(aiResponse) {
 function addMessage(role, content, customId = null) {
     const elMessage = elNew('div', {
         className: `chat-message role-${role}`,
-        innerHTML: content
+        innerHTML: DOMPurify.sanitize(content),
     });
     if (customId) elMessage.id = customId;
     elOutput.append(elMessage);
