@@ -11,7 +11,7 @@ const PROVIDERS = {
         kind: "gemini",
         keyPlaceholder: "Key",
         keyHelp: `Create one at <a href="https://aistudio.google.com/app/api-keys" target="_blank">aistudio.google.com/app/api-keys</a>`,
-        models: ["gemini-3-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash"]
+        models: ["gemini-3.1-flash-lite", "gemini-3.5-flash"]
     },
     openai: {
         label: "OpenAI",
@@ -53,6 +53,37 @@ const PROVIDERS = {
         models: ["deepseek-chat", "deepseek-coder"]
     }
 };
+
+function tryParseAIJson(rawText) {
+    let text = rawText.trim();
+    text = text.replace(/```json\s*/i, '').replace(/```\s*$/, '').trim();
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
+    let jsonStr = jsonMatch[0];
+
+    try {
+        return JSON.parse(jsonStr);
+    } catch (err) {
+        // Common failure: literal newlines/tabs inside string values.
+        // Escape control characters that appear *inside* quoted strings only.
+        const repaired = jsonStr.replace(/"((?:[^"\\]|\\.)*)"/gs, (match, inner) => {
+            const fixed = inner
+                .replace(/\\/g, '\\\\')   // escape backslashes first
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r')
+                .replace(/\t/g, '\\t');
+            return `"${fixed}"`;
+        });
+
+        try {
+            return JSON.parse(repaired);
+        } catch (err2) {
+            console.error("Raw AI response that failed to parse:", rawText);
+            throw new Error("AI returned malformed JSON — couldn't repair automatically");
+        }
+    }
+}
 
 // Storage: keyed by provider so keys don't collide
 const ls = LS("xode.settings", {
@@ -105,7 +136,8 @@ ${el(`[data-rx="js"]`).value}
 
 Keep the explanation to 1-3 sentences, plain language, no code fences inside "explanation".
 
-Respond **only** with **valid JSON** (no extra text, no markdown):
+Respond **only** with valid JSON (no extra text, no markdown, no code fences).
+All string values must have newlines escaped as \\n and double quotes inside code escaped as \\" — the output must be valid, parseable JSON:
 {
   "html": "full new html or null if unchanged",
   "css": "full new css or null",
@@ -190,13 +222,7 @@ async function callAI(userPrompt) {
         else if (providerInfo.kind === "anthropic") text = await callAnthropic(config, fullPrompt);
         else text = await callOpenAICompatible(config, fullPrompt);
 
-        text = text.trim();
-        text = text.replace(/```json\s*/i, '').replace(/```\s*$/, '').trim();
-
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("No JSON found in response");
-
-        return JSON.parse(jsonMatch[0]);
+        return tryParseAIJson(text);
 
     } catch (err) {
         console.error("Error in callAI:", err);
@@ -214,7 +240,7 @@ async function sendMessage() {
     elInput.value = "";
 
     const thinkingId = 'thinking-msg-' + Date.now();
-    addMessage('ai', '<em class="thinking">Thinking...</em>', thinkingId);
+    addMessage('system', '<em class="thinking">Thinking...</em>', thinkingId);
 
     try {
         const currentCode = {
