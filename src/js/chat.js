@@ -1,6 +1,8 @@
 import { el, elNew, LS } from "./utils.js";
 import { bus } from './bus.js';
 import DOMPurify from 'dompurify';
+import { marked } from 'marked';
+
 
 // Provider registry
 const PROVIDERS = {
@@ -101,15 +103,9 @@ JS:
 ${el(`[data-rx="js"]`).value}
 \`\`\`
 
-The user has NOT approved any change yet — you are proposing a change for them to review and apply themselves.
-Write "explanation" as a suggestion, not a completed action. Use phrasing like:
-- "Here's what you could do: ..."
-- "This would add a hover effect to the button by ..."
-- "I'd suggest changing X to Y because ..."
-**Never say** "I've updated," "Done," "Fixed," or otherwise imply the code has already been changed in the editor.
 Keep the explanation to 1-3 sentences, plain language, no code fences inside "explanation".
 
-Respond **only** with valid JSON (no extra text, no markdown):
+Respond **only** with **valid JSON** (no extra text, no markdown):
 {
   "html": "full new html or null if unchanged",
   "css": "full new css or null",
@@ -250,42 +246,42 @@ function renderSuggestion(aiResponse) {
     const changedPanes = ['html', 'css', 'js'].filter(k => aiResponse[k] !== null && aiResponse[k] !== undefined);
 
     if (!changedPanes.length) {
-        addMessage('ai', `<p>${aiResponse.explanation || 'No changes needed.'}</p>`);
+        addMessage('ai', `${aiResponse.explanation || 'No changes needed.'}`);
         return;
     }
 
     // 0. Snapshot current pane values BEFORE applying
     const snapshot = {};
-    changedPanes.forEach(pane => {
-        snapshot[pane] = el(`[data-rx="${pane}"]`).value;
+    changedPanes.forEach((syntax) => {
+        snapshot[syntax] = el(`[data-rx="${syntax}"]`).value;
     });
 
-    // 1. Apply immediately
-    changedPanes.forEach(pane => {
-        bus.emit('ai:update', { syntax: pane, content: aiResponse[pane] });
+    // 1. Apply immediately one Editor pane at a time
+    changedPanes.forEach((syntax) => {
+        bus.emit('ai:update', { syntax, content: aiResponse[syntax] });
     });
 
     // A newer change just landed on top of any previous pending one — freeze its Discard button
     if (lastAppliedMsgEl) {
-        const prevActions = lastAppliedMsgEl.querySelector('.suggestion-actions');
+        const prevActions = el('.suggestion-actions', lastAppliedMsgEl);
         if (prevActions) {
             prevActions.innerHTML = `<span class="suggestion-superseded">Superseded by a later change</span>`;
         }
     }
 
-    const msgEl = addMessage('ai', `
+    const msgEl = addMessage('system', `
         <p>${aiResponse.explanation || 'Change applied.'}</p>
         <div class="suggestion-actions">
             <span class="suggestion-panes">✓ Applied to: ${changedPanes.join(', ').toUpperCase()}</span>
-            <button class="btn-discard">Discard</button>
+            <button class="btn-discard accent">Discard</button>
         </div>
     `);
 
-    msgEl.querySelector('.btn-discard')?.addEventListener('click', () => {
-        changedPanes.forEach(pane => {
-            bus.emit('ai:update', { syntax: pane, content: snapshot[pane] });
+    el('.btn-discard', msgEl)?.addEventListener('click', () => {
+        changedPanes.forEach((syntax) => {
+            bus.emit('ai:update', { syntax, content: snapshot[syntax] });
         });
-        msgEl.querySelector('.suggestion-actions').innerHTML = `<span class="suggestion-discarded">Discarded — reverted to previous version</span>`;
+        el('.suggestion-actions', msgEl).innerHTML = `<span class="suggestion-discarded">Discarded — reverted to previous version</span>`;
 
         if (lastAppliedMsgEl === msgEl) lastAppliedMsgEl = null;
     });
@@ -296,9 +292,21 @@ function renderSuggestion(aiResponse) {
 function addMessage(role, content, customId = null) {
     const elMessage = elNew('div', {
         className: `chat-message role-${role}`,
-        innerHTML: DOMPurify.sanitize(content),
     });
     if (customId) elMessage.id = customId;
+
+    if (role === "system") {
+        elMessage.innerHTML = content;
+    } else {
+        // All other roles (user, ai) render through markdown + sanitize.
+        // Safety comes from DOMPurify's allowlist, not from skipping markdown.
+        const html = marked.parse(content, { breaks: true });
+        elMessage.innerHTML = DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'code', 'pre', 'ul', 'ol', 'li', 'br', 'blockquote', 'h1', 'h2', 'h3'],
+            ALLOWED_ATTR: ['href', 'target', 'rel']
+        });
+    }
+
     elOutput.append(elMessage);
     elOutput.scrollTo({ top: elOutput.scrollHeight, behavior: 'smooth' });
 
@@ -374,4 +382,4 @@ const initialSettings = ls.get();
 elProvider.value = initialSettings.provider || "gemini";
 loadProviderIntoUI(elProvider.value);
 
-addMessage("system", `<h3>✨&#xfe0e; Hi, I'm <b>Xody</b></h3>your AI assistant.<br>Choose a provider, enter your API key, and ask a question to get started.`);
+addMessage("system", `<h3>✨︎ Hi, I'm Xody</h3>your AI assistant.<br>Choose a provider, enter your API key, and ask a question to get started.`);

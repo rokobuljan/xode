@@ -27,6 +27,7 @@
     "dompurify": "^3.4.11",
     "emmet": "^2.4.11",
     "highlight.js": "^11.11.1",
+    "marked": "^18.0.6",
     "prettier": "^3.9.4"
   }
 }

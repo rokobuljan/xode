@@ -95,8 +95,6 @@ export class Editor {
                 this.selectionCounter();
             });
         });
-
-
     }
     setValue(value) {
         this.value = value;
