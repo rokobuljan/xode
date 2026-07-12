@@ -271,6 +271,5 @@ drawProjects();
 
 // Update html from AI
 bus.on('ai:update', ({ syntax, content }) => {
-    console.log({ ai: content })
-    panes[syntax]?.setValue(content);
+    currentProject[syntax] = content; // Update and save
 });
