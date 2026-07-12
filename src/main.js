@@ -8,6 +8,7 @@ import "./css/index.css";
 import "./js/splitview.js";
 import "./js/modal.js";
 import "./js/chat.js";
+import { bus } from './js/bus.js';
 import Rx from "./js/Rx.js";
 import { el, els, elNew, download } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject } from './js/project.js';
@@ -268,3 +269,8 @@ paneConsole.init();
 projectInit(false); // Load latest project
 drawProjects();
 
+// Update html from AI
+bus.on('ai:update', ({ syntax, content }) => {
+    console.log({ ai: content })
+    panes[syntax]?.setValue(content);
+});
