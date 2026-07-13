@@ -54,28 +54,60 @@ const PROVIDERS = {
     }
 };
 
+function extractFirstJsonObject(text) {
+    const start = text.indexOf('{');
+    if (start === -1) throw new Error("No JSON found in response");
+
+    let depth = 0;
+    let inString = false;
+    let escapeNext = false;
+
+    for (let i = start; i < text.length; i++) {
+        const char = text[i];
+
+        if (escapeNext) {
+            escapeNext = false;
+            continue;
+        }
+        if (char === '\\') {
+            escapeNext = true;
+            continue;
+        }
+        if (char === '"') {
+            inString = !inString;
+            continue;
+        }
+        if (inString) continue;
+
+        if (char === '{') depth++;
+        if (char === '}') {
+            depth--;
+            if (depth === 0) {
+                return text.slice(start, i + 1); // exact matching object, garbage after ignored
+            }
+        }
+    }
+
+    throw new Error("Unbalanced JSON braces in response");
+}
+
 function tryParseAIJson(rawText) {
     let text = rawText.trim();
     text = text.replace(/```json\s*/i, '').replace(/```\s*$/, '').trim();
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON found in response");
-    let jsonStr = jsonMatch[0];
+    const jsonStr = extractFirstJsonObject(text); // was: text.match(/\{[\s\S]*\}/)[0]
 
     try {
         return JSON.parse(jsonStr);
     } catch (err) {
-        // Common failure: literal newlines/tabs inside string values.
-        // Escape control characters that appear *inside* quoted strings only.
         const repaired = jsonStr.replace(/"((?:[^"\\]|\\.)*)"/gs, (match, inner) => {
             const fixed = inner
-                .replace(/\\/g, '\\\\')   // escape backslashes first
+                .replace(/\\/g, '\\\\')
                 .replace(/\n/g, '\\n')
                 .replace(/\r/g, '\\r')
                 .replace(/\t/g, '\\t');
             return `"${fixed}"`;
         });
-
         try {
             return JSON.parse(repaired);
         } catch (err2) {
@@ -179,8 +211,19 @@ async function callOpenAICompatible(config, fullPrompt) {
             messages: [{ role: "user", content: fullPrompt }]
         })
     });
+
+    if (!res.ok) {
+        const raw = await res.text();
+        console.error(`${config.provider} error response:`, raw);
+        let message = `${config.provider} request failed (${res.status})`;
+        try {
+            const parsed = JSON.parse(raw);
+            message = parsed.error?.message || parsed.message || parsed.error || message;
+        } catch { /* raw wasn't JSON, keep the generic message but it's logged above */ }
+        throw new Error(message);
+    }
+
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || `${config.provider} request failed`);
     return data.choices?.[0]?.message?.content || "";
 }
 

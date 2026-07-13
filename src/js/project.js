@@ -131,6 +131,6 @@ export function deleteProject(id) {
 export function openProject(id) {
     const targetId = id || getLastProjectId();
     const data = targetId ? loadProject(targetId) : null;
-    if (targetId) setLastProjectId(targetId);
+    // if (targetId) setLastProjectId(targetId);
     return data || createProject({ persist: false });
 }

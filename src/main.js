@@ -10,8 +10,8 @@ import "./js/modal.js";
 import "./js/chat.js";
 import { bus } from './js/bus.js';
 import Rx from "./js/Rx.js";
-import { el, els, elNew, download } from "./js/utils.js";
-import { openProject, listProjects, saveProject, createProject, deleteProject } from './js/project.js';
+import { el, els, elNew, download, formatDateTime } from "./js/utils.js";
+import { openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId } from './js/project.js';
 import { Editor } from "./js/editor.js";
 
 
@@ -77,6 +77,8 @@ const projectInit = (isNew = true, id) => {
 
     currentProject = new Rx(project, {}).on("rx:change", rxHandler).state;
 
+    setLastProjectId(currentProject.id); // Remember last opened project
+
     //  Update UI: Toggle open/close panes
     els("[data-view]").forEach(elView => {
         const isOpen = currentProject.panes[elView.dataset.view];
@@ -111,7 +113,7 @@ const generatePreviewHTML = (isApp = true, data = currentProject) => {
     </head>
     <body${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
         ${data.html}
-        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${data.js}//# sourceURL=js</script>
+        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${data.js}${isApp ? "//# sourceURL=js" : ""}</script>
     </body>
     </html>`;
 };
@@ -147,17 +149,27 @@ addEventListener("message", async (evt) => {
 });
 
 const drawProjects = () => {
-    el("#projects-select").innerHTML = "";
+    const elProjectsList = el("#projects-list");
+    elProjectsList.innerHTML = "";
     listProjects().forEach((project) => {
+        const elThumbnail = elNew("div", { className: "thumbnail" });
+        elThumbnail.dataset.modal = "";
+        const projectData = openProject(project.id);
+        projectData.html = `
+            <script>// XODE-injected: Silence, suppress some console methods for thumbnails
+            const methods = ['log', 'warn', 'error', 'info', 'debug'];
+            methods.forEach(method => {
+                if (window.console && window.console[method]) window.console[method] = function () {};
+            });</script>
+        ` + projectData.html;
         const elThumbnailIframe = elNew("iframe", {
             className: "iframe-thumbnail",
-            srcdoc: generatePreviewHTML(false, openProject(project.id)),
-            sandbox: "allow-same-origin", // allow-scripts, allow-same-origin
+            srcdoc: generatePreviewHTML(false, projectData),
+            sandbox: "allow-scripts", // allow-scripts, allow-same-origin
             loading: "lazy",
             scrolling: "no"
         });
-        const elThumbnail = elNew("div", { className: "thumbnail" });
-        elThumbnail.dataset.modal = "";
+
         elThumbnail.append(elThumbnailIframe);
 
         const elProject = elNew("div", {
@@ -165,7 +177,7 @@ const drawProjects = () => {
             className: "project",
             innerHTML: `<div class="bar">
                 <span class="project-name">${project.name}</span>
-                <span class="project-date">${new Date(project.updatedAt).toLocaleString()}</span>
+                <span class="project-date">${formatDateTime(project.updatedAt)}</span>
                 <br>
                 <span>
                     <button data-download-id="${project.id}" type="button"><span class="icon" data-name="download">&#xf3b7;</span></button>
@@ -189,7 +201,7 @@ const drawProjects = () => {
         elThumbnail.addEventListener("click", () => {
             projectInit(false, project.id);
         });
-        el("#projects-select").append(elProject);
+        elProjectsList.append(elProject);
     });
 };
 
