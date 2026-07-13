@@ -41,6 +41,22 @@ const PROVIDERS = {
         baseUrl: "https://api.mistral.ai/v1/chat/completions",
         keyPlaceholder: "Key",
         keyHelp: `Create one at <a href="https://console.mistral.ai/api-keys" target="_blank">console.mistral.ai</a>`
+    },
+    ollama: {
+        label: "Ollama (local)",
+        kind: "openai-compatible",
+        baseUrl: "http://localhost:11434/v1/chat/completions",
+        requiresKey: false,
+        keyPlaceholder: "Not required",
+        keyHelp: `Runs entirely on your machine — no key needed. Make sure Ollama is running locally (<code>ollama serve</code>), and that it allows this site's origin (<code>OLLAMA_ORIGINS</code>) if requests fail.`
+    },
+    LMStudio: {
+        label: "LM Studio (Local)",
+        kind: "openai-compatible",
+        baseUrl: "http://localhost:1234/v1/chat/completions",
+        requiresKey: false,
+        keyPlaceholder: "Not required",
+        keyHelp: `Runs entirely on your machine — no key needed. Make sure LM Studio is running locally on port :1234 (and that you loaded a model and started the LM Studio local server. Enable CORS if Models list is not loading).`
     }
 };
 
@@ -166,10 +182,6 @@ function renderMarkdownFallback(rawText) {
     const segments = splitMarkdownSegments(rawText);
 
     const wrapper = elNew('div', { className: 'chat-message role-system markdown-fallback' });
-    wrapper.append(elNew('p', {
-        className: 'markdown-fallback-notice',
-        textContent: '⚠️ The model returned plain text instead of structured JSON — showing it raw:'
-    }));
 
     segments.forEach(seg => {
         if (seg.type === 'text') {
@@ -188,7 +200,7 @@ function renderMarkdownFallback(rawText) {
             const header = elNew('div', { className: 'code-fence-header' });
             header.append(elNew('span', { className: 'code-fence-lang', textContent: (seg.lang || pane).toUpperCase() }));
 
-            const insertBtn = elNew('button', { className: 'btn-insert accent', textContent: `Insert into ${pane.toUpperCase()}` });
+            const insertBtn = elNew('button', { type: "button", className: 'btn-insert accent', textContent: `Insert into ${pane.toUpperCase()}` });
             header.append(insertBtn);
             card.append(header);
 
@@ -240,6 +252,14 @@ function setApiKey(provider, key) {
     settings.apiKeys = settings.apiKeys || {};
     settings.apiKeys[provider] = key;
     ls.set(settings);
+}
+
+// A provider is "ready" to be used/fetched from when either:
+//  - it declares requiresKey: false (e.g. Ollama, running locally), or
+//  - an API key has actually been entered for it
+function isProviderReady(providerKey, apiKey) {
+    const p = PROVIDERS[providerKey];
+    return p.requiresKey === false ? true : !!apiKey;
 }
 
 const getAIConfig = () => {
@@ -309,12 +329,14 @@ async function callGemini(config, fullPrompt) {
 
 async function callOpenAICompatible(config, fullPrompt) {
     const { baseUrl } = PROVIDERS[config.provider];
+    const headers = { "Content-Type": "application/json" };
+    if (config.apiKey) {
+        headers.Authorization = `Bearer ${config.apiKey}`;
+    }
+
     const res = await fetch(baseUrl, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${config.apiKey}`
-        },
+        headers,
         body: JSON.stringify({
             model: config.model,
             temperature: 0.1,
@@ -366,13 +388,14 @@ async function callAnthropic(config, fullPrompt) {
 async function callAI(userPrompt) {
     const config = getAIConfig();
     const providerInfo = PROVIDERS[config.provider];
+    const requiresKey = providerInfo.requiresKey !== false;
 
-    if (!config.apiKey) {
+    if (requiresKey && !config.apiKey) {
         addMessage("ai", `❌ Error<br>Please set your ${providerInfo.label} API key first.<br>${providerInfo.keyHelp}`);
         return null;
     }
     if (!config.model) {
-        addMessage("ai", `❌ Error<br>No model selected. Make sure your ${providerInfo.label} API key is valid so models can load.`);
+        addMessage("ai", `❌ Error<br>No model selected. ${requiresKey ? `Make sure your ${providerInfo.label} API key is valid so models can load.` : `Make sure ${providerInfo.label} is running locally and that a model is loaded.`}`);
         return null;
     }
 
@@ -443,7 +466,6 @@ async function sendMessage(msg) {
         const aiResult = await callAI(
             userText + `\n\nCurrent code: ${JSON.stringify(currentCode)}`
         );
-
         if (aiResult?.type === "json") {
             renderSuggestion(aiResult.data);
         } else if (aiResult?.type === "markdown") {
@@ -542,6 +564,10 @@ function removeThinkingMessage(id) {
 }
 
 // Events
+elInput.addEventListener('focus', () => {
+    // close chat Optiosn on message input focus
+    el('.chat-options').open = false;
+});
 elInput.addEventListener('keydown', function (evt) {
     if (evt.key === 'Enter' && !evt.shiftKey) {
         evt.preventDefault();
@@ -589,9 +615,12 @@ async function fetchModelsGemini(apiKey) {
 async function fetchModelsOpenAICompatible(providerKey, apiKey) {
     const { baseUrl } = PROVIDERS[providerKey];
     const listUrl = baseUrl.replace(/\/chat\/completions$/, "/models");
-    const res = await fetch(listUrl, {
-        headers: { Authorization: `Bearer ${apiKey}` }
-    });
+    const headers = {};
+    if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+    }
+
+    const res = await fetch(listUrl, { headers });
     if (!res.ok) throw new Error(`Failed to fetch ${providerKey} models`);
     const data = await res.json();
     return data.data
@@ -642,18 +671,19 @@ function renderModelState(state, payload) {
 }
 
 // Loads the model list for a provider into elModel.
-// Uses a 24h cache (keyed to the exact API key used) to avoid refetching
-// on every provider switch; otherwise fetches live and shows explicit
-// loading/error states while doing so.
+// Uses a 24h cache (keyed to the exact API key used — or "" for keyless
+// providers like Ollama) to avoid refetching on every provider switch;
+// otherwise fetches live and shows explicit loading/error states while doing so.
 async function refreshModelOptions(providerKey, apiKey) {
-    if (!apiKey) {
+    if (!isProviderReady(providerKey, apiKey)) {
         renderModelState("no-key");
         return;
     }
 
+    const cacheKey = apiKey || "__no_key__"; // keyless providers share one cache slot
     const cache = modelCache.get();
     const cached = cache[providerKey];
-    const isFresh = cached && cached.forKey === apiKey && (Date.now() - cached.fetchedAt) < MODEL_CACHE_TTL;
+    const isFresh = cached && cached.forKey === cacheKey && (Date.now() - cached.fetchedAt) < MODEL_CACHE_TTL;
     if (isFresh) {
         renderModelState("ready", cached.models);
         return;
@@ -670,7 +700,7 @@ async function refreshModelOptions(providerKey, apiKey) {
             return;
         }
 
-        cache[providerKey] = { models, fetchedAt: Date.now(), forKey: apiKey };
+        cache[providerKey] = { models, fetchedAt: Date.now(), forKey: cacheKey };
         modelCache.set(cache);
         renderModelState("ready", models);
     } catch (err) {
@@ -690,7 +720,9 @@ Object.entries(PROVIDERS).forEach(([key, p]) => {
 
 const uiUpdateModel = () => {
     const settings = ls.get();
-    el(".chat-model-label").textContent = settings.model.replace(/-/g, " ") ?? "Options";
+    const elModelLabel = el(".chat-model-label");
+    elModelLabel.textContent = settings.model.replace(/-/g, " ") ?? "Options";
+    elModelLabel.title = settings.provider ?? "Unknown Provider";
 };
 
 async function loadProviderIntoUI(providerKey) {
