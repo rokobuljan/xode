@@ -9,6 +9,8 @@ import prettierPluginPostcss from "prettier/plugins/postcss";
 import { el, elNew } from "./utils.js";
 import { extractColors } from "./colorExtract.js";
 
+const TAB_WIDTH = 4;
+
 const formatCode = async (code, language) => {
     const parserMap = {
         js: "babel",
@@ -26,7 +28,7 @@ const formatCode = async (code, language) => {
         plugins: pluginMap[parser],
         semi: true,
         singleQuote: true,
-        tabWidth: 2,
+        tabWidth: TAB_WIDTH,
         htmlWhitespaceSensitivity: "ignore"
     });
 };
@@ -67,7 +69,7 @@ export class Editor {
                     this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
                 } else {
                     // convert Tab to spaces
-                    document.execCommand("insertHTML", false, " ".repeat(4));
+                    document.execCommand("insertHTML", false, " ".repeat(TAB_WIDTH));
                 }
                 this.highlight();
             }
@@ -128,7 +130,7 @@ export class Editor {
         // 3. Expand the abbreviation and replace the text
         try {
             let expanded = expand(abbreviation, { syntax: this.syntax, type });
-            expanded = expanded.replace(/\t/g, " ".repeat(4)); // Replace tabs with 4 spaces
+            expanded = expanded.replace(/\t/g, " ".repeat(TAB_WIDTH)); // Replace tabs with 4 spaces
             // Replace the extracted abbreviation with the expanded code
             const newValue = source.substring(0, start) + expanded + source.substring(end);
             this.setValue(newValue);
