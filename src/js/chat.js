@@ -107,6 +107,122 @@ function tryParseAIJson(rawText) {
     }
 }
 
+// ============================================================
+// Markdown fallback — used when a model refuses/fails to return
+// valid JSON but the response is readable markdown instead.
+// ============================================================
+
+// Cheap heuristics — no extra dependency needed for detection.
+// We only need to *parse* markdown (via `marked`, already imported),
+// detection is fine as pattern-matching.
+function looksLikeMarkdown(text) {
+    const trimmed = text.trim();
+    const hasFence = /```/.test(trimmed);
+    const hasMdSyntax = /^#{1,6}\s|^\*\s|^-\s|\*\*.+\*\*/m.test(trimmed);
+    const notJsonShaped = !/^[{[]/.test(trimmed);
+    return hasFence || (hasMdSyntax && notJsonShaped);
+}
+
+// Splits raw markdown text into alternating text/code segments.
+// Each code segment keeps its fence language tag (may be empty).
+function splitMarkdownSegments(text) {
+    const regex = /```(\w+)?\n?([\s\S]*?)```/g;
+    const segments = [];
+    let last = 0;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+        if (match.index > last) {
+            segments.push({ type: 'text', content: text.slice(last, match.index) });
+        }
+        segments.push({ type: 'code', lang: (match[1] || '').toLowerCase(), code: match[2].trim() });
+        last = regex.lastIndex;
+    }
+    if (last < text.length) {
+        segments.push({ type: 'text', content: text.slice(last) });
+    }
+    return segments;
+}
+
+// Maps a fence's language tag to one of our editor panes, if recognized.
+function mapLangToPane(lang) {
+    if (['js', 'javascript', 'jsx', 'ts', 'typescript', 'mjs'].includes(lang)) return 'js';
+    if (['html', 'htm', 'xml'].includes(lang)) return 'html';
+    if (['css', 'scss', 'less'].includes(lang)) return 'css';
+    return null;
+}
+
+// Best-effort guess when a fence has no (or an unrecognized) language tag.
+function sniffPane(code) {
+    if (/<\/?[a-z][\s\S]*>/i.test(code)) return 'html';
+    if (/[.#]?[\w-]+\s*\{[\s\S]*:[^;]+;/.test(code)) return 'css';
+    return 'js';
+}
+
+// Renders a markdown-fallback message: prose through marked+DOMPurify,
+// each fenced code block as a card with a real "Insert into <PANE>"
+// button (never innerHTML for the code itself, to avoid HTML in the
+// snippet being interpreted, and so it displays byte-for-byte as returned).
+function renderMarkdownFallback(rawText) {
+    const segments = splitMarkdownSegments(rawText);
+
+    const wrapper = elNew('div', { className: 'chat-message role-system markdown-fallback' });
+    wrapper.append(elNew('p', {
+        className: 'markdown-fallback-notice',
+        textContent: '⚠️ The model returned plain text instead of structured JSON — showing it raw:'
+    }));
+
+    segments.forEach(seg => {
+        if (seg.type === 'text') {
+            if (!seg.content.trim()) return;
+            const textEl = elNew('div', { className: 'markdown-fallback-text' });
+            const html = marked.parse(seg.content, { breaks: true });
+            textEl.innerHTML = DOMPurify.sanitize(html, {
+                ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'code', 'pre', 'ul', 'ol', 'li', 'br', 'blockquote', 'h1', 'h2', 'h3'],
+                ALLOWED_ATTR: ['href', 'target', 'rel']
+            });
+            wrapper.append(textEl);
+        } else {
+            const pane = mapLangToPane(seg.lang) || sniffPane(seg.code);
+
+            const card = elNew('div', { className: 'code-fence-card' });
+            const header = elNew('div', { className: 'code-fence-header' });
+            header.append(elNew('span', { className: 'code-fence-lang', textContent: (seg.lang || pane).toUpperCase() }));
+
+            const insertBtn = elNew('button', { className: 'btn-insert accent', textContent: `Insert into ${pane.toUpperCase()}` });
+            header.append(insertBtn);
+            card.append(header);
+
+            const pre = elNew('pre');
+            const codeEl = elNew('code', { textContent: seg.code }); // textContent — never rendered as HTML/markdown
+            pre.append(codeEl);
+            card.append(pre);
+
+            insertBtn.addEventListener('click', () => {
+                const snapshot = el(`[data-rx="${pane}"]`).value;
+                bus.emit('ai:update', { syntax: pane, content: seg.code });
+
+                header.innerHTML = '';
+                header.append(elNew('span', { className: 'code-fence-lang', textContent: (seg.lang || pane).toUpperCase() }));
+                const status = elNew('span', { className: 'suggestion-panes', textContent: `✓ Inserted into ${pane.toUpperCase()}` });
+                const undoBtn = elNew('button', { className: 'btn-discard accent', textContent: 'Undo' });
+                header.append(status, undoBtn);
+
+                undoBtn.addEventListener('click', () => {
+                    bus.emit('ai:update', { syntax: pane, content: snapshot });
+                    status.textContent = 'Reverted';
+                    undoBtn.remove();
+                }, { once: true });
+            }, { once: true });
+
+            wrapper.append(card);
+        }
+    });
+
+    elOutput.append(wrapper);
+    elOutput.scrollTo({ top: elOutput.scrollHeight, behavior: 'smooth' });
+    return wrapper;
+}
+
 // Storage: keyed by provider so keys don't collide
 const ls = LS("xode.settings", {
     provider: "gemini",
@@ -166,9 +282,9 @@ Keep the explanation to 1-3 sentences, plain language, no code fences inside "ex
 Respond **only** with valid JSON (no extra text, no markdown, no code fences).
 All string values must have newlines escaped as \\n and double quotes inside code escaped as \\" — the output must be valid, parseable JSON:
 {
-  "html": "full new html or null if unchanged",
-  "css": "full new css or null",
-  "js": "full new js or null",
+  "html": "full new HTML or null if unchanged",
+  "css": "full new CSS or null",
+  "js": "full new JS or null",
   "explanation": "brief explanation of changes"
 }
 
@@ -242,7 +358,11 @@ async function callAnthropic(config, fullPrompt) {
     return data.content?.find(b => b.type === "text")?.text || "";
 }
 
-// Main AI call, dispatches by provider kind
+// Main AI call, dispatches by provider kind.
+// Returns one of:
+//   { type: "json", data: {...} }       — structured response, parsed
+//   { type: "markdown", raw: "..." }    — model refused/failed JSON but gave readable markdown
+//   null                                — error already shown via addMessage
 async function callAI(userPrompt) {
     const config = getAIConfig();
     const providerInfo = PROVIDERS[config.provider];
@@ -263,8 +383,15 @@ async function callAI(userPrompt) {
         if (providerInfo.kind === "gemini") text = await callGemini(config, fullPrompt);
         else if (providerInfo.kind === "anthropic") text = await callAnthropic(config, fullPrompt);
         else text = await callOpenAICompatible(config, fullPrompt);
-        console.log("AI response text:", text);
-        return tryParseAIJson(text);
+
+        try {
+            return { type: "json", data: tryParseAIJson(text) };
+        } catch (parseErr) {
+            if (looksLikeMarkdown(text)) {
+                return { type: "markdown", raw: text };
+            }
+            throw parseErr; // genuinely unusable output — falls through to the catch below
+        }
 
     } catch (err) {
         console.error("Error in callAI:", err);
@@ -274,15 +401,38 @@ async function callAI(userPrompt) {
 }
 
 // Chat flow
-async function sendMessage() {
-    const userText = elInput.value.trim();
+async function sendMessage(msg) {
+    const userText = msg ?? elInput.value.trim();
     if (!userText) return;
 
-    addMessage('user', userText);
+    const msgUser = addMessage('user', userText);
+    const elBtns = elNew('div', { className: 'chat-message-btns' });
+    const elBtnRetry = elNew('button', {
+        type: "button",
+        className: 'chat-retry',
+        innerHTML: '<span class="icon" data-name="arrow-clockwise">&#x10028;</span>',
+        title: "Retry",
+        onclick() {
+            sendMessage(userText);
+        }
+    });
+    const elBtnEdit = elNew('button', {
+        type: "button",
+        className: 'chat-edit',
+        innerHTML: '<span class="icon" data-name="pencil">&#xf18c;</span>',
+        title: "Edit ",
+        onclick() {
+            elInput.value = userText;
+            elInput.focus();
+        }
+    });
+    elBtns.append(elBtnRetry, elBtnEdit);
+    msgUser.append(elBtns);
+
     elInput.value = "";
 
     const thinkingId = 'thinking-msg-' + Date.now();
-    addMessage('system', '<em class="thinking">Thinking...</em>', thinkingId);
+    addMessage("system", '<span class="loader"></span> <em class="thinking">Thinking...</em>', thinkingId);
 
     try {
         const currentCode = {
@@ -290,16 +440,21 @@ async function sendMessage() {
             css: el(`[data-rx="css"]`).value,
             js: el(`[data-rx="js"]`).value
         };
-        const aiResponse = await callAI(
+        const aiResult = await callAI(
             userText + `\n\nCurrent code: ${JSON.stringify(currentCode)}`
         );
-        if (aiResponse) {
-            renderSuggestion(aiResponse);
+
+        if (aiResult?.type === "json") {
+            renderSuggestion(aiResult.data);
+        } else if (aiResult?.type === "markdown") {
+            renderMarkdownFallback(aiResult.raw);
+        } else if (aiResult === null) {
+            // callAI already rendered an error message — nothing more to do
         } else {
-            addMessage('ai', "Sorry, I couldn't process that request.");
+            addMessage("ai", "Sorry, I couldn't process that request.");
         }
     } catch (err) {
-        addMessage('ai', `❌ ${err.message || "Something went wrong. Please try again."}`);
+        addMessage("ai", `❌ ${err.message || "Something went wrong. Please try again."}`);
         console.error(err);
     } finally {
         removeThinkingMessage(thinkingId);
@@ -370,8 +525,8 @@ function addMessage(role, content, customId = null) {
         // Safety comes from DOMPurify's allowlist, not from skipping markdown.
         const html = marked.parse(content, { breaks: true });
         elMessage.innerHTML = DOMPurify.sanitize(html, {
-            ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'code', 'pre', 'ul', 'ol', 'li', 'br', 'blockquote', 'h1', 'h2', 'h3'],
-            ALLOWED_ATTR: ['href', 'target', 'rel']
+            ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "code", "pre", "ul", "ol", "li", "br", "blockquote", "h1", "h2", "h3"],
+            ALLOWED_ATTR: ["href", "target", "rel"]
         });
     }
 
@@ -395,7 +550,7 @@ elInput.addEventListener('keydown', function (evt) {
         }
     }
 });
-elSend.addEventListener("click", sendMessage);
+elSend.addEventListener("click", () => sendMessage());
 
 // ============================================================
 // Live model discovery
@@ -533,6 +688,11 @@ Object.entries(PROVIDERS).forEach(([key, p]) => {
     elProvider.append(elNew("option", { value: key, textContent: p.label }));
 });
 
+const uiUpdateModel = () => {
+    const settings = ls.get();
+    el(".chat-model-label").textContent = settings.model.replace(/-/g, " ") ?? "Options";
+};
+
 async function loadProviderIntoUI(providerKey) {
     const settings = ls.get();
     const apiKey = (settings.apiKeys || {})[providerKey] || "";
@@ -547,6 +707,8 @@ async function loadProviderIntoUI(providerKey) {
     if (savedModel && [...elModel.options].some(o => o.value === savedModel)) {
         elModel.value = savedModel;
     }
+
+    uiUpdateModel();
 }
 
 elProvider.addEventListener("change", async () => {
@@ -560,6 +722,7 @@ elModel.addEventListener("change", () => {
     const settings = ls.get();
     settings.model = elModel.value;
     ls.set(settings);
+    uiUpdateModel();
 });
 
 elApiKey.addEventListener("change", async () => {
