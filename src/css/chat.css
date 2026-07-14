@@ -322,8 +322,8 @@
 
 .chat-message {
 
-    p {
-        margin: 1em 0 0.5em;
+    >*+* {
+        margin-top: 0.5rem;
     }
 
     pre {

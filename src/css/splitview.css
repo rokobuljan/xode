@@ -41,7 +41,7 @@
         }
 
         &:hover {
-            background-color: var(--c1);
+            background-image: linear-gradient(45deg, var(--c2), var(--c1));
         }
 
         &:first-child {

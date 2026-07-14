@@ -3,7 +3,7 @@
     --foreground: hsl(221, 30%, 98%);
     --bg: var(--background);
     --fg: var(--foreground);
-    --c1: #0bf;
+    --c1: #00bbff;
     --c2: #7c6cff;
     --ce: #f44747;
 
@@ -319,7 +319,8 @@ textarea {
 
 select,
 textarea,
-input[type="text"] {
+input[type="text"],
+input[type="password"] {
     /* border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%); */
     color: var(--fg);
     padding: 0.4em 0.6em;
