@@ -13,7 +13,13 @@ const PROVIDERS = {
         label: "Google Gemini",
         kind: "gemini",
         keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://aistudio.google.com/app/api-keys" target="_blank">aistudio.google.com/app/api-keys</a>`
+        keyHelp: `Create one at <a href="https://aistudio.google.com/app/api-keys" target="_blank">aistudio.google.com/app/api-keys</a>`,
+    },
+    anthropic: {
+        label: "Anthropic Claude",
+        kind: "anthropic",
+        keyPlaceholder: "Key",
+        keyHelp: `Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>`
     },
     openai: {
         label: "OpenAI",
@@ -22,11 +28,12 @@ const PROVIDERS = {
         keyPlaceholder: "Key",
         keyHelp: `Create one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>`
     },
-    anthropic: {
-        label: "Anthropic Claude",
-        kind: "anthropic",
+    deepseek: {
+        label: "DeepSeek",
+        kind: "openai-compatible",
+        baseUrl: "https://api.deepseek.com/v1/chat/completions",
         keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>`
+        keyHelp: `Create one at <a href="https://platform.deepseek.com/api_keys" target="_blank">platform.deepseek.com/api_keys</a>`
     },
     xai: {
         label: "xAI Grok",
@@ -48,7 +55,7 @@ const PROVIDERS = {
         baseUrl: "http://localhost:11434/v1/chat/completions",
         requiresKey: false,
         keyPlaceholder: "Not required",
-        keyHelp: `Runs entirely on your machine — no key needed. Make sure Ollama is running locally (<code>ollama serve</code>), and that it allows this site's origin (<code>OLLAMA_ORIGINS</code>) if requests fail.`
+        keyHelp: `Runs entirely on your machine — no key needed. Make sure Ollama is running locally (<code>ollama serve</code>) on port :11434, and that it allows this site's origin (<code>OLLAMA_ORIGINS</code>) if requests fail.`
     },
     LMStudio: {
         label: "LM Studio (Local)",
@@ -214,8 +221,14 @@ function renderMarkdownFallback(rawText) {
                 bus.emit('ai:update', { syntax: pane, content: seg.code });
 
                 header.innerHTML = '';
-                header.append(elNew('span', { className: 'code-fence-lang', textContent: (seg.lang || pane).toUpperCase() }));
-                const status = elNew('span', { className: 'suggestion-panes', textContent: `✓ Inserted into ${pane.toUpperCase()}` });
+                header.append(elNew('span', {
+                    className: 'code-fence-lang',
+                    textContent: (seg.lang || pane).toUpperCase()
+                }));
+                const status = elNew('span', {
+                    className: 'suggestion-panes',
+                    innerHTML: `<span class="icon" data-name="check">&#xf313;</span> Inserted into ${pane.toUpperCase()}`
+                });
                 const undoBtn = elNew('button', { className: 'btn-discard accent', textContent: 'Undo' });
                 header.append(status, undoBtn);
 
@@ -514,10 +527,10 @@ function renderSuggestion(aiResponse) {
         }
     }
 
-    const msgEl = addMessage('system', `
+    const msgEl = addMessage("system", `
         <p>${aiResponse.explanation || 'Change applied.'}</p>
         <div class="suggestion-actions">
-            <span class="suggestion-panes">✓ Applied to: ${changedPanes.join(', ').toUpperCase()}</span>
+            <span class="suggestion-panes"><span class="icon" data-name="check">&#xf313;</span> Applied to: ${changedPanes.join(', ').toUpperCase()}</span>
             <button class="btn-discard accent">Discard</button>
         </div>
     `);
@@ -606,6 +619,7 @@ async function fetchModelsGemini(apiKey) {
     const res = await fetch(url);
     if (!res.ok) throw new Error("Failed to fetch Gemini models");
     const data = await res.json();
+    console.log(data);
     return data.models
         .filter(m => m.supportedGenerationMethods?.includes("generateContent"))
         .map(m => ({ id: m.name.replace("models/", ""), label: m.displayName || m.name }))

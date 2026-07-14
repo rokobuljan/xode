@@ -91,9 +91,6 @@ const projectInit = (isNew = true, id) => {
 
     // Preview the project
     preview();
-
-    console.log(currentProject, panes);
-
 };
 
 /**
