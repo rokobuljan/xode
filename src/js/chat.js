@@ -313,6 +313,8 @@ ${el(`[data-rx="js"]`).value}
 Keep the explanation to 1-3 sentences, plain language, no code fences inside "explanation".
 
 Respond **only** with valid JSON (no extra text, no markdown, no code fences).
+HTML markup should go in the "html" key, CSS in the "css" key, and JS in the "js" key.
+Only create HTML markup that goes within the <BODY> tag.
 All string values must have newlines escaped as \\n and double quotes inside code escaped as \\" — the output must be valid, parseable JSON:
 {
   "html": "full new HTML or null if unchanged",
@@ -449,7 +451,7 @@ async function sendMessage(msg) {
         innerHTML: '<span class="icon" data-name="arrow-clockwise">&#x10028;</span>',
         title: "Retry",
         onclick() {
-            sendMessage(userText);
+            void sendMessage(userText);
         }
     });
     const elBtnEdit = elNew('button', {
@@ -585,15 +587,14 @@ elInput.addEventListener('keydown', function (evt) {
     if (evt.key === 'Enter' && !evt.shiftKey) {
         evt.preventDefault();
         if (elInput.value.trim()) {
-            sendMessage();
+            void sendMessage();
         }
     }
 });
 elSend.addEventListener("click", () => sendMessage());
 
-// ============================================================
 // Live model discovery
-// ============================================================
+// 
 // No hardcoded model IDs anywhere below — model lists are always fetched
 // live from each provider once an API key is present. If a fetch fails,
 // the UI shows an explicit error state rather than silently falling back
@@ -619,7 +620,6 @@ async function fetchModelsGemini(apiKey) {
     const res = await fetch(url);
     if (!res.ok) throw new Error("Failed to fetch Gemini models");
     const data = await res.json();
-    console.log(data);
     return data.models
         .filter(m => m.supportedGenerationMethods?.includes("generateContent"))
         .map(m => ({ id: m.name.replace("models/", ""), label: m.displayName || m.name }))
@@ -657,8 +657,8 @@ async function fetchModelsAnthropic(apiKey) {
 
 const MODEL_FETCHERS = {
     gemini: (providerKey, apiKey) => fetchModelsGemini(apiKey),
+    anthropic: (providerKey, apiKey) => fetchModelsAnthropic(apiKey),
     "openai-compatible": (providerKey, apiKey) => fetchModelsOpenAICompatible(providerKey, apiKey),
-    anthropic: (providerKey, apiKey) => fetchModelsAnthropic(apiKey)
 };
 
 // Renders one of five explicit states into the model <select>.
@@ -682,6 +682,7 @@ function renderModelState(state, payload) {
             elModel.append(elNew("option", { value: id, textContent: label }));
         });
     }
+    uiUpdateModelLabel(payload?.[0]?.label ?? null);
 }
 
 // Loads the model list for a provider into elModel.
@@ -723,19 +724,18 @@ async function refreshModelOptions(providerKey, apiKey) {
     }
 }
 
-// ============================================================
 // Provider / model / key wiring
-// ============================================================
 
 // Populate provider <select> once
 Object.entries(PROVIDERS).forEach(([key, p]) => {
     elProvider.append(elNew("option", { value: key, textContent: p.label }));
 });
 
-const uiUpdateModel = () => {
+const uiUpdateModelLabel = (suggestedModel) => {
     const settings = ls.get();
     const elModelLabel = el(".chat-model-label");
-    elModelLabel.textContent = settings.model.replace(/-/g, " ") ?? "Options";
+    const modelName = settings.model || suggestedModel;
+    elModelLabel.textContent = modelName?.replace(/-/g, " ") || "Options";
     elModelLabel.title = settings.provider ?? "Unknown Provider";
 };
 
@@ -753,22 +753,21 @@ async function loadProviderIntoUI(providerKey) {
     if (savedModel && [...elModel.options].some(o => o.value === savedModel)) {
         elModel.value = savedModel;
     }
-
-    uiUpdateModel();
 }
 
-elProvider.addEventListener("change", async () => {
+elProvider.addEventListener("input", async () => {
     const settings = ls.get();
     settings.provider = elProvider.value;
+    // settings.model = "";
     ls.set(settings);
     await loadProviderIntoUI(elProvider.value);
 });
 
-elModel.addEventListener("change", () => {
+elModel.addEventListener("input", () => {
     const settings = ls.get();
     settings.model = elModel.value;
     ls.set(settings);
-    uiUpdateModel();
+    uiUpdateModelLabel();
 });
 
 elApiKey.addEventListener("change", async () => {
@@ -776,11 +775,14 @@ elApiKey.addEventListener("change", async () => {
     await refreshModelOptions(elProvider.value, elApiKey.value);
 });
 
-// === Init ================================================================
-(async () => {
+// Init
+; (async () => {
     const initialSettings = ls.get();
     elProvider.value = initialSettings.provider || "gemini";
     await loadProviderIntoUI(elProvider.value);
+    addMessage("system", `<h3>✨︎ Hi, I'm Xody</h3>your AI assistant.<br>Choose a provider, select a model, and ask a question to get started.`);
+})().catch((error) => {
+    // Handle the error here
+    console.error(error);
+});
 
-    addMessage("system", `<h3>✨︎ Hi, I'm Xody</h3>your AI assistant.<br>Choose a provider, enter your API key, and ask a question to get started.`);
-})();
