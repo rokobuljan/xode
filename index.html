@@ -212,7 +212,6 @@
                     </h2>
                 </div>
                 <div class="modal-body">
-
                     <div class="col">
                         <label>
                             <span><span class="icon" data-name="folder">&#xf045;</span> Name</span>
@@ -224,8 +223,21 @@
                             <textarea data-rx="description" placeholder="Project Description"></textarea>
                         </label>
                         <button type="button" id="githubPublish" class="accent"> <span class="icon"
-                                data-name="github-logo">&#xf772;</span>Publish</button>
+                                data-name="github-logo">&#xf772;</span> Publish</button>
                     </div>
+
+                    <h2>
+                        <span class="icon" data-name="cloud-download">&#xf094;</span>
+                        <span>Load Gist</span>
+                    </h2>
+                    <label>
+                        <span><span class="icon" data-name="github-logo">&#xf772;</span> Gist ID</span>
+                        <input id="githubLoadId" type="text" placeholder="Gist ID">
+                        <button type="button" id="githubLoad" class="accent" title="Load Gist">
+                            <span class="icon" data-name="download-simple">&#xfed9;</span> Load
+                        </button>
+                    </label>
+
                     <h2>
                         <span class="icon" data-name="github-logo">&#xf772;</span>
                         <span>GitHub Connect</span>
