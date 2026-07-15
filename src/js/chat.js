@@ -261,10 +261,10 @@ const modelCache = LS("xode.modelCache", {});
 const MODEL_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
 
 function setApiKey(provider, key) {
-    const settings = ls.get();
+    const settings = ls.read();
     settings.apiKeys = settings.apiKeys || {};
     settings.apiKeys[provider] = key;
-    ls.set(settings);
+    ls.update(settings);
 }
 
 // A provider is "ready" to be used/fetched from when either:
@@ -276,7 +276,7 @@ function isProviderReady(providerKey, apiKey) {
 }
 
 const getAIConfig = () => {
-    const settings = ls.get();
+    const settings = ls.read();
     return {
         provider: settings.provider,
         model: elModel.value,
@@ -732,7 +732,7 @@ Object.entries(PROVIDERS).forEach(([key, p]) => {
 });
 
 const uiUpdateModelLabel = (suggestedModel) => {
-    const settings = ls.get();
+    const settings = ls.read();
     const elModelLabel = el(".chat-model-label");
     const modelName = settings.model || suggestedModel;
     elModelLabel.textContent = modelName?.replace(/-/g, " ") || "Options";
@@ -740,7 +740,7 @@ const uiUpdateModelLabel = (suggestedModel) => {
 };
 
 async function loadProviderIntoUI(providerKey) {
-    const settings = ls.get();
+    const settings = ls.read();
     const apiKey = (settings.apiKeys || {})[providerKey] || "";
 
     elApiKey.placeholder = PROVIDERS[providerKey].keyPlaceholder;
@@ -756,12 +756,12 @@ async function loadProviderIntoUI(providerKey) {
 }
 
 elProvider.addEventListener("input", async () => {
-    ls.set({ provider: elProvider.value });
+    ls.update({ provider: elProvider.value });
     await loadProviderIntoUI(elProvider.value);
 });
 
 elModel.addEventListener("input", () => {
-    ls.set({ model: elModel.value });
+    ls.update({ model: elModel.value });
     uiUpdateModelLabel();
 });
 
@@ -772,7 +772,7 @@ elApiKey.addEventListener("change", async () => {
 
 // Init
 ; (async () => {
-    const initialSettings = ls.get();
+    const initialSettings = ls.read();
     elProvider.value = initialSettings.provider || "gemini";
     await loadProviderIntoUI(elProvider.value);
     addMessage("system", `<h3>✨︎ Hi, I'm Xody</h3>your AI assistant.<br>Choose a provider, select a model, and ask a question to get started.`);

@@ -11,6 +11,14 @@ import { extractColors } from "./colorExtract.js";
 
 const TAB_WIDTH = 4;
 
+function syncScroll(evt) {
+    evt.preventDefault();
+    const area = evt.target;
+    area.blur();
+    area.focus();
+    console.log("fix scroll");
+}
+
 const formatCode = async (code, language) => {
     const parserMap = {
         js: "babel",
@@ -87,6 +95,16 @@ export class Editor {
                 this.elTextarea.setSelectionRange(newCaretPosition, newCaretPosition);
                 // Trigger input event
                 this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+        });
+
+        // Fix textaarea scroll on click - change line focus
+        this.elTextarea.addEventListener('click', (evt) => {
+            syncScroll(evt);
+        });
+        this.elTextarea.addEventListener('keyup', (evt) => {
+            if (evt.key === "Enter" || evt.key === "ArrowDown" || evt.key === "ArrowUp" || evt.key === "ArrowLeft" || evt.key === "ArrowRight") {
+                syncScroll(evt);
             }
         });
 
