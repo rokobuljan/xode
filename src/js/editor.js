@@ -171,7 +171,6 @@ export class Editor {
         const totLines = this.elTextarea.value.split(/\n/).length;
         this.elLines.innerHTML = "<span></span>".repeat(totLines);
         const digitsLen = String(totLines).length;
-        console.log(digitsLen);
         this.elParent.style.setProperty("--gutter-digits", digitsLen);
 
         // Color swatches in lines

@@ -114,7 +114,6 @@ const gistCrud = {
      * @param {{ description?: string, files: object }} data
      */
     update: requireAuth(async (token, gistId, { description, files }) => {
-        console.log(token, gistId, { description, files });
         return request(`${API_BASE}/${gistId}`, {
             method: 'PATCH',
             body: JSON.stringify({ description, files })
