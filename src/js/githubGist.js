@@ -11,17 +11,17 @@ const API_BASE = 'https://api.github.com/gists';
 /* ---------- token helpers ---------- */
 
 export function getToken() {
-    return ls.get().gt;
+    return ls.read().gt;
 }
 
 export function setToken(gt) {
-    ls.set({ gt });
+    ls.update({ gt });
 }
 
 export function clearToken() {
-    const settings = ls.get();
+    const settings = ls.read();
     delete settings.gt;
-    ls.set(settings);
+    ls.update(settings);
 }
 
 export function hasToken() {

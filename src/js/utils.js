@@ -11,9 +11,9 @@ export const download = (content, filename = "new_document.html", mimeType = "te
 export const LS = (id = "main", defaultData = {}) => {
     return {
         dbName: `ls-${id}`,
-        get() {
+        read() {
             if (!localStorage[this.dbName]) {
-                this.set(defaultData);
+                localStorage[this.dbName] = JSON.stringify(defaultData);
             }
             try {
                 return JSON.parse(localStorage[this.dbName]);
@@ -21,9 +21,8 @@ export const LS = (id = "main", defaultData = {}) => {
                 return null;
             }
         },
-        set(data) {
-            // Merge new data with existing!
-            const _data = this.get();
+        update(data) {
+            const _data = this.read() || {};
             if (data) Object.assign(_data, data);
             localStorage[this.dbName] = JSON.stringify(_data);
         },
