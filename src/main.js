@@ -8,18 +8,19 @@ import "./css/index.css";
 import "./js/splitview.js";
 import "./js/modal.js";
 import "./js/chat.js";
+import gist, { setToken, getToken, clearToken, hasToken } from "./js/githubGist.js";
 import { bus } from './js/bus.js';
 import Rx from "./js/Rx.js";
-import { el, els, elNew, download, formatDateTime } from "./js/utils.js";
-import { openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId } from './js/project.js';
+import { el, els, elNew, download, formatDateTime, params } from "./js/utils.js";
+import { openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from './js/project.js';
 import { Editor } from "./js/editor.js";
 
 
-let currentProject = {};
 const panes = {};
 const elPreview = el("#preview"); // the iframe
 const elAutorun = el("#autorun");
 const elRun = el("#run");
+let currentProject = {};
 let previewTimeout;
 
 const paneConsole = {
@@ -168,35 +169,35 @@ const drawProjects = () => {
         });
 
         elThumbnail.append(elThumbnailIframe);
-
+        const gistLinkHTML = projectData.gistId ? `<a href="https://gist.github.com/${projectData.gistId}" target="_blank" rel="noopener noreferrer"><span class="icon" data-name="github-logo">&#xf772;</span></a>` : "";
         const elProject = elNew("div", {
-            id: `project-${project.id}`,
+            id: `project-${projectData.id}`,
             className: "project",
             innerHTML: `<div class="bar">
-                <span class="project-name">${project.name}</span>
-                <span class="project-date">${formatDateTime(project.updatedAt)}</span>
+                <span class="project-name">${projectData.name}</span>
                 <br>
-                <span>
-                    <button data-download-id="${project.id}" type="button"><span class="icon" data-name="download">&#xf3b7;</span></button>
-                    <button data-delete-id="${project.id}" type="button"><span class="icon" data-name="trash">&#xf202;</span></button>
+                <span class="project-actions">
+                    ${gistLinkHTML}
+                    <button data-download-id="${projectData.id}" type="button"><span class="icon" data-name="download">&#xf3b7;</span></button>
+                    <button data-delete-id="${projectData.id}" type="button"><span class="icon" data-name="trash">&#xf202;</span></button>
                 </span>
             </div>`,
-            title: `${project.name} — ${project.description || "No description"}`,
+            title: `${projectData.name} — ${projectData.description || "No description"} | ${formatDateTime(projectData.updatedAt)}`,
         });
         elProject.prepend(elThumbnail);
 
         el(`[data-delete-id]`, elProject).addEventListener("click", () => {
-            if (confirm(`Delete project: "${project.name}"?`)) {
-                deleteProject(project.id);
+            if (confirm(`Delete project: "${projectData.name}"?`)) {
+                deleteProject(projectData.id);
                 drawProjects();
             }
         });
         el(`[data-download-id]`, elProject).addEventListener("click", () => {
-            downloadProject(project.id);
+            downloadProject(projectData.id);
         });
         // Close modal on iframe click:
         elThumbnail.addEventListener("click", () => {
-            projectInit(false, project.id);
+            projectInit(false, projectData.id);
         });
         elProjectsList.append(elProject);
     });
@@ -260,7 +261,7 @@ elPreview.addEventListener('load', () => {
 // NEW PROJECT
 el("#project-new").addEventListener("click", () => {
     projectInit(); // Create new project
-    drawProjects(); // redraw aold ones
+    drawProjects(); // redraw old ones
 });
 
 /**
@@ -272,13 +273,116 @@ const generatePanes = () => {
     panes.js = new Editor(el("#editor-js"), { syntax: "js" });
 };
 
-// INIT
-generatePanes();
-paneConsole.init();
-projectInit(false); // Load latest project
-drawProjects();
-
 // Update html from AI
 bus.on('ai:update', ({ syntax, content }) => {
     currentProject[syntax] = content; // Update and save
 });
+
+// === GISTS =============================
+
+const gistId = params.g;
+let token = getToken();
+console.log({ gistId, token });
+
+// Save token to localStorage
+const elGithubToken = el("#githubToken");
+const elGithubTokenDelete = el("#githubTokenDelete");
+const elGithubPublish = el("#githubPublish");
+
+const updateElGithubToken = () => {
+    elGithubToken.value = "";
+    if (token) elGithubToken.placeholder = "CONNECTED! Insert a new token if expired.";
+    else elGithubToken.placeholder = "GitHub Token (classic)";
+    elGithubTokenDelete.disabled = !token;
+    elGithubPublish.disabled = !token;
+};
+updateElGithubToken();
+elGithubToken.addEventListener("input", (evt) => {
+    token = evt.target.value;
+    if (token) setToken(token);
+    else clearToken();
+    updateElGithubToken();
+});
+elGithubToken.addEventListener("blur", () => {
+    updateElGithubToken();
+});
+elGithubTokenDelete.addEventListener("click", () => {
+    updateElGithubToken();
+    elGithubToken.dispatchEvent(new Event("input"));
+});
+
+const gistLoad = async (gistId) => {
+    const existsLocally = loadProject(gistId);
+    if (!existsLocally) {
+        const data = await gist.read(gistId);
+        const files = { html: "", css: "", js: "" };
+        Object.entries(data.files).forEach(([name, file]) => {
+            if (name.endsWith(".html")) files.html = file.content;
+            else if (name.endsWith(".css")) files.css = file.content;
+            else if (name.endsWith(".js")) files.js = file.content;
+        });
+        const newProjectData = {
+            id: gistId,
+            gistId,
+            name: data.description,
+            description: data.description,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at,
+            html: files.html,
+            css: files.css,
+            js: files.js,
+        };
+        const project = createProject(newProjectData);
+        saveProject(project);
+        drawProjects();
+    }
+
+    projectInit(false, gistId);
+};
+
+
+const gistPublish = async (project) => {
+    const files = {};
+    if (project.html?.trim()) files['index.html'] = { content: project.html };
+    if (project.js?.trim()) files['script.js'] = { content: project.js };
+    if (project.css?.trim()) files['style.css'] = { content: project.css };
+    if (Object.keys(files).length === 0) {
+        console.warn('Nothing to publish — all panes are empty');
+        return;
+    }
+
+    const description = project.name || project.description || "Untitled";
+    let res;
+
+    console.log(res);
+
+    // PUBLISH - Create
+    if (!project.gistId) {
+        res = await gist.create({ description, files });
+        project.id = res.id;
+        project.gistId = res.id;
+        saveProject(project); // Save a local copy with the new ID
+    }
+    // PUBLISH - Update
+    else {
+        resizeTo = await gist.update(project.gistId, { description, files });
+    }
+};
+
+elGithubPublish.addEventListener("click", () => {
+    void gistPublish(currentProject);
+});
+
+
+// INIT
+
+generatePanes();
+paneConsole.init();
+
+if (gistId) {
+    void gistLoad(gistId);
+} else {
+    projectInit(false); // Load latest project
+}
+
+drawProjects();

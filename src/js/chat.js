@@ -756,17 +756,12 @@ async function loadProviderIntoUI(providerKey) {
 }
 
 elProvider.addEventListener("input", async () => {
-    const settings = ls.get();
-    settings.provider = elProvider.value;
-    // settings.model = "";
-    ls.set(settings);
+    ls.set({ provider: elProvider.value });
     await loadProviderIntoUI(elProvider.value);
 });
 
 elModel.addEventListener("input", () => {
-    const settings = ls.get();
-    settings.model = elModel.value;
-    ls.set(settings);
+    ls.set({ model: elModel.value });
     uiUpdateModelLabel();
 });
 
