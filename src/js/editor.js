@@ -16,7 +16,6 @@ function syncScroll(evt) {
     const area = evt.target;
     area.blur();
     area.focus();
-    console.log("fix scroll");
 }
 
 const formatCode = async (code, language) => {
@@ -171,6 +170,9 @@ export class Editor {
         if (!this.elTextarea || !this.elLines) return;
         const totLines = this.elTextarea.value.split(/\n/).length;
         this.elLines.innerHTML = "<span></span>".repeat(totLines);
+        const digitsLen = String(totLines).length;
+        console.log(digitsLen);
+        this.elParent.style.setProperty("--gutter-digits", digitsLen);
 
         // Color swatches in lines
         if (this.syntax === "css") {

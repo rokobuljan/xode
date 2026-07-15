@@ -1,0 +1,158 @@
+/* EDITOR */
+
+.editor {
+    --gutter-width: 1;
+    display: flex;
+    overflow: auto;
+    height: 100%;
+    width: 100%;
+    background: var(--bg);
+    scroll-padding-left: calc(var(--gutter-width) * 1ch + 3rem);
+}
+
+.editor-area {
+    position: relative;
+    width: 100%;
+    container-type: size;
+}
+
+.editor-selection-stat {
+    position: absolute;
+    bottom: 0.4rem;
+    right: 0.5rem;
+    text-align: right;
+    color: color-mix(in srgb, var(--fg), var(--bg) 20%);
+    font-size: 0.7em;
+    pointer-events: none;
+}
+
+textarea,
+.editor-highlight code,
+.editor-textarea,
+.editor-lines {
+    background: transparent;
+    font: normal normal 13px/1.4 "Fira Code", monospace;
+}
+
+.editor-highlight code,
+.editor-textarea {
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow: hidden;
+    padding: 0 !important;
+    padding-right: 1rem !important;
+}
+
+.editor-textarea {
+    position: relative;
+    display: block;
+    min-width: 100%;
+    resize: none;
+    field-sizing: content;
+    min-height: 100cqh;
+    /* 1* Make text invisible */
+    color: #fff0;
+    /* 1* but keep caret visible */
+    caret-color: var(--fg);
+    border: 0;
+    padding-bottom: 50cqh !important;
+
+    &:focus {
+        outline: transparent;
+    }
+
+    &::selection {
+        background: color-mix(in srgb, var(--c1), #0000 70%);
+    }
+
+    &::placeholder {
+        color: color-mix(in srgb, var(--fg), var(--bg) 80%);
+        font-style: italic;
+        text-transform: uppercase;
+    }
+}
+
+.is-resizing {
+    user-select: none;
+
+    #preview {
+        pointer-events: none;
+    }
+}
+
+.editor-highlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    user-select: none;
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+.editor-lines {
+    flex-shrink: 0;
+    position: sticky;
+    left: 0px;
+    height: max-content;
+    min-height: 100%;
+    min-width: 3.3em;
+    text-align: right;
+    color: color-mix(in srgb, var(--bg), var(--fg) 30%);
+    background: var(--bg);
+    margin-bottom: 0;
+    z-index: 1;
+
+    &::before {
+        content: attr(data-label);
+        position: absolute;
+        top: 0.3em;
+        left: 0.2em;
+        height: 0;
+        width: min-content;
+        color: #fff;
+        font-size: 0.85em;
+        transform-origin: top right;
+        rotate: -90deg;
+        translate: -100% 10%;
+        color: color-mix(in srgb, var(--bg), var(--fg) 30%);
+        text-transform: uppercase;
+    }
+
+    [data-view="html"] &::before {
+        color: #f57454;
+    }
+
+    [data-view="css"] &::before {
+        color: hsl(196, 100%, 50%);
+    }
+
+    [data-view="js"] &::before {
+        color: hsl(54, 100%, 50%);
+    }
+
+    >span {
+        position: relative;
+        display: block;
+        padding: 0 0.5rem;
+        counter-increment: lineNumber;
+
+        &::before {
+            content: counter(lineNumber);
+        }
+
+        .swatch {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(var(--swatch), var(--swatch)), repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 6px 6px;
+            opacity: 1;
+            transition: opacity 0.2s;
+
+            @starting-style {
+                opacity: 0;
+            }
+        }
+    }
+}

@@ -48,7 +48,6 @@ const paneConsole = {
 };
 
 const rxHandler = ({ detail }) => {
-    console.log(detail);
     // SAVE PROJECT if edited:
     if (/^(name|description)$/.test(detail.prop)) {
         if (detail.oldValue !== detail.value) {
@@ -361,8 +360,6 @@ const gistPublish = async (project) => {
 
     const description = project.name || project.description || "Untitled";
     let res;
-
-    console.log(res);
 
     // PUBLISH - Create
     if (!project.gistId) {
