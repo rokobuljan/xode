@@ -151,7 +151,6 @@ const drawProjects = () => {
     elProjectsList.innerHTML = "";
     listProjects().forEach((project) => {
         const elThumbnail = elNew("div", { className: "thumbnail" });
-        elThumbnail.dataset.modal = "";
         const projectData = openProject(project.id);
         projectData.html = `
             <script>// XODE-injected: Silence, suppress some console methods for thumbnails
@@ -376,6 +375,7 @@ const gistPublish = async (project) => {
     else {
         resizeTo = await gist.update(project.gistId, { description, files });
     }
+    drawProjects();
 };
 
 elGithubPublish.addEventListener("click", () => {
