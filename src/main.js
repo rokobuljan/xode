@@ -89,6 +89,15 @@ const projectInit = (isNew = true, id) => {
     ["html", "css", "js"].forEach(syntax => panes[syntax]?.highlight());
     paneConsole.clear();
 
+    // Update URI param if is Gist or not
+    const url = new URL(window.location.href);
+    if (currentProject.gistId) {
+        url.searchParams.set("g", currentProject.gistId);
+    } else {
+        url.searchParams.delete("g");
+    }
+    window.history.replaceState({}, "", url);
+
     // Preview the project
     preview();
 };
@@ -346,7 +355,6 @@ const gistLoad = async (gistId) => {
 
     projectInit(false, gistId);
 };
-
 
 const gistPublish = async (project) => {
     const files = {};

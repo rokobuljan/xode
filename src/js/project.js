@@ -66,7 +66,7 @@ function updateIndexEntry(project) {
     saveIndex(index);
 }
 
-//  CRUD 
+// CRUD 
 
 export function listProjects() {
     return Object.values(loadIndex()).sort((a, b) => b.updatedAt - a.updatedAt);
@@ -135,6 +135,5 @@ export function deleteProject(id) {
 export function openProject(id) {
     const targetId = id || getLastProjectId();
     const data = targetId ? loadProject(targetId) : null;
-    // if (targetId) setLastProjectId(targetId);
     return data || createProject({ persist: false });
 }
