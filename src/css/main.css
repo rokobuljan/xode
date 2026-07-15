@@ -78,6 +78,10 @@ button {
     cursor: pointer;
     transition: background 0.2s;
 
+    &:disabled {
+        opacity: 0.5;
+    }
+
     &:not(:disabled):hover {
         background: var(--c1);
         color: var(--bg);
@@ -120,6 +124,7 @@ details {
         font-weight: 400;
         font-size: 1.1rem;
         padding-right: 1rem;
+        cursor: pointer;
 
         b {
             color: var(--c1);
@@ -336,7 +341,7 @@ input[type="password"] {
 }
 
 :disabled {
-    pointer-events: none;
+    cursor: not-allowed;
 }
 
 .ckbtn {
@@ -482,16 +487,19 @@ input[type="password"] {
 
     .project {
         overflow: hidden;
-        cursor: pointer;
-        transition: scale 0.25s;
 
-        &:hover {
-            iframe {
+        .thumbnail {
+            cursor: pointer;
+            margin-bottom: 0.4rem;
+            transition: box-shadow 0.25s;
+
+            &:hover {
                 box-shadow: 0 0 0 0.2rem var(--c1);
             }
         }
 
         iframe {
+            display: block;
             background: #fff;
             border: 0;
             width: 100%;
@@ -511,11 +519,14 @@ input[type="password"] {
             }
         }
 
-        .project-name {}
+        .project-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
 
-        .project-date {
-            opacity: 0.5;
-            font-size: 0.8em;
+            >* {
+                padding: 0.2em 0.4em;
+            }
         }
     }
 }
@@ -525,27 +536,16 @@ input[type="password"] {
     color: var(--bg);
 }
 
-/* utils */
-.ml-auto {
-    margin-left: auto;
+#modal-projects {
+    max-width: 1200px;
+
+    >* {
+        flex: 1;
+    }
 }
 
-.mr-auto {
-    margin-right: auto;
-}
-
-.col {
-    display: flex;
-    flex-direction: column;
-}
-
-.row {
-    display: flex;
-    flex-direction: row;
-}
-
-.flex-1 {
-    flex: 1;
+#githubPublish {
+    align-self: flex-end;
 }
 
 /* highlight.js customizations: */
@@ -556,8 +556,9 @@ input[type="password"] {
 blockquote {
     border-left: 3px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
     padding-left: 1rem;
-    margin-left: 1rem;
+    margin-left: 0rem;
     font-size: 0.85rem;
+    margin: 0.1rem 0;
 }
 
 details {

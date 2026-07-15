@@ -197,42 +197,80 @@
     </main>
 
     <div class="modal-wrapper">
-        <div class="modal" id="modal-projects">
-            <div class="modal-head">
-                <h2>
-                    <span class="icon" data-name="folder">&#xf045;</span>
-                    <span>Project</span>
-                    <button class="accent" type="button" id="project-new">+ Create New</button>
-                </h2>
-                <button type="button" data-modal>
-                    <span class="icon" data-name="x1">&#xf488;</span>
-                </button>
-            </div>
+        <div class="modal row" id="modal-projects">
+            <button class="modal-close" type="button" data-modal>
+                <span class="icon" data-name="x1">&#xf488;</span>
+            </button>
             <div class="col">
-                <label>
-                    <span><span class="icon" data-name="folder">&#xf045;</span> Name</span>
-                    <input data-rx="name" class="currentProjectName" type="text" placeholder="Project Name" value=""
-                        maxlength="20" minlength="3">
-                </label>
-                <label>
-                    <span><span class="icon" data-name="info">&#xf2e0;</span> Description</span>
-                    <textarea data-rx="description" placeholder="Project Description"></textarea>
-                </label>
-            </div>
-            <blockquote>
-                HTML &amp; CSS support expandable <b>Emmet</b> syntax.<br>
-                Format using <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd>
-            </blockquote>
-            <div class="modal-body">
+                <div>
+                    <button class="accent" type="button" id="project-new">+ Create New</button>
+                </div>
+                <div class="modal-head">
+                    <h2>
+                        <span class="icon" data-name="folder">&#xf045;</span>
+                        <span>Project</span>
+                    </h2>
+                </div>
+                <div class="modal-body">
 
-                <h2>
-                    <span class="icon" data-name="folder-search">&#xf0a4;</span>
-                    All projects
-                </h2>
-                <div id="projects-list"></div>
+                    <div class="col">
+                        <label>
+                            <span><span class="icon" data-name="folder">&#xf045;</span> Name</span>
+                            <input data-rx="name" class="currentProjectName" type="text" placeholder="Project Name"
+                                value="" maxlength="20" minlength="3">
+                        </label>
+                        <label>
+                            <span><span class="icon" data-name="info">&#xf2e0;</span> Description</span>
+                            <textarea data-rx="description" placeholder="Project Description"></textarea>
+                        </label>
+                        <button type="button" id="githubPublish" class="accent"> <span class="icon"
+                                data-name="github-logo">&#xf772;</span>Publish</button>
+                    </div>
+                    <h2>
+                        <span class="icon" data-name="github-logo">&#xf772;</span>
+                        <span>GitHub Connect</span>
+                    </h2>
+                    <p>
+                        XODE projects are saved locally. For a more permanent solution, and to share your
+                        creations, <a href="https://github.com/settings/tokens" target="_blank"
+                            rel="noopener noreferrer">create a GitHub token</a> and paste it below to enable
+                        this feature.
+                    </p>
+                    <div class="form-group">
+                        <label>
+                            <span><span class="icon" data-name="key-round">&#xf12c;</span> Token</span>
+                            <input id="githubToken" type="password" placeholder="GitHub Token (classic)">
+                            <button type="button" id="githubTokenDelete" class="accent"
+                                title="Delete token and disconnect">
+                                <span class="icon" data-name="trash">&#xf202;</span>
+                            </button>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-foot">
+                    <p>
+                        <span class="icon" data-name="info">&#xf2e0;</span><br>
+                        Format using <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd><br>
+                        HTML &amp; CSS support expandable <b>Emmet</b> syntax.
+                    </p>
+                    <br>
+                    <p>
+                        &copy; XODE — roxon.hr
+                    </p>
+                </div>
+
             </div>
-            <div class="modal-foot">
-                &copy; XODE — roxon.hr
+
+            <div class="col" style="flex: 1.8;">
+                <div class="modal-head">
+                    <h2>
+                        <span class="icon" data-name="folder-search">&#xf0a4;</span>
+                        All projects
+                    </h2>
+                </div>
+                <div class="modal-body">
+                    <div id="projects-list"></div>
+                </div>
             </div>
         </div>
     </div>

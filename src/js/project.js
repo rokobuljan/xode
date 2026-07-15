@@ -20,7 +20,8 @@
 const APP_PREFIX = 'xode';
 const INDEX_KEY = `${APP_PREFIX}-index`;
 const LAST_KEY = `${APP_PREFIX}-last-project`;
-const projectKey = (id) => `${APP_PREFIX}-project-${id}`;
+const generateUUID = () => crypto.randomUUID().replace(/-/g, '');
+const projectKey = (uuid) => `${APP_PREFIX}-project-${uuid}`;
 
 export function getLastProjectId() {
     return localStorage.getItem(LAST_KEY);
@@ -76,21 +77,24 @@ export function loadProject(id) {
     return raw ? JSON.parse(raw) : null;
 }
 
-export function createProject({ name = "Untitled", description = "", panes = {}, persist = true } = {}) {
+export function createProject(data = {}) {
     const now = Date.now();
+    const { persist, panes, ...rest } = data;
     const project = {
-        id: crypto.randomUUID(),
-        name,
-        description,
+        id: generateUUID(),
+        gistId: null,
+        name: "Untitled",
+        description: "",
         html: "",
         css: "",
         js: "",
+        ...rest,
         panes: { ...DEFAULT_PANES, ...panes },
         createdAt: now,
         updatedAt: now,
-        isAutorun: true
+        isAutorun: true,
     };
-    if (persist) {
+    if (persist !== false) {
         saveProject(project);
     }
     return project;
