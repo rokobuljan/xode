@@ -282,16 +282,18 @@ bus.on('ai:update', ({ syntax, content }) => {
 
 const gistId = params.g;
 let token = getToken();
-console.log({ gistId, token });
+
 
 // Save token to localStorage
 const elGithubToken = el("#githubToken");
 const elGithubTokenDelete = el("#githubTokenDelete");
 const elGithubPublish = el("#githubPublish");
+const elGithubLoad = el("#githubLoad");
+const elGithubLoadId = el("#githubLoadId");
 
 const updateElGithubToken = () => {
     elGithubToken.value = "";
-    if (token) elGithubToken.placeholder = "CONNECTED! Insert a new token if expired.";
+    if (token) elGithubToken.placeholder = "CONNECTED!";
     else elGithubToken.placeholder = "GitHub Token (classic)";
     elGithubTokenDelete.disabled = !token;
     elGithubPublish.disabled = !token;
@@ -309,6 +311,13 @@ elGithubToken.addEventListener("blur", () => {
 elGithubTokenDelete.addEventListener("click", () => {
     updateElGithubToken();
     elGithubToken.dispatchEvent(new Event("input"));
+});
+
+elGithubLoad.addEventListener("click", async () => {
+    const gistId = elGithubLoadId.value;
+    if (!gistId) return;
+    await gistLoad(gistId);
+    elGithubLoadId.value = "";
 });
 
 const gistLoad = async (gistId) => {
