@@ -2,19 +2,55 @@
     --grow: 100;
 
     position: relative;
-    display: flex;
     flex: var(--grow) 0 0;
     overflow: hidden;
     background-color: color-mix(in srgb, var(--bg), #000 10%);
 
-    &:has(.view):not(:has(.view:not([data-open="false"]))) {
-        /* Hide .view if inner .view are all hidden */
-        display: none;
-    }
+    display: none;
+
 
     &.noflex {
         flex: none;
     }
+
+    &.col {
+        flex-direction: column;
+
+        &>.splitter {
+            /* Horizontal splitters */
+            cursor: ns-resize;
+        }
+    }
+
+    /* &[data-open="false"] {
+        display: none;
+    }
+
+    &:has([data-open]) {
+        display: none;
+    }
+
+    &.view:not(#app):has(>[data-open]):not(:has(>[data-open="true"])) {
+        display: none;
+    }
+
+    &[data-open="true"],
+    &:has([data-open="true"]),
+    &:not([data-open]):has([data-open="true"]) {
+        display: flex;
+    } */
+
+    /*
+    Hide .view if inner .view are all hidden
+    Debug: open View but none of the html, css, js, console panes
+    */
+    /* &:has(.view):not(:has(.view:not([data-open="false"]))) {
+        display: none;
+    } */
+
+    /* &:not([data-open="false"]):has([data-open="false"]):not(:has([data-open="true"])) {
+        display: none;
+    } */
 
     >.splitter {
         /* Vertical splitters */
@@ -47,20 +83,5 @@
         &:first-child {
             display: none;
         }
-    }
-
-    &.col {
-        flex-direction: column;
-
-        &>.splitter {
-            /* Horizontal splitters */
-            cursor: ns-resize;
-        }
-    }
-}
-
-[data-view] {
-    &[data-open="false"] {
-        display: none;
     }
 }

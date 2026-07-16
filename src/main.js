@@ -8,6 +8,7 @@ import "./css/index.css";
 import "./js/splitview.js";
 import "./js/modal.js";
 import "./js/chat.js";
+import "./js/consoleWarning.js";
 import gist, { setToken, getToken, clearToken, hasToken } from "./js/githubGist.js";
 import { bus } from './js/bus.js';
 import Rx from "./js/Rx.js";
@@ -80,10 +81,18 @@ const projectInit = (isNew = true, id) => {
     setLastProjectId(currentProject.id); // Remember last opened project
 
     //  Update UI: Toggle open/close panes
-    els("[data-view]").forEach(elView => {
+    els("[data-view]").forEach((elView) => {
         const isOpen = currentProject.panes[elView.dataset.view];
-        elView.dataset.open = isOpen;
+        if (typeof isOpen === "boolean") {
+            elView.dataset.open = isOpen;
+        }
     });
+
+    // // Hide a .view parent that has no visible children
+    // els(`.view:not([data-open="true"]):has([data-open="false"]):not(:has([data-open="true"]))`).forEach((elView) => {
+    //     elView.dataset.open = false;
+    //     console.dir(elView.dataset)
+    // });
 
     // Force-clear editors highlight
     ["html", "css", "js"].forEach(syntax => panes[syntax]?.highlight());
@@ -278,6 +287,7 @@ const generatePanes = () => {
     panes.html = new Editor(el("#editor-html"), { syntax: "html" });
     panes.css = new Editor(el("#editor-css"), { syntax: "css" });
     panes.js = new Editor(el("#editor-js"), { syntax: "js" });
+    paneConsole.init();
 };
 
 // Update html from AI
@@ -391,7 +401,6 @@ elGithubPublish.addEventListener("click", () => {
 // INIT
 
 generatePanes();
-paneConsole.init();
 
 if (gistId) {
     void gistLoad(gistId);
@@ -400,3 +409,4 @@ if (gistId) {
 }
 
 drawProjects();
+
