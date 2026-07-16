@@ -696,7 +696,7 @@ async function refreshModelOptions(providerKey, apiKey) {
     }
 
     const cacheKey = apiKey || "__no_key__"; // keyless providers share one cache slot
-    const cache = modelCache.get();
+    const cache = modelCache.read();
     const cached = cache[providerKey];
     const isFresh = cached && cached.forKey === cacheKey && (Date.now() - cached.fetchedAt) < MODEL_CACHE_TTL;
     if (isFresh) {
@@ -716,7 +716,7 @@ async function refreshModelOptions(providerKey, apiKey) {
         }
 
         cache[providerKey] = { models, fetchedAt: Date.now(), forKey: cacheKey };
-        modelCache.set(cache);
+        modelCache.update(cache);
         renderModelState("ready", models);
     } catch (err) {
         console.warn(`Model fetch failed for ${providerKey}:`, err.message);
