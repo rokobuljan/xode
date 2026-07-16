@@ -70,7 +70,7 @@
 
     <main id="app" class="view">
         <div class="view col">
-            <div class="view" id="panes">
+            <div class="view">
                 <div class="view" data-view="html" data-open="{{panes.html}}">
                     <div class="editor" id="editor-html"></div>
                 </div>
@@ -90,7 +90,7 @@
             </div>
             <div class="splitter"></div>
             <div class="view col" data-view="preview" data-open="{{panes.preview}}">
-                <div class="view-open-exclude" data-view="richEditor" data-open="{{panes.richEditor}}">
+                <div data-view="richEditor" data-open-inner data-open="{{panes.richEditor}}">
                     <div class="cmd-group">
                         <span data-cmd="bold" title="Bold" class="icon" data-name="bold">&#xf320;</span>
                         <span data-cmd="italic" alt="Italic" title="Italic" class="icon"
