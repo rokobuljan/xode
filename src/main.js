@@ -88,12 +88,6 @@ const projectInit = (isNew = true, id) => {
         }
     });
 
-    // // Hide a .view parent that has no visible children
-    // els(`.view:not([data-open="true"]):has([data-open="false"]):not(:has([data-open="true"]))`).forEach((elView) => {
-    //     elView.dataset.open = false;
-    //     console.dir(elView.dataset)
-    // });
-
     // Force-clear editors highlight
     ["html", "css", "js"].forEach(syntax => panes[syntax]?.highlight());
     paneConsole.clear();
