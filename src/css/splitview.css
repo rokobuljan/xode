@@ -11,7 +11,7 @@
     .view {
         display: none;
 
-        &:has([data-open="true"]:not(.view-open-exclude)) {
+        &:has([data-open="true"]:not([data-open-inner])) {
             display: flex;
         }
 
