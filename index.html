@@ -90,7 +90,7 @@
             </div>
             <div class="splitter"></div>
             <div class="view col" data-view="preview" data-open="{{panes.preview}}">
-                <div data-view="richEditor" data-open="{{panes.richEditor}}">
+                <div class="view-open-exclude" data-view="richEditor" data-open="{{panes.richEditor}}">
                     <div class="cmd-group">
                         <span data-cmd="bold" title="Bold" class="icon" data-name="bold">&#xf320;</span>
                         <span data-cmd="italic" alt="Italic" title="Italic" class="icon"
@@ -155,8 +155,7 @@
                             class="icon" data-name="remove-formatting">&#xf175;</span>
                     </div>
                 </div>
-                <iframe id="preview" data-open="true"
-                    sandbox="allow-modals allow-forms allow-pointer-lock allow-popups allow-scripts"
+                <iframe id="preview" sandbox="allow-modals allow-forms allow-pointer-lock allow-popups allow-scripts"
                     frameborder="0"></iframe>
             </div>
         </div>
