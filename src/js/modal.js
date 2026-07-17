@@ -5,7 +5,9 @@ addEventListener("click", (evt) => {
     const elBtn = evt.target.closest("[data-modal]");
 
     // Click inside modal (but not on a close modal button)
-    if (evt.target.closest('.modal') && !elBtn) return;
+    if (evt.target.closest('.modal') && !elBtn) {
+        return;
+    }
 
     const id = elBtn?.dataset.modal;
 
@@ -14,7 +16,6 @@ addEventListener("click", (evt) => {
 
     if (!elBtn) return;
     if (!id) {
-        console.log("CLosing modal 2", id);
         elBtn.closest(".modal").classList.remove("is-open");
     }
     else {
