@@ -17,10 +17,11 @@
  * and avoids the pitfall of silently-unpersisted nested mutations.
  */
 
+import { generateUUID } from './utils.js';
+
 const APP_PREFIX = 'xode';
 const INDEX_KEY = `${APP_PREFIX}-index`;
 const LAST_KEY = `${APP_PREFIX}-last-project`;
-const generateUUID = () => crypto.randomUUID().replace(/-/g, '');
 const projectKey = (uuid) => `${APP_PREFIX}-project-${uuid}`;
 
 export function getLastProjectId() {

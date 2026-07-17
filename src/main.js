@@ -93,13 +93,11 @@ const projectInit = (isNew = true, id) => {
     paneConsole.clear();
 
     // Update URI param if is Gist or not
-    const url = new URL(window.location.href);
     if (currentProject.gistId) {
-        url.searchParams.set("g", currentProject.gistId);
+        params.set("g", currentProject.gistId);
     } else {
-        url.searchParams.delete("g");
+        params.delete("g");
     }
-    window.history.replaceState({}, "", url);
 
     // Preview the project
     preview();
@@ -198,10 +196,22 @@ const drawProjects = () => {
 
         el(`[data-delete-id]`, elProject).addEventListener("click", () => {
             if (confirm(`Delete project: "${projectData.name}"?`)) {
-                el(`#project-${projectData.id}`).remove();
-                deleteProject(projectData.id);
+                requestAnimationFrame(() => {
+                    el(`#project-${projectData.id}`).remove();
+                    const isActiveProject = currentProject.id === projectData.id;
+                    if (isActiveProject) {
+                        params.delete("g"); // Remove from URI params to load load again the same project from GitHub gists
+                        const firstProject = listProjects()[0];
+                        if (firstProject) {
+                            projectInit(false, firstProject.id);
+                        } else {
+                            projectInit(); // init a new empty project
+                        }
+                    }
+                    deleteProject(projectData.id);
+                });
             }
-        });
+        }, { capture: true });
         el(`[data-download-id]`, elProject).addEventListener("click", () => {
             downloadProject(projectData.id);
         });
@@ -216,7 +226,6 @@ const drawProjects = () => {
 const elProjectsSearch = el("#projects-search");
 elProjectsSearch.addEventListener("input", () => {
     const search = elProjectsSearch.value.toLowerCase().trim();
-    console.log(search);
     const elsProjects = els(".project", elProjectsList);
     const projectsListId = listProjects().reduce((acc, proj) => (acc[proj.id] = proj, acc), {});
     elsProjects.forEach((elProject) => {
@@ -306,9 +315,7 @@ bus.on('ai:update', ({ syntax, content }) => {
 
 // === GISTS =============================
 
-const gistId = params.g;
 let token = getToken();
-
 
 // Save token to localStorage
 const elGithubToken = el("#githubToken");
@@ -414,11 +421,10 @@ elGithubPublish.addEventListener("click", () => {
 
 generatePanes();
 
-if (gistId) {
-    void gistLoad(gistId);
+if (params.get("g")) {
+    void gistLoad(params.get("g")); // Load Gist Project
 } else {
-    projectInit(false); // Load latest project
+    projectInit(false); // Load latest Project
 }
 
 drawProjects();
-

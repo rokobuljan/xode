@@ -33,4 +33,24 @@ export const LS = (id = "main", defaultData = {}) => {
 };
 export const elsSiblings = (elem, sel) => [...els(sel, elem.parentElement)].filter(child => child !== elem);
 export const formatDateTime = (date) => new Date(date).toISOString().replace('T', ' ').slice(0, 19);
-export const params = Object.fromEntries(new URLSearchParams(location.search));
+export const params = {
+    get(key) {
+        const all = Object.fromEntries(new URLSearchParams(location.search));
+        return key ? all[key] : all;
+    },
+    set(key, value) {
+        if (value === null || value === undefined || value === "") {
+            return this.delete(key);
+        }
+        const url = new URL(window.location.href);
+        url.searchParams.set(key, value);
+        window.history.replaceState({}, "", url);
+    },
+    delete(key) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete(key);
+        window.history.replaceState({}, "", url);
+    }
+};
+export const generateUUID = () => crypto.randomUUID().replace(/-/g, '');
+
