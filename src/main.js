@@ -161,8 +161,9 @@ const elProjectsList = el("#projects-list");
 const drawProjects = () => {
     elProjectsList.innerHTML = "";
     listProjects().forEach((project) => {
-        const elThumbnail = elNew("div", { className: "thumbnail" });
         const projectData = openProject(project.id);
+        const title = `${projectData.name} ${projectData.description ? " — " + projectData.description : ""} | ${formatDateTime(projectData.updatedAt)}`;
+        const elThumbnail = elNew("div", { className: "thumbnail", title });
         projectData.html = `
             <script>// XODE-injected: Silence, suppress some console methods for thumbnails
             const methods = ['log', 'warn', 'error', 'info', 'debug'];
@@ -179,29 +180,27 @@ const drawProjects = () => {
         });
 
         elThumbnail.append(elThumbnailIframe);
-        const gistLinkHTML = projectData.gistId ? `<a href="https://gist.github.com/${projectData.gistId}" target="_blank" rel="noopener noreferrer"><span class="icon" data-name="github-logo">&#xf772;</span></a>` : "";
+        const gistLinkHTML = projectData.gistId ? `<a href="https://gist.github.com/${projectData.gistId}" target="_blank" rel="noopener noreferrer" title="External Github Gist"><span class="icon" data-name="github-logo">&#xf772;</span></a>` : "";
         const elProject = elNew("div", {
             id: `project-${projectData.id}`,
             className: "project",
             innerHTML: `<div class="bar">
-                <span class="project-name">${projectData.name}</span>
+                <span class="project-name" title="${title}">${projectData.name}</span>
                 <br>
                 <span class="project-actions">
                     ${gistLinkHTML}
-                    <button data-download-id="${projectData.id}" type="button"><span class="icon" data-name="download">&#xf3b7;</span></button>
-                    <button data-delete-id="${projectData.id}" type="button"><span class="icon" data-name="trash">&#xf202;</span></button>
+                    <button data-download-id="${projectData.id}" type="button" title="Download"><span class="icon" data-name="download">&#xf3b7;</span></button>
+                    <button data-delete-id="${projectData.id}" type="button" title="Delete"><span class="icon" data-name="trash">&#xf202;</span></button>
                 </span>
-            </div>`,
-            title: `${projectData.name} — ${projectData.description || "No description"} | ${formatDateTime(projectData.updatedAt)}`,
+            </div>`
         });
         elProject.prepend(elThumbnail);
 
         el(`[data-delete-id]`, elProject).addEventListener("click", () => {
-            drawProjects();
-            // if (confirm(`Delete project: "${projectData.name}"?`)) {
-            //     // deleteProject(projectData.id);
-            //     drawProjects();
-            // }
+            if (confirm(`Delete project: "${projectData.name}"?`)) {
+                el(`#project-${projectData.id}`).remove();
+                deleteProject(projectData.id);
+            }
         });
         el(`[data-download-id]`, elProject).addEventListener("click", () => {
             downloadProject(projectData.id);
@@ -357,11 +356,12 @@ const gistLoad = async (gistId) => {
             else if (name.endsWith(".css")) files.css = file.content;
             else if (name.endsWith(".js")) files.js = file.content;
         });
+        const [projName, projDesc] = data.description.split(" — ");
         const newProjectData = {
             id: gistId,
             gistId,
-            name: data.description,
-            description: data.description,
+            name: projName,
+            description: `${projDesc || ""}`,
             createdAt: data.created_at,
             updatedAt: data.updated_at,
             html: files.html,
@@ -385,20 +385,20 @@ const gistPublish = async (project) => {
         console.warn('Nothing to publish — all panes are empty');
         return;
     }
-
-    const description = project.name || project.description || "Untitled";
-    let res;
+    const projName = project.name?.trim() || "Untitled";
+    const projDesc = project.description?.trim() || "";
+    const description = `${projName} ${projDesc ? ` — ${projDesc}` : ""}`;
 
     // PUBLISH - Create
     if (!project.gistId) {
-        res = await gist.create({ description, files });
+        const res = await gist.create({ description, files });
         project.id = res.id;
         project.gistId = res.id;
         saveProject(project); // Save a local copy with the new ID
     }
     // PUBLISH - Update
     else {
-        resizeTo = await gist.update(project.gistId, { description, files });
+        await gist.update(project.gistId, { description, files });
     }
     drawProjects();
 };
