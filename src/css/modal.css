@@ -49,8 +49,12 @@
     .modal-head {
         position: relative;
         padding: 1rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
 
-        h2 {
+        >:not(button) {
+            margin: 0;
             padding: 0;
         }
 
@@ -94,6 +98,7 @@
 
 .modal-close {
     position: absolute;
+    z-index: 1;
     right: 0.5rem;
     top: 0.5rem;
 }
