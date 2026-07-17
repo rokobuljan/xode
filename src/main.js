@@ -157,8 +157,8 @@ addEventListener("message", async (evt) => {
     }
 });
 
+const elProjectsList = el("#projects-list");
 const drawProjects = () => {
-    const elProjectsList = el("#projects-list");
     elProjectsList.innerHTML = "";
     listProjects().forEach((project) => {
         const elThumbnail = elNew("div", { className: "thumbnail" });
@@ -197,10 +197,11 @@ const drawProjects = () => {
         elProject.prepend(elThumbnail);
 
         el(`[data-delete-id]`, elProject).addEventListener("click", () => {
-            if (confirm(`Delete project: "${projectData.name}"?`)) {
-                deleteProject(projectData.id);
-                drawProjects();
-            }
+            drawProjects();
+            // if (confirm(`Delete project: "${projectData.name}"?`)) {
+            //     // deleteProject(projectData.id);
+            //     drawProjects();
+            // }
         });
         el(`[data-download-id]`, elProject).addEventListener("click", () => {
             downloadProject(projectData.id);
@@ -212,6 +213,21 @@ const drawProjects = () => {
         elProjectsList.append(elProject);
     });
 };
+// Search projects
+const elProjectsSearch = el("#projects-search");
+elProjectsSearch.addEventListener("input", () => {
+    const search = elProjectsSearch.value.toLowerCase().trim();
+    console.log(search);
+    const elsProjects = els(".project", elProjectsList);
+    const projectsListId = listProjects().reduce((acc, proj) => (acc[proj.id] = proj, acc), {});
+    elsProjects.forEach((elProject) => {
+        const elId = elProject.id.replace("project-", "");
+        const project = projectsListId[elId];
+        const matchName = project.name.toLowerCase().includes(search);
+        const matchDesc = project.description.toLowerCase().includes(search);
+        elProject.classList.toggle("is-hidden", !(matchName && matchDesc));
+    });
+});
 
 // EVENTS
 
@@ -304,7 +320,7 @@ const elGithubLoadId = el("#githubLoadId");
 
 const updateElGithubToken = () => {
     elGithubToken.value = "";
-    if (token) elGithubToken.placeholder = "CONNECTED!";
+    if (token) elGithubToken.placeholder = "ENABLED!";
     else elGithubToken.placeholder = "GitHub Token (classic)";
     elGithubTokenDelete.disabled = !token;
     elGithubPublish.disabled = !token;
@@ -390,6 +406,8 @@ const gistPublish = async (project) => {
 elGithubPublish.addEventListener("click", () => {
     void gistPublish(currentProject);
 });
+
+
 
 
 // INIT

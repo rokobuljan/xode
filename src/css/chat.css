@@ -67,9 +67,9 @@
     position: relative;
     padding: 1rem;
     font-size: 0.92rem;
-    transition: scale 0.3s, opacity 0.3s, translate 0.3s;
     max-width: calc(100% - 2rem);
     word-break: break-word;
+    transition: scale 0.3s, opacity 0.3s, translate 0.3s;
 
     @starting-style {
         opacity: 0;
@@ -252,28 +252,14 @@
         padding: 1px;
         background: conic-gradient(from var(--angle),
                 #0000,
-                #0000,
-                #0000,
-                #0000,
-                #0000,
-                #0000,
-                #0000,
-                var(--c2),
-                #00bbff,
-                #61d5ff,
-                #00bbff,
-                var(--c2),
-                #0000,
-                #0000,
-                #0000,
-                #0000,
-                #0000,
-                #0000,
-                #0000,
+                #0000 30%,
+                var(--c2) 50%,
+                var(--c1) 60%,
+                #0000 65%,
                 #0000);
-        animation: spin 4s linear infinite;
+        animation: spin 5s linear infinite;
         /* mask trick: only show the ring, not the fill */
-        -webkit-mask: linear-gradient(#000 0 0) content-box,
+        mask: linear-gradient(#000 0 0) content-box,
             linear-gradient(#000 0 0);
         -webkit-mask-composite: xor;
         mask-composite: exclude;

@@ -133,25 +133,34 @@
     >span {
         position: relative;
         display: block;
-        padding: 0 0.5rem;
+        padding: 0 0.8rem 0 0.5rem;
         counter-increment: lineNumber;
 
         &::before {
+            position: relative;
             content: counter(lineNumber);
+            z-index: 2;
+            pointer-events: none;
         }
 
         .swatch {
             position: absolute;
-            right: 0;
+            right: 2px;
             top: 0;
-            width: 5px;
+            width: 6px;
             height: 100%;
             background: linear-gradient(var(--swatch), var(--swatch)), repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 6px 6px;
             opacity: 1;
-            transition: opacity 0.2s;
+            box-shadow: 1px 0 0 0 color-mix(in srgb, var(--bg), var(--fg) 10%);
+            transition: width 0.1s, opacity 0.2s;
 
             @starting-style {
                 opacity: 0;
+            }
+
+            &:hover {
+                width: calc(100% - 5px);
+                z-index: 1;
             }
         }
     }

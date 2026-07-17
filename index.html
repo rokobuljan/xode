@@ -5,9 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>XODE</title>
-    <link rel="shortcut icon"
-        href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22>%3Ctext y=%22.87em%22 font-size=%2290%22>🔷%3C/text>%3C/svg>"
-        type="image/x-icon" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
@@ -15,15 +13,21 @@
 </head>
 
 <body>
+
+    <svg style="display:none">
+        <symbol id="logo-xode" viewBox="0 0 282 72">
+            <path fill="currentColor"
+                d="M276.888,59.831v9.535H228.552V3.282h47.2v9.535H239.692v18.6h32.287v9.441H239.692V59.831h37.2Zm-69.955.142a32.36,32.36,0,0,1-10.951,6.939A37.77,37.77,0,0,1,182.2,69.366H155.387V3.282h27.094A37.049,37.049,0,0,1,196.17,5.736a32.454,32.454,0,0,1,10.81,6.892,31.475,31.475,0,0,1,7.128,10.479,33.67,33.67,0,0,1,2.548,13.217,33.317,33.317,0,0,1-2.548,13.17A31.741,31.741,0,0,1,206.933,59.973Zm-3.305-33.042a23.872,23.872,0,0,0-4.909-7.505,21.129,21.129,0,0,0-7.316-4.909,24.075,24.075,0,0,0-9.11-1.7H166.527V59.831h16.238a23.1,23.1,0,0,0,8.921-1.7,21.149,21.149,0,0,0,7.175-4.862,23.091,23.091,0,0,0,4.815-7.458,24.732,24.732,0,0,0,1.746-9.393A24.409,24.409,0,0,0,203.628,26.931ZM133.343,60.3a34.523,34.523,0,0,1-11.14,7.222,37.638,37.638,0,0,1-27.472,0A34.5,34.5,0,0,1,83.591,60.3a33.543,33.543,0,0,1-7.458-10.809A32.878,32.878,0,0,1,73.442,36.23a32.551,32.551,0,0,1,2.691-13.217A33.178,33.178,0,0,1,83.591,12.3,34.283,34.283,0,0,1,94.731,5.17a38.286,38.286,0,0,1,27.472,0,33.893,33.893,0,0,1,18.6,17.89,32.213,32.213,0,0,1,2.691,13.17A32.873,32.873,0,0,1,140.8,49.494,33.575,33.575,0,0,1,133.343,60.3Zm-3.115-33.561a24.6,24.6,0,0,0-5.051-7.694A23.472,23.472,0,0,0,99.357,13.9a24.041,24.041,0,0,0-7.6,5.145,23.762,23.762,0,0,0-5.145,7.694,24.283,24.283,0,0,0-1.841,9.488,24.077,24.077,0,0,0,1.888,9.535,24.78,24.78,0,0,0,5.192,7.788,24.293,24.293,0,0,0,7.6,5.24,22.921,22.921,0,0,0,18.22,0,23.225,23.225,0,0,0,7.506-5.24,24.994,24.994,0,0,0,5.051-7.788,24.635,24.635,0,0,0,1.84-9.535A24.288,24.288,0,0,0,130.228,26.742Z" />
+            <path fill="#7c6cff" d="M28,36l5.876,8.3L18,70H4L25,36,4,3H18L33.732,27.721Z" />
+            <path fill="#00bbff" d="M69,3H55L34,36,55,70H69L48,36Z" />
+        </symbol>
+    </svg>
+
     <nav id="top">
-        <h1 class="logo" data-modal="#modal-projects">
-            <svg xmlns="http://www.w3.org/2000/svg" height="1rem" viewBox=" 0 0 282 72">
-                <path fill="currentColor"
-                    d="M276.888,59.831v9.535H228.552V3.282h47.2v9.535H239.692v18.6h32.287v9.441H239.692V59.831h37.2Zm-69.955.142a32.36,32.36,0,0,1-10.951,6.939A37.77,37.77,0,0,1,182.2,69.366H155.387V3.282h27.094A37.049,37.049,0,0,1,196.17,5.736a32.454,32.454,0,0,1,10.81,6.892,31.475,31.475,0,0,1,7.128,10.479,33.67,33.67,0,0,1,2.548,13.217,33.317,33.317,0,0,1-2.548,13.17A31.741,31.741,0,0,1,206.933,59.973Zm-3.305-33.042a23.872,23.872,0,0,0-4.909-7.505,21.129,21.129,0,0,0-7.316-4.909,24.075,24.075,0,0,0-9.11-1.7H166.527V59.831h16.238a23.1,23.1,0,0,0,8.921-1.7,21.149,21.149,0,0,0,7.175-4.862,23.091,23.091,0,0,0,4.815-7.458,24.732,24.732,0,0,0,1.746-9.393A24.409,24.409,0,0,0,203.628,26.931ZM133.343,60.3a34.523,34.523,0,0,1-11.14,7.222,37.638,37.638,0,0,1-27.472,0A34.5,34.5,0,0,1,83.591,60.3a33.543,33.543,0,0,1-7.458-10.809A32.878,32.878,0,0,1,73.442,36.23a32.551,32.551,0,0,1,2.691-13.217A33.178,33.178,0,0,1,83.591,12.3,34.283,34.283,0,0,1,94.731,5.17a38.286,38.286,0,0,1,27.472,0,33.893,33.893,0,0,1,18.6,17.89,32.213,32.213,0,0,1,2.691,13.17A32.873,32.873,0,0,1,140.8,49.494,33.575,33.575,0,0,1,133.343,60.3Zm-3.115-33.561a24.6,24.6,0,0,0-5.051-7.694A23.472,23.472,0,0,0,99.357,13.9a24.041,24.041,0,0,0-7.6,5.145,23.762,23.762,0,0,0-5.145,7.694,24.283,24.283,0,0,0-1.841,9.488,24.077,24.077,0,0,0,1.888,9.535,24.78,24.78,0,0,0,5.192,7.788,24.293,24.293,0,0,0,7.6,5.24,22.921,22.921,0,0,0,18.22,0,23.225,23.225,0,0,0,7.506-5.24,24.994,24.994,0,0,0,5.051-7.788,24.635,24.635,0,0,0,1.84-9.535A24.288,24.288,0,0,0,130.228,26.742Z" />
-                <path fill="#7c6cff" d="M28,36l5.876,8.3L18,70H4L25,36,4,3H18L33.732,27.721Z" />
-                <path fill="#00bbff" d="M69,3H55L34,36,55,70H69L48,36Z" />
-            </svg>
-        </h1>
+        <svg id="logo" class="logo" height="1rem" width="3.8rem" data-modal="#modal-projects">
+            <use href="#logo-xode"></use>
+        </svg>
+
         <button type="button" data-modal="#modal-projects" title="Project Settings">
             <span class="icon" data-name="folder-simple">&#xfdf9;</span>
             <span data-rx="name">Untitled</span>
@@ -201,8 +205,16 @@
                 <span class="icon" data-name="x1">&#xf488;</span>
             </button>
             <div class="col">
-                <div>
-                    <button class="gradient lg" type="button" id="project-new">+ Create new Project</button>
+                <div class="modal-head row">
+                    <svg id="logo" class="logo" height="1rem" width="4rem" style="zoom:1.5;"
+                        data-modal="#modal-projects">
+                        <use href="#logo-xode"></use>
+                    </svg>
+                    <br>
+                    <button class="gradient lg" type="button" id="project-new">
+                        <span class="icon" data-name="plus">&#xf317;</span>
+                        New Project
+                    </button>
                 </div>
                 <div class="modal-head">
                     <h2>
@@ -229,12 +241,9 @@
                         <span class="icon" data-name="cloud-download">&#xf094;</span>
                         <span>Load Gist</span>
                     </h2>
-                    <p>
-                        Load a GitHub Gist project.
-                    </p>
                     <label>
                         <span><span class="icon" data-name="github-logo">&#xf772;</span> Gist ID</span>
-                        <input id="githubLoadId" type="text" placeholder="Gist ID">
+                        <input id="githubLoadId" type="text" placeholder="GitHub Gist ID">
                         <button type="button" id="githubLoad" class="accent" title="Load Gist">
                             <span class="icon" data-name="download-simple">&#xfed9;</span> Load Project
                         </button>
@@ -254,7 +263,7 @@
                         <label>
                             <span><span class="icon" data-name="key-round">&#xf12c;</span> Token</span>
                             <input id="githubToken" type="password" placeholder="GitHub Token (classic)">
-                            <button type="button" id="githubTokenDelete" class="accent"
+                            <button type="button" id="githubTokenDelete" class="danger"
                                 title="Delete token and disconnect">
                                 <span class="icon" data-name="trash">&#xf202;</span>
                             </button>
@@ -281,6 +290,10 @@
                         <span class="icon" data-name="folder-search">&#xf0a4;</span>
                         All projects
                     </h2>
+                    <label>
+                        <i class="icon" data-name="search">&#xf5ae;</i>
+                        <input id="projects-search" type="text" placeholder="Search...">
+                    </label>
                 </div>
                 <div class="modal-body">
                     <div id="projects-list"></div>
