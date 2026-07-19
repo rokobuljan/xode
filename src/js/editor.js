@@ -36,7 +36,8 @@ const formatCode = async (code, language) => {
         semi: true,
         singleQuote: true,
         tabWidth: TAB_WIDTH,
-        htmlWhitespaceSensitivity: "ignore"
+        htmlWhitespaceSensitivity: "ignore",
+        bracketSameLine: true
     });
 };
 
@@ -65,7 +66,7 @@ export class Editor {
         this.elCode = el(".editor-highlight code", this.elParent);
 
         // Init value
-        this.setValue(this.value);
+        this.setValue(this.value, true);
 
         // Events
         this.elTextarea.addEventListener("keydown", async (evt) => {
@@ -93,7 +94,7 @@ export class Editor {
                 let newCaretPosition = oldCaretPosition;
                 this.elTextarea.setSelectionRange(newCaretPosition, newCaretPosition);
                 // Trigger input event
-                this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+                // this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
             }
         });
 
@@ -115,10 +116,21 @@ export class Editor {
             });
         });
     }
-    setValue(value) {
-        this.value = value;
-        this.elTextarea.value = value;
+    setValue(newValue, noHistory = false) {
+        const ss = this.elTextarea.selectionStart; // remember caret before replacing
+        const se = this.elTextarea.selectionEnd;
+
+        if (noHistory) {
+            this.elTextarea.value = newValue;
+        } else {
+            this.elTextarea.focus();
+            document.execCommand("selectAll", false);
+            document.execCommand('insertText', false, newValue);
+        }
+
         this.highlight();
+        this.elTextarea.setSelectionRange(ss, se);
+        this.value = newValue;
     }
     async format() {
         const formatted = await formatCode(this.elTextarea.value, this.syntax);
