@@ -9,14 +9,15 @@ import "./js/splitview.js";
 import "./js/modal.js";
 import "./js/chat.js";
 import "./js/consoleWarning.js";
-import gist, { setToken, getToken, clearToken, hasToken } from "./js/githubGist.js";
+import gist, { setToken, getToken, clearToken } from "./js/githubGist.js";
 import { bus } from './js/bus.js';
 import Rx from "./js/Rx.js";
-import { el, els, elNew, download, formatDateTime, params } from "./js/utils.js";
+import { el, els, elNew, download, formatDateTime, params, LS } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from './js/project.js';
 import { Editor } from "./js/editor.js";
 
-
+const lsSettings = LS("xode.settings");
+const tabWidth = lsSettings.read("tabWidth") || 4;
 const panes = {};
 const elPreview = el("#preview"); // the iframe
 const elAutorun = el("#autorun");
@@ -225,15 +226,15 @@ const drawProjects = () => {
 // Search projects
 const elProjectsSearch = el("#projects-search");
 elProjectsSearch.addEventListener("input", () => {
-    const search = elProjectsSearch.value.toLowerCase().trim();
+    const search = elProjectsSearch.value.trim().toLowerCase();
     const elsProjects = els(".project", elProjectsList);
     const projectsListId = listProjects().reduce((acc, proj) => (acc[proj.id] = proj, acc), {});
     elsProjects.forEach((elProject) => {
         const elId = elProject.id.replace("project-", "");
         const project = projectsListId[elId];
-        const matchName = project.name.toLowerCase().includes(search);
-        const matchDesc = project.description.toLowerCase().includes(search);
-        elProject.classList.toggle("is-hidden", !(matchName && matchDesc));
+        const full = `${project.name.trim()} ${project.description.trim()} ${project.id} ${new Date(project.updatedAt).toLocaleString()}`;
+        const matchName = full.toLowerCase().includes(search);
+        elProject.classList.toggle("is-hidden", !matchName);
     });
 });
 
@@ -414,6 +415,12 @@ elGithubPublish.addEventListener("click", () => {
     void gistPublish(currentProject);
 });
 
+// Change intentation spaces for code format (prettier)
+const elTabWidth = el("#tabWidth");
+elTabWidth.addEventListener("input", () => {
+    lsSettings.update({ tabWidth: elTabWidth.value });
+});
+elTabWidth.value = tabWidth;
 
 
 
