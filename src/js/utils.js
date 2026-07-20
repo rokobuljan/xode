@@ -11,12 +11,13 @@ export const download = (content, filename = "new_document.html", mimeType = "te
 export const LS = (id = "main", defaultData = {}) => {
     return {
         dbName: `ls-${id}`,
-        read() {
+        read(key) {
             if (!localStorage[this.dbName]) {
                 localStorage[this.dbName] = JSON.stringify(defaultData);
             }
             try {
-                return JSON.parse(localStorage[this.dbName]);
+                const db = JSON.parse(localStorage[this.dbName]);
+                return key ? db[key] : db;
             } catch {
                 return null;
             }

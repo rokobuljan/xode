@@ -8,7 +8,7 @@ const ls = LS("xode.settings");
 
 const API_BASE = 'https://api.github.com/gists';
 
-/* ---------- token helpers ---------- */
+/* Token helpers */
 
 export function getToken() {
     return ls.read().gt;

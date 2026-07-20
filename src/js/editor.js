@@ -6,10 +6,10 @@ import prettierPluginEstree from "prettier/plugins/estree";
 import prettierPluginHtml from "prettier/plugins/html";
 import prettierPluginPostcss from "prettier/plugins/postcss";
 
-import { el, elNew } from "./utils.js";
+import { el, elNew, LS } from "./utils.js";
 import { extractColors } from "./colorExtract.js";
 
-const TAB_WIDTH = 4;
+const lsSettings = LS("xode.settings");
 
 function syncScroll(evt) {
     evt.preventDefault();
@@ -35,7 +35,7 @@ const formatCode = async (code, language) => {
         plugins: pluginMap[parser],
         semi: true,
         singleQuote: true,
-        tabWidth: TAB_WIDTH,
+        tabWidth: Number(lsSettings.read("tabWidth")),
         htmlWhitespaceSensitivity: "ignore",
         bracketSameLine: true
     });
@@ -77,7 +77,7 @@ export class Editor {
                     this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
                 } else {
                     // convert Tab to spaces
-                    document.execCommand("insertHTML", false, " ".repeat(TAB_WIDTH));
+                    document.execCommand("insertHTML", false, " ".repeat(lsSettings.read("tabWidth")));
                 }
                 this.highlight();
             }
@@ -159,7 +159,7 @@ export class Editor {
         // 3. Expand the abbreviation and replace the text
         try {
             let expanded = expand(abbreviation, { syntax: this.syntax, type });
-            expanded = expanded.replace(/\t/g, " ".repeat(TAB_WIDTH)); // Replace tabs with 4 spaces
+            expanded = expanded.replace(/\t/g, " ".repeat(lsSettings.read("tabWidth"))); // Replace tabs with 4 spaces
             // Replace the extracted abbreviation with the expanded code
             const newValue = source.substring(0, start) + expanded + source.substring(end);
             this.setValue(newValue);
