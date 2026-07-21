@@ -580,7 +580,7 @@ function removeThinkingMessage(id) {
 
 // Events
 elInput.addEventListener('focus', () => {
-    // close chat Optiosn on message input focus
+    // Close chat Options on message input focus
     el('.chat-options').open = false;
 });
 elInput.addEventListener('keydown', function (evt) {
