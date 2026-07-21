@@ -434,15 +434,14 @@ elTabWidth.value = tabWidth;
 
 // Tabs UI - Single pane toggle
 const elTabs = el("#top .tabs");
-const elsTabs = els(":scope [data-rx]", elTabs);
+const elsTabs = els("[data-rx]", elTabs);
 elTabs.addEventListener("click", (evt) => {
-    const elTabTarget = evt.target.closest(".tab");
-    if (!evt.ctrlKey || !elTabTarget) return;
-    const elInput = el("[data-rx]", elTabTarget);
+    const elTabCheckbox = el("[data-rx]", evt.target.closest(`.tab`));
+    if (!evt.ctrlKey || !elTabCheckbox) return;
     evt.preventDefault();
     elsTabs.forEach((elTab) => {
         const pane = elTab.dataset.rx;
-        const isTarget = pane === elInput.dataset.rx;
+        const isTarget = pane === elTabCheckbox.dataset.rx;
         const syntax = pane.split("panes.")[1];
         elTab.checked = isTarget
         currentProject.panes[syntax] = isTarget;
