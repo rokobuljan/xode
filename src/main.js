@@ -4,6 +4,7 @@
  * @url https://roxon.hr
  */
 
+import DOMPurify from 'dompurify';
 import "./css/index.css";
 import "./js/splitview.js";
 import "./js/modal.js";
@@ -12,18 +13,16 @@ import "./js/consoleWarning.js";
 import gist, { setToken, getToken, clearToken } from "./js/githubGist.js";
 import { bus } from './js/bus.js';
 import Rx from "./js/Rx.js";
-import { el, els, elNew, download, formatDateTime, params, LS } from "./js/utils.js";
+import { el, els, elNew, download, formatDateTime, params, LS, debounce } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from './js/project.js';
 import { Editor } from "./js/editor.js";
 
 const lsSettings = LS("xode.settings");
 const tabWidth = lsSettings.read("tabWidth") || 4;
-const panes = {};
+const editors = {};
 const elPreview = el("#preview"); // the iframe
-const elAutorun = el("#autorun");
-const elRun = el("#run");
+
 let currentProject = {};
-let previewTimeout;
 
 const paneConsole = {
     init() {
@@ -51,18 +50,20 @@ const paneConsole = {
 
 const rxHandler = ({ detail }) => {
     // SAVE PROJECT if edited:
-    if (/^(name|description)$/.test(detail.prop)) {
+    if (/^(name|description|isAutorun)$/.test(detail.prop)) {
         if (detail.oldValue !== detail.value) {
             saveProject(currentProject);
         }
     }
-    else if (/^(html|css|js)$/.test(detail.prop)) {
+    // Editors "input" event (via data-rx): save project data
+    else if (["html", "js", "css"].includes(detail.prop)) {
         if (detail.oldValue !== detail.value) {
-            panes[detail.prop]?.highlight();
-            preview(); // Update changes in iframe
+            editors[detail.prop]?.highlight();
+            previewCurrentProject(detail.prop); // Update changes in iframe
             saveProject(currentProject);
         }
     }
+    // Save panes toggle changes
     else if (detail.prop.startsWith("panes.")) {
         if (detail.oldValue !== detail.value) {
             saveProject(currentProject);
@@ -90,7 +91,7 @@ const projectInit = (isNew = true, id) => {
     });
 
     // Force-clear editors highlight
-    ["html", "css", "js"].forEach(syntax => panes[syntax]?.highlight());
+    ["html", "css", "js"].forEach(syntax => editors[syntax]?.highlight());
     paneConsole.clear();
 
     // Update URI param if is Gist or not
@@ -101,39 +102,55 @@ const projectInit = (isNew = true, id) => {
     }
 
     // Preview the project
-    preview();
+    previewCurrentProject("all");
 };
 
+
 /**
- * Construct HTML page output for preview or download
+ * Construct HTML page output for preview, download, or iframe "thumbnails"
  * @param {boolean} isApp DDiffferentiate whilst in-app vs downloaded document
  */
-const generatePreviewHTML = (isApp = true, data = currentProject) => {
+const generatePreviewHTML = (project, isApp = true) => {
     const injectScript = /*html*/`<script id="◆xode-inject" src="inject.js?t=${Date.now()}"></script>`;
+    // Prevent user's <script> tags if autorun is disables
     return /*html*/`<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${data.name}</title>
-        <style${isApp ? ' id="◆xode-css"' : ''}>${data.css}</style>
+        <title>${project.name}</title>
+        <style${isApp ? ' id="◆xode-css"' : ''}>${project.css}</style>
         ${isApp ? injectScript : ""}
     </head>
     <body${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
-        ${data.html}
-        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${data.js}${isApp ? "//# sourceURL=js" : ""}</script>
+        ${project.html}
+        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${project.js}${isApp ? "//# sourceURL=js" : ""}</script>
     </body>
     </html>`;
 };
 
-const preview = (isForce) => {
-    // If richEditor and iframe has focus - do NOT update preview
-    if (currentProject.panes.richEditor && document.activeElement === elPreview) return;
-    if (!isForce && !elAutorun.checked) return;
-    clearTimeout(previewTimeout);
-    previewTimeout = setTimeout(() => {
-        elPreview.srcdoc = generatePreviewHTML();
-    }, isForce ? 0 : 350);
+let previewTimeoutId;
+const previewCurrentProject = (pane = "all", isForce = false) => {
+    // If richEditor and iframe have focus - do NOT preview changes (prevent infinite editing loop)
+    if (currentProject.panes.richEditor && document.activeElement === elPreview) {
+        return;
+    }
+
+    let previewTask = null;
+    if (isForce || (["all", "js", "html"].includes(pane) && currentProject.isAutorun)) {
+        previewTask = () => elPreview.srcdoc = generatePreviewHTML(currentProject);
+    } else if (pane === "all" && !currentProject.isAutorun) {
+        previewTask = () => elPreview.srcdoc = generatePreviewHTML({ ...currentProject, js: "", html: DOMPurify.sanitize(currentProject.html) });
+    } else if (pane === "css") {
+        previewTask = () => elPreview.contentWindow.postMessage({ type: "action", args: ["patchCSS", currentProject.css] }, "*");
+    } else if (pane === "html") {
+        previewTask = () => elPreview.contentWindow.postMessage({ type: "action", args: ["patchHTML", DOMPurify.sanitize(currentProject.html)] }, "*");
+    }
+
+    clearTimeout(previewTimeoutId);
+    previewTimeoutId = setTimeout(() => {
+        previewTask?.();
+    }, pane === "css" ? 250 : 320);
 };
 
 // Rich Editor --to--> HTML
@@ -142,8 +159,9 @@ addEventListener("message", async (evt) => {
         const body = new DOMParser().parseFromString(evt.data.html, "text/html").body;
         body.querySelector("#◆xode-js")?.remove();
         const html = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
-        panes.html.setValue(html);
+        editors.html.setValue(html, true);
         currentProject.html = html; // Update with new value + save project
+        // Reset focus back into Iframe
     }
     // Console messages
     else if (evt.data.type.startsWith("console:")) {
@@ -172,7 +190,7 @@ const drawProjects = () => {
         ` + projectData.html;
         const elThumbnailIframe = elNew("iframe", {
             className: "iframe-thumbnail",
-            srcdoc: generatePreviewHTML(false, projectData),
+            srcdoc: generatePreviewHTML(projectData, false),
             sandbox: "allow-scripts", // allow-scripts, allow-same-origin
             loading: "lazy",
             scrolling: "no"
@@ -223,6 +241,7 @@ const drawProjects = () => {
         elProjectsList.append(elProject);
     });
 };
+
 // Search projects
 const elProjectsSearch = el("#projects-search");
 elProjectsSearch.addEventListener("input", () => {
@@ -241,13 +260,14 @@ elProjectsSearch.addEventListener("input", () => {
 // EVENTS
 
 // RUN --> Preview
-elRun.addEventListener("click", () => preview(true));
+const elRun = el("#run");
+elRun.addEventListener("click", () => previewCurrentProject("all", true));
 
 // Download project by ID
 const downloadProject = (id) => {
     const project = openProject(id);
     const projectName = project.name.trim() ? project.name.trim().replace(/\W/g, "-") : "untitled";
-    download(generatePreviewHTML(false, project), `${projectName}.xode.html`);
+    download(generatePreviewHTML(project, false), `${projectName.toLowerCase()}.xode.html`);
 };
 
 // Download current project
@@ -298,16 +318,6 @@ el("#project-new").addEventListener("click", () => {
     projectInit(); // Create new project
     drawProjects(); // redraw old ones
 });
-
-/**
- * One-time call to generate UI panes
- */
-const generatePanes = () => {
-    panes.html = new Editor(el("#editor-html"), { syntax: "html" });
-    panes.css = new Editor(el("#editor-css"), { syntax: "css" });
-    panes.js = new Editor(el("#editor-js"), { syntax: "js" });
-    paneConsole.init();
-};
 
 // Update html from AI
 bus.on('ai:update', ({ syntax, content }) => {
@@ -415,23 +425,43 @@ elGithubPublish.addEventListener("click", () => {
     void gistPublish(currentProject);
 });
 
-// Change intentation spaces for code format (prettier)
+// Tab width - Change indentation spaces for code format (prettier)
 const elTabWidth = el("#tabWidth");
 elTabWidth.addEventListener("input", () => {
     lsSettings.update({ tabWidth: elTabWidth.value });
 });
 elTabWidth.value = tabWidth;
 
+// Tabs UI - Single pane toggle
+const elTabs = el("#top .tabs");
+const elsTabs = els(":scope [data-rx]", elTabs);
+elTabs.addEventListener("click", (evt) => {
+    const elTabTarget = evt.target.closest(".tab");
+    if (!evt.ctrlKey || !elTabTarget) return;
+    const elInput = el("[data-rx]", elTabTarget);
+    evt.preventDefault();
+    elsTabs.forEach((elTab) => {
+        const pane = elTab.dataset.rx;
+        const isTarget = pane === elInput.dataset.rx;
+        const syntax = pane.split("panes.")[1];
+        elTab.checked = isTarget
+        currentProject.panes[syntax] = isTarget;
+    });
+});
 
+// One-time call to generate UI panes
+const generateEditors = () => {
+    editors.html = new Editor(el("#editor-html"), { syntax: "html" });
+    editors.css = new Editor(el("#editor-css"), { syntax: "css" });
+    editors.js = new Editor(el("#editor-js"), { syntax: "js" });
+    paneConsole.init();
+};
 
 // INIT
-
-generatePanes();
-
+generateEditors();
 if (params.get("g")) {
     void gistLoad(params.get("g")); // Load Gist Project
 } else {
     projectInit(false); // Load latest Project
 }
-
 drawProjects();

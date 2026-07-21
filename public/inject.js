@@ -63,19 +63,27 @@ window.addEventListener("unhandledrejection", (evt) => {
 // Rich Editor mode
 // Inside the iframe's document
 let debounceTimer = null;
-const notifyParent = () => {
-    window.parent.postMessage(
-        { type: "content-changed", html: document.documentElement.outerHTML },
-        "*" // restrict to your real origin in production
-    );
+const notifyParent = (data) => {
+    // restrict to your real origin in production
+    window.parent.postMessage(data, "*");
 };
 document.addEventListener("input", () => {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(notifyParent, 250);
+    debounceTimer = setTimeout(() => {
+        notifyParent({ type: "content-changed", html: document.documentElement.outerHTML })
+    }, 250);
 });
 const actions = {
     designMode: (val) => {
         document.designMode = val ? "on" : "off";
+    },
+    patchCSS: (val) => {
+        const elTarget = document.getElementById("◆xode-css");
+        if (elTarget) elTarget.textContent = val;
+    },
+    patchHTML: (val) => {
+        const elTarget = document.getElementById("◆xode-html");
+        if (elTarget) elTarget.innerHTML = val;
     }
 };
 // Messages from parent window
@@ -98,9 +106,10 @@ window.addEventListener("message", (evt) => {
         }
         document.execCommand("styleWithCSS", false, false);
         document.execCommand(cmd, false, par);
-        window.parent.postMessage({
-            type: "content-changed",
-            html: document.querySelector("body").innerHTML
-        }, "*");
+        notifyParent({ type: "content-changed", html: document.documentElement.outerHTML })
+        // window.parent.postMessage({
+        //     type: "content-changed",
+        //     html: document.querySelector("body").innerHTML
+        // }, "*");
     }
 });
