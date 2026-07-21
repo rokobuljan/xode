@@ -230,7 +230,6 @@
 .chat-send {
     position: absolute;
     right: 1rem;
-    zoom: 1.2;
     box-shadow: 0 0.1rem 1rem color-mix(in srgb, var(--c1), #0000 50%);
 }
 
