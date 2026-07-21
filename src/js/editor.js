@@ -11,9 +11,10 @@ import { extractColors } from "./colorExtract.js";
 
 const lsSettings = LS("xode.settings");
 
-function syncScroll(evt) {
+function scrollToCaret(evt) {
     evt.preventDefault();
-    const area = evt.target;
+    const area = evt.target.closest("textarea");
+    if (!area) return;
     area.blur();
     area.focus();
 }
@@ -41,6 +42,52 @@ const formatCode = async (code, language) => {
     });
 };
 
+/**
+ * A self-contained undo/redo stack, fully decoupled from the browser's
+ * native contenteditable/textarea undo manager.
+ *
+ * Why: the native undo stack only tracks changes made via real user input
+ * or execCommand — it has no idea when you do `textarea.value = x`
+ * directly (which is exactly what's needed when syncing from an iframe).
+ * Owning the stack ourselves means both "user typed in the textarea" and
+ * "iframe pushed new HTML" go through the exact same, reliable path.
+ */
+class HistoryStack {
+    constructor(value, caretStart = value.length, caretEnd = value.length) {
+        this.stack = [{ value, caretStart, caretEnd }];
+        this.index = 0;
+        this.maxSize = 500;
+    }
+    get current() {
+        return this.stack[this.index];
+    }
+    // Drops any redo entries ahead of the current position. Call this the
+    // moment new input starts, so redo doesn't resurrect stale branches.
+    cutRedoBranch() {
+        this.stack.length = this.index + 1;
+    }
+    push(value, caretStart, caretEnd) {
+        if (this.current.value === value) return;
+        this.cutRedoBranch();
+        this.stack.push({ value, caretStart, caretEnd });
+        this.index++;
+        if (this.stack.length > this.maxSize) {
+            this.stack.shift();
+            this.index--;
+        }
+    }
+    undo() {
+        if (this.index === 0) return null;
+        this.index--;
+        return this.current;
+    }
+    redo() {
+        if (this.index >= this.stack.length - 1) return null;
+        this.index++;
+        return this.current;
+    }
+}
+
 export class Editor {
     constructor(elParent, options) {
         this.elParent = elParent
@@ -48,7 +95,9 @@ export class Editor {
             syntax: "", // "html", "css", ...
             value: "",
         }, options);
-        this.noHistoryStash = []; // If we don't use history so that we can reapply it using execcommand
+        this.history = new HistoryStack(this.value);
+        this.historyTimer = null;
+        this.historyDebounceMs = 400;
         this.init();
     }
     init() {
@@ -66,8 +115,9 @@ export class Editor {
         this.elTextarea = el(".editor-textarea", this.elParent);
         this.elCode = el(".editor-highlight code", this.elParent);
 
-        // Init value
-        this.setValue(this.value, true);
+        // Init value (already seeded into the history stack above, so skip re-pushing it)
+        this.setValue(this.value, { history: false });
+        this.notifyChange("init");
 
         // Events
         this.elTextarea.addEventListener("keydown", async (evt) => {
@@ -75,13 +125,21 @@ export class Editor {
                 evt.preventDefault();
                 // Tab = Emmet expand
                 if (["html", "css"].includes(this.syntax) && this.emmetExpand()) {
-                    this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+                    // emmetExpand() already updated value/history/highlight
                 }
-                // Tab = Convert to spaces (since no Emmet expansion was made)
+                // Tab = insert spaces (no Emmet expansion was made)
                 else {
-                    document.execCommand("insertText", false, " ".repeat(lsSettings.read("tabWidth")));
+                    this.insertAtCaret(" ".repeat(lsSettings.read("tabWidth")));
                 }
-                this.highlight();
+            }
+            // Undo / Redo — handled entirely by our own stack, not the browser's
+            else if (this.isUndoShortcut(evt)) {
+                evt.preventDefault();
+                this.undo();
+            }
+            else if (this.isRedoShortcut(evt)) {
+                evt.preventDefault();
+                this.redo();
             }
             // Format combo
             else if (evt.altKey && evt.shiftKey && evt.key === "F") {
@@ -92,24 +150,31 @@ export class Editor {
             }
         });
 
-        this.elTextarea.addEventListener("focus", () => {
-            if (this.noHistoryStash.length) {
-                while (this.noHistoryStash.length) {
-                    // shift stash back to history
-                    const html = this.noHistoryStash.shift();
-                    // console.log(html)
-                    this.setValue(html);
-                }
+        // Any normal typing: re-highlight, (debounced) record a history snapshot,
+        // and tell the outside world (e.g. the iframe sync code) that the value changed.
+        this.elTextarea.addEventListener("input", (evt) => {
+            this.value = this.elTextarea.value;
+            this.highlight();
+            if (evt.isTrusted) {
+                this.queueHistory();
+                this.notifyChange("user");
             }
         });
 
+        // Flush a pending debounced snapshot when the user leaves the field,
+        // so a switch to another pane becomes a clean undo boundary.
+        this.elTextarea.addEventListener("blur", () => this.flushHistory());
+
         // Fix textaarea scroll on click - change line focus
         this.elTextarea.addEventListener('click', (evt) => {
-            syncScroll(evt);
+            scrollToCaret(evt);
         });
         this.elTextarea.addEventListener('keyup', (evt) => {
-            if (["Enter", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(evt.key)) {
-                syncScroll(evt);
+            if (
+                ["Enter", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(evt.key)
+                || evt.ctrlKey && (evt.key === "z" || evt.key === "y")
+            ) {
+                scrollToCaret(evt);
             }
         });
 
@@ -121,28 +186,131 @@ export class Editor {
             });
         });
     }
-    setValue(newValue, noHistory = false, stash = false) {
-        const ss = this.elTextarea.selectionStart; // remember caret before replacing
-        const se = this.elTextarea.selectionEnd;
 
-        if (noHistory) {
-            this.elTextarea.value = newValue;
-            if (stash) {
-                this.noHistoryStash.push(newValue);
-            }
-        } else {
-            this.elTextarea.focus();
-            document.execCommand("selectAll", false);
-            document.execCommand('insertText', false, newValue);
-        }
-
-        this.highlight();
-        this.elTextarea.setSelectionRange(ss, se);
-        this.value = newValue;
+    /**
+     * Announce that the value changed, so outside code (the iframe <->
+     * editor sync layer) can react. `origin` tells the listener where the
+     * change came from:
+     *   - "user" / "insert" / "undo" / "redo" / "format" / "emmet": the
+     *      change originated in THIS editor pane and should be pushed
+     *      out to the iframe.
+     *   - "external": the change came FROM the iframe (via setValue(...,
+     *      { origin: "external" })) — listeners should ignore this to
+     *      avoid feeding the value right back into the iframe in a loop.
+     *   - "init": first mount; useful for seeding the iframe initially.
+     */
+    notifyChange(origin = "user") {
+        this.elParent.dispatchEvent(new CustomEvent("editor:change", {
+            detail: { value: this.value, origin, syntax: this.syntax },
+            bubbles: true,
+        }));
     }
+
+    isUndoShortcut(evt) {
+        return (evt.ctrlKey || evt.metaKey) && !evt.shiftKey && evt.key.toLowerCase() === "z";
+    }
+    isRedoShortcut(evt) {
+        return (evt.ctrlKey || evt.metaKey) &&
+            (evt.key.toLowerCase() === "y" || (evt.shiftKey && evt.key.toLowerCase() === "z"));
+    }
+
+    // Inserts text at the caret without execCommand (which is deprecated and
+    // inconsistent across browsers for plain <textarea> elements). Groups
+    // with adjacent typing via the same debounce as normal input.
+    insertAtCaret(text) {
+        const ta = this.elTextarea;
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        const newValue = ta.value.slice(0, start) + text + ta.value.slice(end);
+        ta.value = newValue;
+        const newPos = start + text.length;
+        ta.setSelectionRange(newPos, newPos);
+        this.value = newValue;
+        this.highlight();
+        this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+        this.queueHistory();
+        this.notifyChange("insert");
+    }
+
+    /**
+     * Set the editor's value.
+     * options.history:
+     *   - true  (default): record an immediate history snapshot (use for
+     *            discrete, deliberate changes like format()/emmet expand)
+     *   - false: don't touch history at all (use only for initial seeding)
+     *   - 'debounce': group with other rapid changes into one snapshot
+     *            (use this for iframe -> editor sync, since designMode
+     *            edits can fire many times per second)
+     * options.origin: forwarded to notifyChange(); pass "external" when
+     *   this call is just mirroring an edit that happened in the iframe,
+     *   so listeners don't push it right back into the iframe.
+     */
+    setValue(newValue, { history = true, origin = "user" } = {}) {
+        const shouldDispatch = this.elTextarea.value !== newValue;
+        this.elTextarea.value = newValue;
+        this.value = newValue;
+        this.highlight();
+        if (shouldDispatch) {
+            this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        this.notifyChange(origin);
+
+        if (history === false) return;
+        if (history === "debounce") {
+            this.queueHistory();
+        } else {
+            this.flushHistory(); // cancel any pending debounce, it's superseded
+            this.history.push(newValue, newValue.length, newValue.length);
+        }
+    }
+
+    // Schedules a history snapshot after a short pause in activity, so a
+    // burst of keystrokes (or a burst of iframe sync messages) becomes one
+    // undo step instead of dozens.
+    queueHistory() {
+        this.history.cutRedoBranch(); // any typing after an undo kills the old redo branch immediately
+        clearTimeout(this.historyTimer);
+        this.historyTimer = setTimeout(() => {
+            this.history.push(this.elTextarea.value, this.elTextarea.selectionStart, this.elTextarea.selectionEnd);
+        }, this.historyDebounceMs);
+    }
+    flushHistory() {
+        if (!this.historyTimer) return;
+        clearTimeout(this.historyTimer);
+        this.historyTimer = null;
+        this.history.push(this.elTextarea.value, this.elTextarea.selectionStart, this.elTextarea.selectionEnd);
+    }
+
+    undo() {
+        // If there's an uncommitted (still-debounced) edit, commit it first so
+        // the very first Ctrl+Z undoes the last thing the user actually did.
+        clearTimeout(this.historyTimer);
+        this.historyTimer = null;
+        if (this.elTextarea.value !== this.history.current.value) {
+            this.history.push(this.elTextarea.value, this.elTextarea.selectionStart, this.elTextarea.selectionEnd);
+        }
+        const entry = this.history.undo();
+        if (!entry) return;
+        this.applyHistoryEntry(entry);
+    }
+    redo() {
+        const entry = this.history.redo();
+        if (!entry) return;
+        this.applyHistoryEntry(entry);
+    }
+    applyHistoryEntry(entry) {
+        this.elTextarea.value = entry.value;
+        this.value = entry.value;
+        this.highlight();
+        this.elTextarea.focus();
+        this.elTextarea.setSelectionRange(entry.caretStart, entry.caretEnd);
+        this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+        this.notifyChange("undo"); // covers both undo() and redo() callers
+    }
+
     async format() {
         const formatted = await formatCode(this.elTextarea.value, this.syntax);
-        this.setValue(formatted);
+        this.setValue(formatted); // immediate history snapshot, it's a deliberate action
         return formatted;
     }
     selectionCounter() {
@@ -170,10 +338,15 @@ export class Editor {
             expanded = expanded.replace(/\t/g, " ".repeat(lsSettings.read("tabWidth"))); // Replace tabs with 4 spaces
             // Replace the extracted abbreviation with the expanded code
             const newValue = source.substring(0, start) + expanded + source.substring(end);
-            this.setValue(newValue);
-            // Move the caret to the end of the expanded code
             const newCaretPos = start + expanded.length;
+            this.elTextarea.value = newValue;
             this.elTextarea.setSelectionRange(newCaretPos, newCaretPos);
+            this.value = newValue;
+            this.highlight();
+            this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+            this.flushHistory();
+            this.history.push(newValue, newCaretPos, newCaretPos); // discrete action, its own undo step
+            this.notifyChange("emmet");
             return true;
         } catch (error) {
             console.warn("Failed to expand abbreviation:", error);
