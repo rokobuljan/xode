@@ -159,7 +159,7 @@ addEventListener("message", async (evt) => {
         const body = new DOMParser().parseFromString(evt.data.html, "text/html").body;
         body.querySelector("#◆xode-js")?.remove();
         const html = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
-        editors.html.setValue(html, true);
+        editors.html.setValue(html, true, true);
         currentProject.html = html; // Update with new value + save project
         // Reset focus back into Iframe
     }

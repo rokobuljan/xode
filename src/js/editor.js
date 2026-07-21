@@ -48,6 +48,7 @@ export class Editor {
             syntax: "", // "html", "css", ...
             value: "",
         }, options);
+        this.noHistoryStash = []; // If we don't use history so that we can reapply it using execcommand
         this.init();
     }
     init() {
@@ -91,6 +92,17 @@ export class Editor {
             }
         });
 
+        this.elTextarea.addEventListener("focus", () => {
+            if (this.noHistoryStash.length) {
+                while (this.noHistoryStash.length) {
+                    // shift stash back to history
+                    const html = this.noHistoryStash.shift();
+                    // console.log(html)
+                    this.setValue(html);
+                }
+            }
+        });
+
         // Fix textaarea scroll on click - change line focus
         this.elTextarea.addEventListener('click', (evt) => {
             syncScroll(evt);
@@ -109,12 +121,15 @@ export class Editor {
             });
         });
     }
-    setValue(newValue, noHistory = false) {
+    setValue(newValue, noHistory = false, stash = false) {
         const ss = this.elTextarea.selectionStart; // remember caret before replacing
         const se = this.elTextarea.selectionEnd;
 
         if (noHistory) {
             this.elTextarea.value = newValue;
+            if (stash) {
+                this.noHistoryStash.push(newValue);
+            }
         } else {
             this.elTextarea.focus();
             document.execCommand("selectAll", false);
