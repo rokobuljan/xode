@@ -72,29 +72,22 @@ export class Editor {
         this.elTextarea.addEventListener("keydown", async (evt) => {
             if (evt.key === "Tab") {
                 evt.preventDefault();
-                if ((this.syntax === "html" || this.syntax === "css") && this.emmetExpand()) {
-                    // Trigger input event
+                // Tab = Emmet expand
+                if (["html", "css"].includes(this.syntax) && this.emmetExpand()) {
                     this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
-                } else {
-                    // convert Tab to spaces
-                    document.execCommand("insertHTML", false, " ".repeat(lsSettings.read("tabWidth")));
+                }
+                // Tab = Convert to spaces (since no Emmet expansion was made)
+                else {
+                    document.execCommand("insertText", false, " ".repeat(lsSettings.read("tabWidth")));
                 }
                 this.highlight();
             }
+            // Format combo
             else if (evt.altKey && evt.shiftKey && evt.key === "F") {
                 evt.preventDefault();
                 const oldCaretPosition = this.elTextarea.selectionStart;
                 await this.format();
-                // // Try as best to reset caret position to where it was - but at the end of line:
-                // let newCaretPosition = Math.min(this.elTextarea.value.length, oldCaretPosition);
-                // // push cater to the end of current line
-                // while (this.elTextarea.value[newCaretPosition] !== "\n") {
-                //     newCaretPosition++;
-                // }
-                let newCaretPosition = oldCaretPosition;
-                this.elTextarea.setSelectionRange(newCaretPosition, newCaretPosition);
-                // Trigger input event
-                // this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+                this.elTextarea.setSelectionRange(oldCaretPosition, oldCaretPosition);
             }
         });
 
@@ -103,7 +96,7 @@ export class Editor {
             syncScroll(evt);
         });
         this.elTextarea.addEventListener('keyup', (evt) => {
-            if (evt.key === "Enter" || evt.key === "ArrowDown" || evt.key === "ArrowUp" || evt.key === "ArrowLeft" || evt.key === "ArrowRight") {
+            if (["Enter", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(evt.key)) {
                 syncScroll(evt);
             }
         });

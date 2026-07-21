@@ -1,0 +1,239 @@
+:root {
+    --background: hsl(215, 19%, 13%);
+    --foreground: hsl(221, 30%, 98%);
+    --bg: var(--background);
+    --fg: var(--foreground);
+    --c1: #00bbff;
+    --c2: #7c6cff;
+    --ce: #f44747;
+
+    /* switch fg bg depending on theme OS */
+    @media (prefers-color-scheme: light) {
+        --bg: var(--foreground);
+        --fg: var(--background);
+    }
+
+    accent-color: var(--c1);
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0000;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--bg), var(--fg) 15%);
+}
+
+::-webkit-scrollbar-corner {
+    background: #0000;
+}
+
+*,
+*::after,
+*::before {
+    margin: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100dvh;
+}
+
+body {
+    font: 0.9rem/1.3 Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+}
+
+a {
+    color: var(--c1);
+    text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    font-weight: 400;
+    color: color-mix(in srgb, var(--fg), var(--bg) 30%);
+}
+
+p {
+    margin-bottom: 1em;
+}
+
+button {
+    padding: 0.5rem 0.8rem;
+    /* border: 1px solid hsl(221 0% 50% / 0.4); */
+    white-space: nowrap;
+    border: 0;
+    border-radius: 0.2em;
+    background: transparent;
+    color: color-mix(in srgb, var(--fg), var(--bg) 20%);
+    text-align: center;
+    line-height: 1em;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: filter 0.2s, background 0.2s, color 0.2s;
+
+    &:disabled {
+        opacity: 0.5;
+    }
+
+    &:not(:disabled):hover {
+        filter: brightness(130%);
+    }
+
+    &.lg {
+        font-size: 1rem;
+    }
+}
+
+details {
+    interpolate-size: allow-keywords;
+
+    &::details-content {
+        transition:
+            block-size 0.3s,
+            content-visibility 0.3s allow-discrete;
+        overflow: hidden;
+        block-size: 0;
+    }
+
+    &[open]::details-content {
+        block-size: auto;
+    }
+}
+
+.note,
+small {
+    color: color-mix(in srgb, var(--fg), var(--bg) 20%);
+    /* font-size: 0.85em;
+    line-height: 1.3em; */
+}
+
+textarea {
+    min-height: 1.9lh;
+}
+
+select,
+input,
+textarea {
+    border: none;
+}
+
+select,
+textarea,
+input[type="text"],
+input[type="password"] {
+    /* border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%); */
+    color: var(--fg);
+    padding: 0.4em 0.6em;
+    border-radius: 0.2em;
+    background-color: color-mix(in srgb, var(--bg), var(--fg) 5%);
+    font: inherit;
+    font-size: 0.9rem;
+
+    &:focus {
+        outline: none;
+        box-shadow: 0 1px var(--c1);
+    }
+}
+
+:disabled {
+    cursor: not-allowed;
+}
+
+.ckbtn {
+    font-size: 0.85rem;
+    /* border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%); */
+    padding: 0.5em 0.6em;
+    line-height: 1;
+    user-select: none;
+    cursor: pointer;
+    border-radius: 0.2em;
+    transition: 0.2s;
+    color: color-mix(in srgb, var(--fg), var(--bg) 20%);
+
+
+    &:hover {
+        color: var(--bg);
+        background: var(--c1);
+    }
+
+    input[type="checkbox"] {
+        display: none !important;
+    }
+
+    &:not(:has(:checked)) {
+        opacity: 0.3;
+    }
+}
+
+.accent {
+    background-color: var(--c1);
+    color: var(--background);
+}
+
+.accent-2 {
+    background-color: var(--c2);
+    color: var(--foreground);
+}
+
+.danger {
+    background-color: var(--ce);
+    color: var(--foreground);
+}
+
+.gradient {
+    background: linear-gradient(145deg, var(--c1), var(--c2));
+    color: var(--background);
+}
+
+/* highlight.js customizations: */
+.hljs {
+    background: none;
+}
+
+blockquote {
+    border-left: 3px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
+    padding-left: 1rem;
+    margin-left: 0rem;
+    font-size: 0.85rem;
+    margin: 0.1rem 0;
+}
+
+details {
+
+    flex: 1;
+
+    /* style summary icon */
+    summary {
+        display: flex;
+        gap: 0.5em;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: color 0.2s;
+        color: color-mix(in srgb, var(--fg), var(--bg) 20%);
+
+        &:hover {
+            color: var(--c1);
+        }
+
+        &::-webkit-details-marker {
+            opacity: 0.3;
+        }
+    }
+
+    .details-body {
+        padding: 1rem;
+    }
+}

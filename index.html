@@ -32,42 +32,42 @@
             <span class="icon" data-name="folder-simple">&#xfdf9;</span>
             <span data-rx="name">Untitled</span>
         </button>
-        <div class="buttons-panels">
-            <label class="ckbtn" title="Toggle HTML panel">
+        <div class="tabs">
+            <label class="tab ckbtn" title="Toggle HTML panel">
                 <input type="checkbox" data-rx="panes.html" checked>
                 <span>HTML</span>
             </label>
-            <label class="ckbtn" title="Toggle CSS panel">
+            <label class="tab ckbtn" title="Toggle CSS panel">
                 <input type="checkbox" data-rx="panes.css" checked>
                 <span>CSS</span>
             </label>
-            <label class="ckbtn" title="Toggle JS panel">
+            <label class="tab ckbtn" title="Toggle JS panel">
                 <input type="checkbox" data-rx="panes.js" checked>
                 <span>JS</span>
             </label>
-            <label class="ckbtn" title="Toggle Console">
+            <label class="tab ckbtn" title="Toggle Console">
                 <input type="checkbox" data-rx="panes.console" checked>
                 <span class="icon" data-name="terminal">&#xf478;</span>
             </label>
-            <label class="ckbtn" title="Toggle Live preview">
+            <label class="tab ckbtn" title="Toggle Live preview">
                 <input type="checkbox" data-rx="panes.preview" checked>
                 <span>View</span>
             </label>
-            <label class="ckbtn" title="Toggle Rich Editor">
+            <label class="tab ckbtn" title="Toggle Rich Editor">
                 <input type="checkbox" data-rx="panes.richEditor" data-action="designMode">
                 <span class="icon" data-name="pencil-line">&#xf113;</span>
             </label>
-            <label class="ckbtn" title="Toggle AI Chat">
+            <label class="tab ckbtn" title="Toggle AI Chat">
                 <input type="checkbox" data-rx="panes.chat" checked>
                 <span>AI</span>
             </label>
         </div>
-        <button class="ml-auto" id="download" type="button" title="Download">
+        <button class="ml-auto" id="download" type="button" title="Download project">
             <span class="icon" data-name="download">&#xf3b7;</span>
         </button>
-        <label>
+        <label title="Autorun Xode preview">
             <input id="autorun" type="checkbox" data-rx="isAutorun">
-            <span>Autorun</span>
+            <span>Auto</span>
         </label>
         <button id="run" type="button" title="Run Xode">Run <span class="icon" data-name="play">&#xf42d;</span></button>
     </nav>
@@ -236,7 +236,6 @@
                             Publish
                         </button>
                     </div>
-
                     <h2>
                         <span class="icon" data-name="cloud-download">&#xf094;</span>
                         <span>Load Gist</span>
@@ -253,8 +252,8 @@
                         <span class="icon" data-name="github-logo">&#xf772;</span>
                         <span>GitHub Connect</span>
                     </h2>
-                    <p>
-                        XODE projects are saved locally. For a more permanent solution, and to share your
+                    <p class="note">
+                        XODE saves projects locally. For a permanent solution, and to share your
                         creations, <a href="https://github.com/settings/tokens" target="_blank"
                             rel="noopener noreferrer">create a GitHub token</a> and paste it below to enable
                         this feature.
@@ -281,10 +280,10 @@
                                 <option>4</option>
                             </select>
                         </label>
-                        <p>
+                        <p class="note">
                             <span class="icon" data-name="info">&#xf2e0;</span><br>
                             Format using <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd><br>
-                            HTML &amp; CSS support expandable <b>Emmet</b> syntax.
+                            <b>Emmet</b> syntax supported in HTML &amp; CSS.
                         </p>
                     </div>
                 </div>
