@@ -68,6 +68,8 @@ const notifyParent = (data) => {
     window.parent.postMessage(data, "*");
 };
 document.addEventListener("input", () => {
+    // Prevent notifying parent whilst i.e: writing into a textarea
+    if (document.designMode === "off") return;
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
         notifyParent({ type: "content-changed", html: document.documentElement.outerHTML })
@@ -107,9 +109,5 @@ window.addEventListener("message", (evt) => {
         document.execCommand("styleWithCSS", false, false);
         document.execCommand(cmd, false, par);
         notifyParent({ type: "content-changed", html: document.documentElement.outerHTML })
-        // window.parent.postMessage({
-        //     type: "content-changed",
-        //     html: document.querySelector("body").innerHTML
-        // }, "*");
     }
 });
