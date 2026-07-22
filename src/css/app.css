@@ -32,7 +32,7 @@
         }
     }
 
-    &.is-detached {
+    body:not(.consoleWarning) &.is-detached {
         position: fixed;
         width: 100%;
         top: 0;
@@ -42,8 +42,9 @@
         translate: 0 -100%;
 
         #logo {
-            translate: 0 3.3rem;
-            transition: translate 0.3s;
+            translate: 0 3.4rem;
+            transition: translate 0.3s, color 0.3s;
+            color: var(--background);
 
             &::after {
                 content: "";
@@ -57,14 +58,6 @@
             }
         }
 
-        &:hover {
-            translate: 0 0;
-
-            #logo {
-                translate: 0 0;
-            }
-        }
-
         &::before {
             content: "";
             position: absolute;
@@ -74,16 +67,18 @@
             top: 100%;
         }
 
-        &::after {
-            content: "Preview";
-            position: absolute;
-            left: 5rem;
-            top: calc(100% + 0.64rem);
-            font-size: 1.4rem;
-            opacity: 0.5;
-            color: #888;
-        }
+        &:hover {
+            translate: 0 0;
 
+            #logo {
+                translate: 0 0;
+                color: var(--forground);
+            }
+
+            &::after {
+                opacity: 0;
+            }
+        }
     }
 }
 

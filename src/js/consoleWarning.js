@@ -1,8 +1,8 @@
 // CONSOLE WARNING - ANTI-PHISHING
 const lsName = "xode-isDeveloper";
-const showWarning = function () {
+const showWarning = () => {
     console.log(`%c⚠️ SECURITY WARNING`, `
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-weight: bold;
     color: #f00;
     text-shadow: 0 0 20px rgba(255,0,0,0.3);`);
@@ -16,10 +16,13 @@ To hide this warning, run: i_am_a_xode_developer()`, `
     border-left: 0.5rem solid #f00;
     font-size: 1rem;
     padding: 0rem 1rem;`);
+
+    document.body.classList.add("consoleWarning");
 };
 
 globalThis.i_am_a_xode_developer = function () {
     localStorage.setItem(lsName, true);
+    document.body.classList.remove("consoleWarning");
     console.clear();
 };
 

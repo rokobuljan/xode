@@ -109,7 +109,9 @@ const projectInit = (isNew = true, id) => {
     togglePanes(); // Toggle views panes
 
     // Force-clear editors highlight
-    ["html", "css", "js"].forEach(syntax => editors[syntax]?.highlight());
+    editors.html.highlight();
+    editors.css.highlight();
+    editors.js.highlight();
     paneConsole.clear();
 
     // Update URI param if is Gist or not
