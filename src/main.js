@@ -66,10 +66,34 @@ const rxHandler = ({ detail }) => {
     // Save panes toggle changes
     else if (detail.prop.startsWith("panes.")) {
         if (detail.oldValue !== detail.value) {
+            const pane = detail.prop.split("panes.")[1];
+            togglePanes(pane);  // Toggle single view pane
             saveProject(currentProject);
         }
     }
 };
+
+// Toggle single `pane` or handle all panes depending on project panes state
+const togglePanes = (pane) => {
+    const allTabsCheckboxes = els("#top .tabs [data-rx]");
+    const openedTabs = [...allTabsCheckboxes].reduce((acc, elTabCkb) => {
+        if (elTabCkb.checked) acc.push(elTabCkb.dataset.rx.replace(/^[^.]+\./, ""));
+        return acc;
+    }, []);
+    // Toggle top tab if only preview is active
+    el("#top").classList.toggle("is-detached", openedTabs.length === 1 && openedTabs[0] === "preview");
+
+    if (pane) {
+        el(`[data-view="${pane}"]`).dataset.open = currentProject.panes[pane];
+    } else {
+        els("[data-view]").forEach((elView) => {
+            const isOpen = currentProject.panes[elView.dataset.view];
+            if (typeof isOpen === "boolean") {
+                elView.dataset.open = isOpen;
+            }
+        });
+    }
+}
 
 const projectInit = (isNew = true, id) => {
     const project = isNew ?
@@ -82,13 +106,7 @@ const projectInit = (isNew = true, id) => {
 
     setLastProjectId(currentProject.id); // Remember last opened project
 
-    //  Update UI: Toggle open/close panes
-    els("[data-view]").forEach((elView) => {
-        const isOpen = currentProject.panes[elView.dataset.view];
-        if (typeof isOpen === "boolean") {
-            elView.dataset.open = isOpen;
-        }
-    });
+    togglePanes(); // Toggle views panes
 
     // Force-clear editors highlight
     ["html", "css", "js"].forEach(syntax => editors[syntax]?.highlight());
@@ -232,13 +250,16 @@ const drawProjects = () => {
                 });
             }
         }, { capture: true });
+
         el(`[data-download-id]`, elProject).addEventListener("click", () => {
             downloadProject(projectData.id);
         });
+
         // Close modal on iframe click:
         elThumbnail.addEventListener("click", () => {
             projectInit(false, projectData.id);
         });
+
         elProjectsList.append(elProject);
     });
 };
@@ -434,22 +455,22 @@ elTabWidth.addEventListener("input", () => {
 elTabWidth.value = tabWidth;
 
 // // Tabs UI - Single pane toggle
-// const elTabs = el("#top .tabs");
-// const elsTabs = els("[data-rx]", elTabs);
-// elTabs.addEventListener("click", (evt) => {
-//     const elTab = evt.target.closest(`.tab`);
-//     if (!elTab) return;
-//     const elTabCheckbox = el("[data-rx]", elTab);
-//     if (!evt.ctrlKey || !elTabCheckbox) return;
-//     // evt.preventDefault();
-//     elsTabs.forEach((elTab) => {
-//         const pane = elTab.dataset.rx;
-//         const isTarget = pane === elTabCheckbox.dataset.rx;
-//         const syntax = pane.split("panes.")[1];
-//         elTab.checked = isTarget
-//         currentProject.panes[syntax] = isTarget;
-//     });
-// });
+const elTabs = el("#top .tabs");
+const elsTabsCheckboxes = els("[data-rx]", elTabs);
+elTabs.addEventListener("click", (evt) => {
+    const elTab = evt.target.closest(`.tab`);
+    if (!elTab) return;
+    const elTabCheckbox = el("[data-rx]", elTab);
+    if (!evt.ctrlKey || !elTabCheckbox) return;
+    const paneTab = elTabCheckbox.dataset.rx;
+    evt.preventDefault();
+    elsTabsCheckboxes.forEach((elTabCkb) => {
+        const pane = elTabCkb.dataset.rx;
+        const isTarget = pane === paneTab;
+        const syntax = pane.split("panes.")[1];
+        currentProject.panes[syntax] = isTarget;
+    });
+});
 
 
 // One-time call to generate UI panes
