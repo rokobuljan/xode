@@ -111,7 +111,6 @@ export function saveProject(project) {
     localStorage.setItem(projectKey(project.id), JSON.stringify(project));
     updateIndexEntry(project);
     setLastProjectId(project.id);
-    return project;
 }
 
 export function deleteProject(id) {
