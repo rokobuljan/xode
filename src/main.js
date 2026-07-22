@@ -181,6 +181,7 @@ const drawProjects = () => {
         const projectData = openProject(project.id);
         const title = `${projectData.name} ${projectData.description ? " — " + projectData.description : ""} | ${formatDateTime(projectData.updatedAt)}`;
         const elThumbnail = elNew("div", { className: "thumbnail", title });
+        elThumbnail.dataset.modal = "";
         projectData.html = `
             <script>// XODE-injected: Silence, suppress some console methods for thumbnails
             const methods = ['log', 'warn', 'error', 'info', 'debug'];
@@ -432,21 +433,24 @@ elTabWidth.addEventListener("input", () => {
 });
 elTabWidth.value = tabWidth;
 
-// Tabs UI - Single pane toggle
-const elTabs = el("#top .tabs");
-const elsTabs = els("[data-rx]", elTabs);
-elTabs.addEventListener("click", (evt) => {
-    const elTabCheckbox = el("[data-rx]", evt.target.closest(`.tab`));
-    if (!evt.ctrlKey || !elTabCheckbox) return;
-    evt.preventDefault();
-    elsTabs.forEach((elTab) => {
-        const pane = elTab.dataset.rx;
-        const isTarget = pane === elTabCheckbox.dataset.rx;
-        const syntax = pane.split("panes.")[1];
-        elTab.checked = isTarget
-        currentProject.panes[syntax] = isTarget;
-    });
-});
+// // Tabs UI - Single pane toggle
+// const elTabs = el("#top .tabs");
+// const elsTabs = els("[data-rx]", elTabs);
+// elTabs.addEventListener("click", (evt) => {
+//     const elTab = evt.target.closest(`.tab`);
+//     if (!elTab) return;
+//     const elTabCheckbox = el("[data-rx]", elTab);
+//     if (!evt.ctrlKey || !elTabCheckbox) return;
+//     // evt.preventDefault();
+//     elsTabs.forEach((elTab) => {
+//         const pane = elTab.dataset.rx;
+//         const isTarget = pane === elTabCheckbox.dataset.rx;
+//         const syntax = pane.split("panes.")[1];
+//         elTab.checked = isTarget
+//         currentProject.panes[syntax] = isTarget;
+//     });
+// });
+
 
 // One-time call to generate UI panes
 const generateEditors = () => {
