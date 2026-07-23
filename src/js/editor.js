@@ -281,6 +281,13 @@ export class Editor {
         this.history.push(this.elTextarea.value, this.elTextarea.selectionStart, this.elTextarea.selectionEnd);
     }
 
+    resetHistory(value = this.elTextarea.value) {
+        clearTimeout(this.historyTimer);
+        this.historyTimer = null;
+        this.value = value;
+        this.history = new HistoryStack(value, value.length, value.length);
+    }
+
     undo() {
         // If there's an uncommitted (still-debounced) edit, commit it first so
         // the very first Ctrl+Z undoes the last thing the user actually did.
