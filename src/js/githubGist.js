@@ -121,6 +121,15 @@ const gistCrud = {
     }),
 
     /**
+     * Fork a gist into the authenticated user's account.
+     */
+    fork: requireAuth(async (token, gistId) => {
+        return request(`${API_BASE}/${gistId}/forks`, {
+            method: 'POST'
+        }, token);
+    }),
+
+    /**
      * Delete a gist. Returns true on success.
      */
     delete: requireAuth(async (token, gistId) => {
