@@ -91,10 +91,10 @@ const gistCrud = {
      * Create a new gist.
      * @param {{ description?: string, files: object, isPublic?: boolean }} data
      */
-    create: requireAuth(async (token, { description = '', files, isPublic = true }) => {
+    create: requireAuth(async (token, { description = "", files, isPublic = false }) => {
         return request(API_BASE, {
             method: 'POST',
-            body: JSON.stringify({ description, public: isPublic, files })
+            body: JSON.stringify({ description, files, public: isPublic })
         }, token);
     }),
 
