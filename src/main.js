@@ -110,10 +110,12 @@ const projectInit = (isNew = true, id) => {
 
     togglePanes(); // Toggle views panes
 
-    // Force-clear editors highlight
-    editors.html.highlight();
-    editors.css.highlight();
-    editors.js.highlight();
+    // Reset undo/redo history for the newly loaded project so switching
+    // projects always starts with the loaded content as the first state.
+    [editors.html, editors.css, editors.js].forEach((editor) => {
+        editor.resetHistory(editor.elTextarea.value);
+        editor.highlight(); // Force-clear editors highlight
+    });
     paneConsole.clear();
 
     // Update URI param if is Gist or not
