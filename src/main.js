@@ -9,6 +9,7 @@ import "./css/index.css";
 import "./js/splitview.js";
 import "./js/modal.js";
 import "./js/chat.js";
+import Toast from "./js/toast.js";
 import "./js/consoleWarning.js";
 import gist, { setToken, getToken, clearToken } from "./js/githubGist.js";
 import { bus } from './js/bus.js';
@@ -16,6 +17,7 @@ import Rx from "./js/Rx.js";
 import { el, els, elNew, download, formatDateTime, params, LS, debounce } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from './js/project.js';
 import { Editor } from "./js/editor.js";
+import { isModuleBody } from 'typescript';
 
 const lsSettings = LS("xode.settings");
 const tabWidth = lsSettings.read("tabWidth") || 4;
@@ -433,14 +435,45 @@ const gistPublish = async (project) => {
 
     // PUBLISH - Create
     if (!project.gistId) {
-        const res = await gist.create({ description, files });
-        project.id = res.id;
-        project.gistId = res.id;
-        saveProject(project); // Save a local copy with the new ID
+        try {
+            const res = await gist.create({ description, files });
+            project.id = res.id;
+            project.gistId = res.id;
+            saveProject(project); // Save a local copy with the new ID
+            new Toast({
+                head: "Published",
+                body: `Successfully publised to <a href="https://gist.github.com/${project.gistId}" target="_blank">${project.name}</a>`,
+                type: "success",
+                time: 3000
+            });
+        } catch (err) {
+            new Toast({
+                head: "Error",
+                type: "error",
+                body: `Could not publish: ${err.message}`,
+                time: 3000
+            });
+        }
     }
     // PUBLISH - Update
     else {
-        await gist.update(project.gistId, { description, files });
+        try {
+            await gist.update(project.gistId, { description, files });
+            new Toast({
+                head: "Updated",
+                type: "success",
+                body: `Successfully updated: <a href="https://gist.github.com/${project.gistId}" target="_blank">${project.name}</a>`,
+                time: 3000
+            });
+        } catch (err) {
+            new Toast({
+                head: "Error",
+                type: "error",
+                body: `Could not publish ${project.name}: ${err.message}`,
+                time: 3000
+            });
+        }
+
     }
     drawProjects();
 };

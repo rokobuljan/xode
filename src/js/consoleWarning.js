@@ -29,4 +29,3 @@ globalThis.i_am_a_xode_developer = function () {
 if (!localStorage.getItem(lsName)) {
     showWarning();
 }
-
