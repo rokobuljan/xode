@@ -65,4 +65,9 @@
 
 [data-open="false"] {
     display: none;
+
+    /* Hide next splitter */
+    +.splitter {
+        display: none;
+    }
 }
