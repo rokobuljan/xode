@@ -11,7 +11,7 @@ import "./js/modal.js";
 import "./js/chat.js";
 import Toast from "./js/toast.js";
 import "./js/consoleWarning.js";
-import gist, { setToken, getToken, clearToken } from "./js/githubGist.js";
+import gist, { setToken, getToken, clearToken, GistApiError } from "./js/githubGist.js";
 import { bus } from './js/bus.js';
 import Rx from "./js/Rx.js";
 import { el, els, elNew, download, formatDateTime, params, LS, debounce } from "./js/utils.js";
@@ -466,12 +466,39 @@ const gistPublish = async (project) => {
                 time: 3000
             });
         } catch (err) {
-            new Toast({
-                head: "Error",
-                type: "error",
-                body: `Could not publish ${project.name}: ${err.message}`,
-                time: 3000
-            });
+            if (err instanceof GistApiError && err.status === 404) {
+                try {
+                    const forked = await gist.fork(project.gistId);
+                    const oldId = project.id;
+                    project.id = forked.id;
+                    project.gistId = forked.id;
+                    saveProject(project);
+                    if (oldId && oldId !== project.id) {
+                        deleteProject(oldId);
+                    }
+                    params.set("g", project.gistId);
+                    new Toast({
+                        head: "Forked",
+                        type: "success",
+                        body: `This gist belonged to another user. A fork was created: <a href="https://gist.github.com/${project.gistId}" target="_blank">${project.name}</a>`,
+                        time: 4000
+                    });
+                } catch (forkErr) {
+                    new Toast({
+                        head: "Error",
+                        type: "error",
+                        body: `Could not fork gist: ${forkErr.message}`,
+                        time: 3000
+                    });
+                }
+            } else {
+                new Toast({
+                    head: "Error",
+                    type: "error",
+                    body: `Could not publish ${project.name}: ${err.message}`,
+                    time: 3000
+                });
+            }
         }
 
     }
