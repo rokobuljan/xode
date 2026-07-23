@@ -29,12 +29,6 @@
     align-self: end;
     transition: 0.3s;
 
-    a {
-        font-weight: 600;
-        color: currentColor;
-    }
-
-
     @starting-style {
         translate: 0 3rem;
         opacity: 0;
@@ -80,6 +74,11 @@
         .permanent & {
             display: none;
         }
+    }
+
+    a {
+        font-weight: 600;
+        color: currentColor;
     }
 
     .toast-head {
