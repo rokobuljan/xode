@@ -41,23 +41,6 @@
         transition: translate 0.3s;
         translate: 0 -100%;
 
-        #logo {
-            translate: 0 3.4rem;
-            transition: translate 0.3s, color 0.3s;
-            color: var(--background);
-
-            &::after {
-                content: "";
-                position: absolute;
-                left: 0;
-                right: 0;
-                height: 5px;
-                top: 100%;
-                opacity: 0.5;
-                background: var(--c1);
-            }
-        }
-
         &::before {
             content: "";
             position: absolute;
@@ -69,15 +52,6 @@
 
         &:hover {
             translate: 0 0;
-
-            #logo {
-                translate: 0 0;
-                color: var(--forground);
-            }
-
-            &::after {
-                opacity: 0;
-            }
         }
     }
 }
