@@ -1,8 +1,8 @@
-const DEFAULT_SOURCE_OFFSETS = {
+const DEFAULT_SOURCE_OFFSETS = Object.assign({
     htmlStartLine: 1,
     jsStartLine: 1,
-};
-const getSourceOffsets = () => globalThis.__XODE_OFFSETS__ || DEFAULT_SOURCE_OFFSETS;
+}, JSON.parse(document.querySelector("#◆xode-inject").dataset.previewoffsets));
+
 const getSourceName = (file = "") => {
     if (file === "js") return "js";
     if (file === "<anonymous>") return "about:srcdoc";
@@ -27,7 +27,7 @@ const extractLocation = (stack = "") => {
 const formatLocation = (file, line) => {
     if (!line) return "";
     const source = getSourceName(file);
-    const { htmlStartLine, jsStartLine } = getSourceOffsets();
+    const { htmlStartLine, jsStartLine } = DEFAULT_SOURCE_OFFSETS;
     if (source === "js") return `js:${line}`;
     if (source === "html") return `html:${line}`;
     if (source === "about:srcdoc" || source === "") {
