@@ -212,16 +212,26 @@ const drawProjects = () => {
         const elThumbnail = elNew("div", { className: "thumbnail", title });
         elThumbnail.dataset.modal = "";
         projectData.html = `
-            <script>// XODE-injected: Silence, suppress some console methods for thumbnails
+            <script>
+            // XODE-injected: suppress ALL console output + uncaught errors from bubbling to DevTools
             const methods = ['log', 'warn', 'error', 'info', 'debug'];
             methods.forEach(method => {
                 if (window.console && window.console[method]) window.console[method] = function () {};
-            });</script>
-        ` + projectData.html;
+            });
+
+            // Suppress uncaught runtime errors (syntax errors, thrown exceptions, missing brackets, etc.)
+            window.onerror = function () { return true; }; // returning true prevents default browser logging
+
+            // Suppress unhandled promise rejections
+            window.addEventListener('unhandledrejection', function (e) {
+                e.preventDefault();
+            });
+            </script>
+            ` + projectData.html;
         const elThumbnailIframe = elNew("iframe", {
             className: "iframe-thumbnail",
             srcdoc: generatePreviewHTML(projectData, false),
-            sandbox: "allow-scripts", // allow-scripts, allow-same-origin
+            sandbox: "allow-scripts", // ⚠️ DO NOT add allow-same-origin — breaks localStorage isolation
             loading: "lazy",
             scrolling: "no"
         });
@@ -232,7 +242,7 @@ const drawProjects = () => {
             id: `project-${projectData.id}`,
             className: "project",
             innerHTML: `<div class="bar">
-                <span class="project-name" title="${title}">${projectData.name}</span>
+                <span class="project-name"></span>
                 <br>
                 <span class="project-actions">
                     ${gistLinkHTML}
@@ -241,6 +251,9 @@ const drawProjects = () => {
                 </span>
             </div>`
         });
+        const elName = el(".project-name", elProject);
+        elName.textContent = projectData.name; // safe — no HTML parsing
+        elName.title = title; // safe — DOM property, not string-parsed
         elProject.prepend(elThumbnail);
 
         el(`[data-delete-id]`, elProject).addEventListener("click", () => {
@@ -357,7 +370,7 @@ bus.on('ai:update', ({ syntax, content }) => {
     currentProject[syntax] = content; // Update and save
 });
 
-// === GISTS =============================
+// GISTS
 
 let token = getToken();
 
