@@ -1,5 +1,42 @@
-const OFFSETLINES_JS = 0; // Offset for console.fn line number
-const OFFSETLINES_HTML = 10;
+const DEFAULT_SOURCE_OFFSETS = {
+    htmlStartLine: 1,
+    jsStartLine: 1,
+};
+const getSourceOffsets = () => globalThis.__XODE_OFFSETS__ || DEFAULT_SOURCE_OFFSETS;
+const getSourceName = (file = "") => {
+    if (file === "js") return "js";
+    if (file === "<anonymous>") return "about:srcdoc";
+    return file;
+};
+const extractLocation = (stack = "") => {
+    const frames = String(stack)
+        .split("\n")
+        .map((frame) => frame.trim())
+        .filter(Boolean);
+    for (let index = frames.length - 1; index >= 0; index--) {
+        const frame = frames[index].replace(/^at\s+/, "");
+        const inner = frame.match(/\(([^()]*)\)\s*$/)?.[1] || frame;
+        const location = inner.match(/^(.*):(\d+):(\d+)$/) || inner.match(/^(.*):(\d+)$/);
+        if (!location) continue;
+        const [, file, line, column = "0"] = location;
+        if (!file || !line) continue;
+        return { file, line: Number(line), column: Number(column) };
+    }
+    return null;
+};
+const formatLocation = (file, line) => {
+    if (!line) return "";
+    const source = getSourceName(file);
+    const { htmlStartLine, jsStartLine } = getSourceOffsets();
+    if (source === "js") return `js:${line}`;
+    if (source === "html") return `html:${line}`;
+    if (source === "about:srcdoc" || source === "") {
+        if (line >= jsStartLine) return `js:${line - jsStartLine + 1}`;
+        if (line >= htmlStartLine) return `html:${line - htmlStartLine + 1}`;
+        return `html:${line}`;
+    }
+    return `${source}:${line}`;
+};
 const serialize = (arg) => {
     if (arg === null) return "null";
     if (arg === undefined) return "undefined";
@@ -11,12 +48,9 @@ const serialize = (arg) => {
     return String(arg);
 };
 const getLineNumber = (stack = new Error().stack) => {
-    const callerLine = stack.split("\n").pop().replace(/ *at */, "");
-    let [file, line, _column] = callerLine.split(/:(?=\d+)/);
-    line = Number(line) - OFFSETLINES_JS;
-    file = file.replace("about:srcdoc", "html");
-    if (file === "html") line -= OFFSETLINES_HTML;
-    return `${file}:${line}`;
+    const location = extractLocation(stack);
+    if (!location) return "";
+    return formatLocation(location.file, location.line);
 };
 const getAllMethods = (obj) => {
     const methods = new Set();
@@ -44,19 +78,19 @@ getAllMethods(window.console).forEach((method) => {
     };
 });
 window.addEventListener("error", (evt) => {
+    const location = evt.error?.stack ? extractLocation(evt.error.stack) : null;
     window.parent.postMessage({
         type: "console:error",
         args: [evt.message],
-        line: evt.lineno ? evt.lineno - OFFSETLINES_JS : "",
+        line: location ? formatLocation(location.file, location.line) : formatLocation(evt.filename, evt.lineno),
     }, "*");
 });
 window.addEventListener("unhandledrejection", (evt) => {
-    let [line, col] = evt.reason.stack.split(/:(?=\d+:\d+$)/)[1].split(":");
-    line = Number(line) - OFFSETLINES_JS;
+    const location = extractLocation(evt.reason?.stack || "");
     window.parent.postMessage({
         type: "console:error",
-        args: [`Uncaught (in promise): at ${line}:${col}`],
-        line,
+        args: [location ? `Uncaught (in promise): at ${location.line}` : "Uncaught (in promise)"],
+        line: location ? formatLocation(location.file, location.line) : "",
     }, "*");
 });
 

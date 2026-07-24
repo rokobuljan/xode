@@ -26,6 +26,8 @@ const elPreview = el("#preview"); // the iframe
 
 let currentProject = {};
 
+const countLines = (value) => value.split("\n").length;
+
 const paneConsole = {
     init() {
         this.el = el(`[data-view="console"] .console`);
@@ -132,23 +134,49 @@ const projectInit = (isNew = true, id) => {
 
 /**
  * Construct HTML page output for preview, download, or iframe "thumbnails"
+ * @param {object} project Project data
  * @param {boolean} isApp DDiffferentiate whilst in-app vs downloaded document
+ * @returns {string} HTML
  */
-const generatePreviewHTML = (project, isApp = true) => {
-    const injectScript = /*html*/`<script id="◆xode-inject" src="inject.js?t=${Date.now()}"></script>`;
-    // Prevent user's <script> tags if autorun is disables
+
+const generatePreviewHTMLWithOffsets = (project, isApp = true) => {
+    const injectScript = /*html*/`<script id="$xode-inject" src="inject.js?t=${Date.now()}"></script>`;
+    const previewPrefix = /*html*/`<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${project.name}</title>
+        <style${isApp ? ' id="$xode-css"' : ''}>${project.css}</style>
+        ${isApp ? injectScript : ""}
+        ${isApp ? `<script>window.__XODE_OFFSETS__ = {"htmlStartLine":0,"jsStartLine":0};</script>` : ""}
+    </head>
+    <body${isApp ? ' id="$xode-html" spellcheck="false"' : ''}>
+        `;
+
+
+    const previewOffsets = {
+        htmlStartLine: countLines(previewPrefix),
+        jsStartLine: countLines(previewPrefix) + countLines(project.html),
+    };
+
+
+    const offsetsScript = isApp ? `<script>window.__XODE_OFFSETS__ = ${JSON.stringify(previewOffsets)};</script>` : "";
+
+
     return /*html*/`<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${project.name}</title>
-        <style${isApp ? ' id="◆xode-css"' : ''}>${project.css}</style>
+        <style${isApp ? ' id="$xode-css"' : ''}>${project.css}</style>
         ${isApp ? injectScript : ""}
+        ${isApp ? offsetsScript : ""}
     </head>
-    <body${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
+    <body${isApp ? ' id="$xode-html" spellcheck="false"' : ''}>
         ${project.html}
-        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${project.js}${isApp ? "//# sourceURL=js" : ""}</script>
+        <script${isApp ? ' id="$xode-js"' : ''} type="module">${project.js}${isApp ? "//# sourceURL=js" : ""}</script>
     </body>
     </html>`;
 };
@@ -162,9 +190,9 @@ const previewCurrentProject = (pane = "all", isForce = false) => {
 
     let previewTask = null;
     if (isForce || (["all", "js", "html"].includes(pane) && currentProject.isAutorun)) {
-        previewTask = () => elPreview.srcdoc = generatePreviewHTML(currentProject);
+        previewTask = () => elPreview.srcdoc = generatePreviewHTMLWithOffsets(currentProject);
     } else if (pane === "all" && !currentProject.isAutorun) {
-        previewTask = () => elPreview.srcdoc = generatePreviewHTML({ ...currentProject, js: "", html: DOMPurify.sanitize(currentProject.html) });
+        previewTask = () => elPreview.srcdoc = generatePreviewHTMLWithOffsets({ ...currentProject, js: "", html: DOMPurify.sanitize(currentProject.html) });
     } else if (pane === "css") {
         previewTask = () => elPreview.contentWindow.postMessage({ type: "action", args: ["patchCSS", currentProject.css] }, "*");
     } else if (pane === "html") {
@@ -215,7 +243,7 @@ const drawProjects = () => {
         ` + projectData.html;
         const elThumbnailIframe = elNew("iframe", {
             className: "iframe-thumbnail",
-            srcdoc: generatePreviewHTML(projectData, false),
+            srcdoc: generatePreviewHTMLWithOffsets(projectData, false),
             sandbox: "allow-scripts", // allow-scripts, allow-same-origin
             loading: "lazy",
             scrolling: "no"
@@ -295,7 +323,7 @@ elRun.addEventListener("click", () => previewCurrentProject("all", true));
 const downloadProject = (id) => {
     const project = openProject(id);
     const projectName = project.name.trim() ? project.name.trim().replace(/\W/g, "-") : "untitled";
-    download(generatePreviewHTML(project, false), `${projectName.toLowerCase()}.xode.html`);
+    download(generatePreviewHTMLWithOffsets(project, false), `${projectName.toLowerCase()}.xode.html`);
 };
 
 // Download current project
