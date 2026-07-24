@@ -733,7 +733,6 @@ Object.entries(PROVIDERS).forEach(([key, p]) => {
 
 const uiUpdateModelLabel = (suggestedModel) => {
     const settings = ls.read();
-    console.log(suggestedModel, settings);
     const elModelLabel = el(".chat-model-label");
     const modelName = settings.model || suggestedModel;
     elModelLabel.textContent = modelName?.replace(/-/g, " ") || "Options";

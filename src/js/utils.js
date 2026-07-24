@@ -58,3 +58,4 @@ export const debounce = (fn, ms) => {
     let t;
     return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
 };
+export const countLines = (value) => value.split("\n").length;
