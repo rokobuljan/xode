@@ -130,10 +130,8 @@ function tryParseAIJson(rawText) {
     }
 }
 
-// ============================================================
 // Markdown fallback — used when a model refuses/fails to return
 // valid JSON but the response is readable markdown instead.
-// ============================================================
 
 // Cheap heuristics — no extra dependency needed for detection.
 // We only need to *parse* markdown (via `marked`, already imported),
