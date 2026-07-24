@@ -17,7 +17,6 @@ import Rx from "./js/Rx.js";
 import { el, els, elNew, download, formatDateTime, params, LS, countLines } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from './js/project.js';
 import { Editor } from "./js/editor.js";
-import { isModuleBody } from 'typescript';
 
 const lsSettings = LS("xode.settings");
 const tabWidth = lsSettings.read("tabWidth") || 4;
