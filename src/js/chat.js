@@ -310,7 +310,7 @@ JS:
 ${el(`[data-rx="js"]`).value}
 \`\`\`
 
-Keep the explanation to 1-3 sentences, plain language, no code fences inside "explanation".
+Keep the explanation short and concise, plain language, no code fences inside "explanation" key.
 
 Respond **only** with valid JSON (no extra text, no markdown, no code fences).
 HTML markup should go in the "html" key, CSS in the "css" key, and JS in the "js" key.
@@ -322,7 +322,7 @@ All string values must have newlines escaped as \\n and double quotes inside cod
   "js": "full new JS or null",
   "explanation": "brief explanation of changes"
 }
-
+If in conversation, don't necessarily respond with code. Provide html, js, css only if code oor code suggestions are requested.
 Only return changed panes as full strings. Keep the code functional.`;
 
 // ADAPTERS (chat calls)
@@ -733,6 +733,7 @@ Object.entries(PROVIDERS).forEach(([key, p]) => {
 
 const uiUpdateModelLabel = (suggestedModel) => {
     const settings = ls.read();
+    console.log(suggestedModel, settings);
     const elModelLabel = el(".chat-model-label");
     const modelName = settings.model || suggestedModel;
     elModelLabel.textContent = modelName?.replace(/-/g, " ") || "Options";
@@ -756,7 +757,7 @@ async function loadProviderIntoUI(providerKey) {
 }
 
 elProvider.addEventListener("input", async () => {
-    ls.update({ provider: elProvider.value });
+    ls.update({ provider: elProvider.value, model: null });
     await loadProviderIntoUI(elProvider.value);
 });
 
