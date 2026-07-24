@@ -7,7 +7,6 @@
     overflow: hidden;
     background-color: color-mix(in srgb, var(--bg), #000 10%);
 
-
     .view {
         display: none;
 
@@ -63,6 +62,6 @@
     }
 }
 
-.view[data-open="false"] {
+[data-open="false"] {
     display: none;
 }
