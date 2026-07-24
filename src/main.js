@@ -141,7 +141,7 @@ const projectInit = (isNew = true, id) => {
 
 const generatePreviewHTMLWithOffsets = (project, isApp = true) => {
     const injectScript = /*html*/`<script id="$xode-inject" src="inject.js?t=${Date.now()}"></script>`;
-    const previewPrefix = /*html*/`<!DOCTYPE html>
+    let previewPrefix = /*html*/`<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
@@ -149,36 +149,19 @@ const generatePreviewHTMLWithOffsets = (project, isApp = true) => {
         <title>${project.name}</title>
         <style${isApp ? ' id="$xode-css"' : ''}>${project.css}</style>
         ${isApp ? injectScript : ""}
-        ${isApp ? `<script>window.__XODE_OFFSETS__ = {"htmlStartLine":0,"jsStartLine":0};</script>` : ""}
-    </head>
-    <body${isApp ? ' id="$xode-html" spellcheck="false"' : ''}>
-        `;
-
-
-    const previewOffsets = {
-        htmlStartLine: countLines(previewPrefix),
-        jsStartLine: countLines(previewPrefix) + countLines(project.html),
-    };
-
-
-    const offsetsScript = isApp ? `<script>window.__XODE_OFFSETS__ = ${JSON.stringify(previewOffsets)};</script>` : "";
-
-
-    return /*html*/`<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${project.name}</title>
-        <style${isApp ? ' id="$xode-css"' : ''}>${project.css}</style>
-        ${isApp ? injectScript : ""}
-        ${isApp ? offsetsScript : ""}
+        {{$xode-offsetsScript}}
     </head>
     <body${isApp ? ' id="$xode-html" spellcheck="false"' : ''}>
         ${project.html}
         <script${isApp ? ' id="$xode-js"' : ''} type="module">${project.js}${isApp ? "//# sourceURL=js" : ""}</script>
     </body>
     </html>`;
+    const previewOffsets = {
+        htmlStartLine: countLines(previewPrefix.split(/<body(?:.*?>)?/)[0]) + 1,
+        jsStartLine: countLines(previewPrefix) + countLines(project.html),
+    };
+    const offsetsScript = isApp ? `<script>window.__XODE_OFFSETS__ = ${JSON.stringify(previewOffsets)};</script>` : "";
+    return previewPrefix.replace(/\{\{\$xode-offsetsScript\}\}/g, offsetsScript);
 };
 
 let previewTimeoutId;
