@@ -64,4 +64,8 @@
 
 [data-open="false"] {
     display: none;
+
+    &+.splitter {
+        display: none;
+    }
 }
