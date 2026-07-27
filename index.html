@@ -73,28 +73,28 @@
         <button id="run" type="button" title="Run JS">Run <span class="icon" data-name="play">&#xf42d;</span></button>
     </nav>
 
-    <main id="app" class="view">
-        <div class="view col">
-            <div class="view">
-                <div class="view" data-view="html" data-open="{{panes.html}}">
+    <main id="app" class="splitview">
+        <div class="splitview col">
+            <div class="splitview">
+                <div class="splitview" data-view="html" data-open="{{panes.html}}">
                     <div class="editor" id="editor-html"></div>
                 </div>
                 <div class="splitter"></div>
-                <div class="view" data-view="css" data-open="{{panes.css}}">
+                <div class="splitview" data-view="css" data-open="{{panes.css}}">
                     <div class="editor" id="editor-css"></div>
                 </div>
                 <div class="splitter"></div>
-                <div class="view" data-view="js" data-open="{{panes.js}}">
+                <div class="splitview" data-view="js" data-open="{{panes.js}}">
                     <div class="editor" id="editor-js"></div>
                 </div>
                 <div class="splitter"></div>
-                <div class="view" data-view="console" data-open="{{panes.console}}">
+                <div class="splitview" data-view="console" data-open="{{panes.console}}">
                     <div class="console"></div>
                     <button class="console-clear" type="button" title="Clear Console">Clear</button>
                 </div>
             </div>
             <div class="splitter"></div>
-            <div class="view col" data-view="preview" data-open="{{panes.preview}}">
+            <div class="splitview col" data-view="preview" data-open="{{panes.preview}}">
                 <div data-view="richEditor" data-open-inner data-open="{{panes.richEditor}}">
                     <div class="cmd-group">
                         <span data-cmd="bold" title="Bold" class="icon" data-name="bold">&#xf320;</span>
@@ -167,7 +167,7 @@
             </div>
         </div>
         <div class="splitter"></div>
-        <aside class="view chat" data-view="chat" data-open="{{panes.chat}}" style="--grow: 25;">
+        <aside class="splitview chat" data-view="chat" data-open="{{panes.chat}}" style="--grow: 25;">
             <div class="chat-output"></div>
             <div class="chat-question">
                 <div class="glow-input">

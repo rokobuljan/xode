@@ -19,12 +19,12 @@ const splitViewStart = (ev) => {
     const SIZE_MIN = 23;
     const elSplitter = ev.target.closest(".splitter");
     let elPrev = elSplitter?.previousElementSibling;
-    while (elPrev && (!elPrev.classList.contains("view") || !elPrev.checkVisibility())) {
+    while (elPrev && (!elPrev.classList.contains("splitview") || !elPrev.checkVisibility())) {
         elPrev = elPrev.previousElementSibling;
     }
     // get next element this is not hidden
     let elNext = elSplitter?.nextElementSibling;
-    while (elNext && (!elNext.classList.contains("view") || !elNext.checkVisibility())) {
+    while (elNext && (!elNext.classList.contains("splitview") || !elNext.checkVisibility())) {
         elNext = elNext.nextElementSibling;
     }
 
@@ -32,7 +32,7 @@ const splitViewStart = (ev) => {
     ev.preventDefault();
 
     elSplitter.setPointerCapture(ev.pointerId);
-    const isCol = elSplitter.closest(".view").matches(".col");
+    const isCol = elSplitter.closest(".splitview").matches(".col");
     const offset = isCol ? "offsetHeight" : "offsetWidth";
     const clientXY = isCol ? "clientY" : "clientX";
     const growSum = getGrow(elPrev) + getGrow(elNext);
