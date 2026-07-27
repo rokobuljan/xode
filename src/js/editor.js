@@ -185,6 +185,9 @@ export class Editor {
                 this.selectionCounter();
             });
         });
+
+        // Auto-indent on Enter
+        this.setupAutoIndent();
     }
 
     /**
@@ -320,6 +323,77 @@ export class Editor {
         this.setValue(formatted); // immediate history snapshot, it's a deliberate action
         return formatted;
     }
+
+    // Determine extra indentation based on syntax and context
+    getExtraIndent(value, position) {
+        const prevChar = position > 0 ? value[position - 1] : '';
+
+        // Don't add extra indent for closing brackets
+        if (['}', ']', ')'].includes(prevChar)) return '';
+
+        // Add indent after opening brackets/braces (works for all syntaxes)
+        if (['{', '[', '('].includes(prevChar)) {
+            return " ".repeat(Number(lsSettings.read("tabWidth")));
+        }
+
+        return '';
+    }
+
+    // Setup auto-indent on Enter key
+    setupAutoIndent() {
+        this.elTextarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+
+                const ta = this.elTextarea;
+                const start = ta.selectionStart;
+                const value = ta.value;
+
+                // Get current line's indentation
+                const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                const currentLine = value.substring(lineStart, start);
+                const indent = currentLine.match(/^\s*/)[0] || '';
+
+                // Determine extra indentation
+                const extraIndent = this.getExtraIndent(value, start);
+
+                // Use insertAtCaret to ensure highlight, history, and events all work
+                this.insertAtCaret('\n' + indent + extraIndent);
+            }
+            // Smart backspace: remove full indent level if on whitespace-only line
+            else if (e.key === 'Backspace') {
+                const ta = this.elTextarea;
+                const start = ta.selectionStart;
+                const value = ta.value;
+
+                // Only apply smart backspace if no selection and cursor not at position 0
+                if (ta.selectionStart === ta.selectionEnd && start > 0) {
+                    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                    const currentLine = value.substring(lineStart, start);
+
+                    // Check if line contains only spaces before cursor
+                    if (currentLine.match(/^\s*$/)) {
+                        const tabWidth = Number(lsSettings.read("tabWidth"));
+                        const spacesToRemove = currentLine.length % tabWidth || tabWidth;
+
+                        // Only apply if we're removing spaces
+                        if (spacesToRemove > 0 && spacesToRemove <= currentLine.length) {
+                            e.preventDefault();
+                            const newValue = value.substring(0, start - spacesToRemove) + value.substring(start);
+                            ta.value = newValue;
+                            ta.setSelectionRange(start - spacesToRemove, start - spacesToRemove);
+                            this.value = newValue;
+                            this.highlight();
+                            this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+                            this.queueHistory();
+                            this.notifyChange("user");
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     selectionCounter() {
         const start = this.elTextarea.selectionStart;
         const end = this.elTextarea.selectionEnd;
