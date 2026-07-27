@@ -1,4 +1,4 @@
-.view {
+.splitview {
     --grow: 100;
 
     display: flex;
@@ -6,15 +6,6 @@
     flex: var(--grow) 0 0;
     overflow: hidden;
     background-color: color-mix(in srgb, var(--bg), #000 10%);
-
-    .view {
-        display: none;
-
-        &[data-open="true"],
-        &:has([data-open="true"]:not([data-open-inner])) {
-            display: flex;
-        }
-    }
 
     &.col {
         flex-direction: column;
@@ -34,11 +25,12 @@
         background-color: color-mix(in srgb, var(--bg), var(--fg) 10%);
         transition: background-color 0.24s;
 
-        /* Remove splitter if not followed by a view */
-        &:not(:has(+.view)) {
+        /* Hide splitter if not followed by a .splitview */
+        &:not(:has(+.splitview)) {
             display: none;
         }
 
+        /* Since the splitter is only 1px wide, we need to add some pointer accessible area */
         &::before {
             content: "";
             position: absolute;
@@ -58,6 +50,18 @@
     }
 }
 
+/* === [data-open] logic === */
+
+
+.splitview [data-open] {
+    display: none;
+
+    &[data-open="true"],
+    &:has([data-open="true"]:not([data-open-inner])) {
+        display: flex;
+    }
+}
+
 [data-open="false"] {
     display: none;
 }
@@ -74,6 +78,6 @@
     display: initial;
 }
 
-.view:has([data-open]):not(:has([data-open="true"]))+.splitter {
+.splitview:has([data-open]):not(:has([data-open="true"]))+.splitter {
     display: none;
 }
