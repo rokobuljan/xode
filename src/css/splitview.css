@@ -38,8 +38,7 @@
         transition: background-color 0.24s;
 
         /* Remove splitter if not followed by a view */
-        &:not(:has(+.view)),
-        &:has(+.view[data-open="false"]) {
+        &:not(:has(+.view)) {
             display: none;
         }
 
@@ -64,8 +63,20 @@
 
 [data-open="false"] {
     display: none;
+}
 
-    &+.splitter {
-        display: none;
-    }
+[data-open="false"]+.splitter {
+    display: none;
+}
+
+.splitter:has(+[data-open="false"]) {
+    display: none;
+}
+
+[data-open="true"]:has(~[data-open="true"])+.splitter {
+    display: initial;
+}
+
+.view:has([data-open]):not(:has([data-open="true"]))+.splitter {
+    display: none;
 }
