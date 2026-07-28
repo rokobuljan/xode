@@ -53,7 +53,7 @@
 /* === [data-open] logic === */
 
 
-.splitview [data-open] {
+.splitview .splitview {
     display: none;
 
     &[data-open="true"],
