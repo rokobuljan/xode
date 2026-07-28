@@ -1,5 +1,4 @@
-export default class Rx {
-
+class Rx {
     constructor(data = {}, handlers = {}) {
         this.handlers = handlers;
         this.bindings = new Map(); // property -> Set of bound nodes
@@ -175,7 +174,7 @@ export default class Rx {
         if (el.tagName === "SCRIPT" || el.tagName === "STYLE") return;
 
         Array.from(el.attributes).forEach(attr => {
-            const variables = this.extractVariables(attr.value);
+            const variables = this.extractVariables(attr.value).map((variable) => this.parseVariable(variable));
             if (variables.length > 0) {
                 const template = attr.value;
                 const templateInfo = { element: el, attrName: attr.name, template, variables };
@@ -186,9 +185,9 @@ export default class Rx {
                 }
                 this.nodeToTemplate.get(el).push(templateInfo);
 
-                variables.forEach(varPath => {
-                    if (!this.bindings.has(varPath)) this.bindings.set(varPath, new Set());
-                    this.bindings.get(varPath).add(el);
+                variables.forEach(variable => {
+                    if (!this.bindings.has(variable.path)) this.bindings.set(variable.path, new Set());
+                    this.bindings.get(variable.path).add(el);
                 });
 
                 this.renderTemplate(templateInfo);
@@ -197,15 +196,15 @@ export default class Rx {
     }
 
     scanTextNode(textNode) {
-        const variables = this.extractVariables(textNode.textContent);
+        const variables = this.extractVariables(textNode.textContent).map((variable) => this.parseVariable(variable));
         if (variables.length > 0) {
             const template = textNode.textContent;
             const templateInfo = { element: textNode, template, variables };
             this.nodeToTemplate.set(textNode, [templateInfo]);
 
-            variables.forEach(varPath => {
-                if (!this.bindings.has(varPath)) this.bindings.set(varPath, new Set());
-                this.bindings.get(varPath).add(textNode);
+            variables.forEach(variable => {
+                if (!this.bindings.has(variable.path)) this.bindings.set(variable.path, new Set());
+                this.bindings.get(variable.path).add(textNode);
             });
 
             this.renderTemplate(templateInfo);
@@ -228,12 +227,31 @@ export default class Rx {
         return variables;
     }
 
+    parseVariable(variable) {
+        const negateMatch = variable.match(/^!+/);
+        const negateCount = negateMatch ? negateMatch[0].length : 0;
+        const path = variable.slice(negateCount).trim();
+        return {
+            raw: variable,
+            path,
+            negate: negateCount % 2 === 1,
+        };
+    }
+
+    escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
     renderTemplate(templateInfo) {
         let result = templateInfo.template;
-        templateInfo.variables.forEach(varPath => {
-            const value = this.getNestedValue(this.state, varPath);
-            const displayValue = value !== undefined && value !== null ? value : "";
-            result = result.replace(new RegExp(`\\{\\{\\s*${varPath.replace(/\./g, "\\.")}\\s*\\}\\}`, "g"), displayValue);
+        templateInfo.variables.forEach(variable => {
+            const value = this.getNestedValue(this.state, variable.path);
+            let displayValue = value !== undefined && value !== null ? value : "";
+            if (variable.negate) displayValue = !displayValue;
+            result = result.replace(
+                new RegExp(`\\{\\{\\s*${this.escapeRegex(variable.raw)}\\s*\\}\\}`, "g"),
+                displayValue
+            );
         });
 
         if (templateInfo.attrName) {
@@ -354,3 +372,5 @@ export default class Rx {
         this.observer?.disconnect();
     }
 }
+
+export default Rx;

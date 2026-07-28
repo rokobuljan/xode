@@ -19,9 +19,7 @@ export function setToken(gt) {
 }
 
 export function clearToken() {
-    const settings = ls.read();
-    delete settings.gt;
-    ls.update(settings);
+    ls.remove('gt');
 }
 
 export function hasToken() {

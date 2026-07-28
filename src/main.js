@@ -11,7 +11,7 @@ import "./js/modal.js";
 import "./js/chat.js";
 import Toast from "./js/toast.js";
 import "./js/consoleWarning.js";
-import gist, { setToken, getToken, clearToken, GistApiError } from "./js/githubGist.js";
+import gist, { setToken, getToken, hasToken, clearToken, GistApiError } from "./js/githubGist.js";
 import { bus } from './js/bus.js';
 import Rx from "./js/Rx.js";
 import { el, els, elNew, download, formatDateTime, params, LS, countLines } from "./js/utils.js";
@@ -24,6 +24,10 @@ const editors = {};
 const elPreview = el("#preview"); // the iframe
 
 let currentProject = {};
+
+const appRx = new Rx({
+    isGithubEnabled: hasToken(),
+}).state;
 
 const paneConsole = {
     init() {
@@ -49,7 +53,7 @@ const paneConsole = {
     }
 };
 
-const rxHandler = ({ detail }) => {
+const rxProjectHandler = ({ detail }) => {
     // SAVE PROJECT if edited:
     if (/^(name|description|isAutorun)$/.test(detail.prop)) {
         if (detail.oldValue !== detail.value) {
@@ -103,7 +107,7 @@ const projectInit = (isNew = true, id) => {
         // old: Open latest project or a specific one (by ID)
         openProject(id);
 
-    currentProject = new Rx(project, {}).on("rx:change", rxHandler).state;
+    currentProject = new Rx(project, {}).on("rx:change", rxProjectHandler).state;
 
     setLastProjectId(currentProject.id); // Remember last opened project
 
@@ -387,6 +391,7 @@ const updateElGithubToken = () => {
     else elGithubToken.placeholder = "GitHub Token (classic)";
     elGithubTokenDelete.disabled = !token;
     elGithubPublish.disabled = !token;
+    appRx.isGithubEnabled = !!token;
 };
 updateElGithubToken();
 elGithubToken.addEventListener("input", (evt) => {
