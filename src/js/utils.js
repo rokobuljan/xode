@@ -27,6 +27,13 @@ export const LS = (id = "main", defaultData = {}) => {
             if (data) Object.assign(_data, data);
             localStorage[this.dbName] = JSON.stringify(_data);
         },
+        remove(key) {
+            const _data = this.read() || {};
+            if (key in _data) {
+                delete _data[key];
+                localStorage[this.dbName] = JSON.stringify(_data);
+            }
+        },
         clear() {
             delete localStorage[this.dbName];
         }

@@ -255,22 +255,28 @@
                         <span class="icon" data-name="github-logo">&#xf772;</span>
                         <span>GitHub Connect</span>
                     </h2>
-                    <p class="note">
-                        XODE saves projects locally. For a permanent solution, and to share your
-                        creations, <a href="https://github.com/settings/tokens" target="_blank"
-                            rel="noopener noreferrer">create a GitHub token</a> and paste it below to enable
-                        this feature.
-                    </p>
-                    <div class="form-group">
-                        <label>
-                            <span><span class="icon" data-name="key-round">&#xf12c;</span> Token</span>
-                            <input id="githubToken" type="password" placeholder="GitHub Token (classic)">
-                            <button type="button" id="githubTokenDelete" class="danger"
-                                title="Delete token and disconnect">
-                                <span class="icon" data-name="trash">&#xf202;</span>
-                            </button>
-                        </label>
+                    <div data-open="{{isGithubEnabled}}">
+                        <span class="icon" data-name="check-fat">&#xf056;</span>
+                        Connected &emsp;
+                        <button type="button" id="githubTokenDelete" title="Delete token and disconnect">
+                            <span class="icon" data-name="trash">&#xf202;</span>
+                        </button>
                     </div>
+                    <div data-open="{{!isGithubEnabled}}">
+                        <p class="note">
+                            XODE saves projects locally. For a permanent solution, and to share your
+                            creations, <a href="https://github.com/settings/tokens" target="_blank"
+                                rel="noopener noreferrer">create a GitHub token</a> and paste it below to enable
+                            this feature.
+                        </p>
+                        <div class="form-group">
+                            <label>
+                                <span><span class="icon" data-name="key-round">&#xf12c;</span> Token</span>
+                                <input id="githubToken" type="password" placeholder="GitHub Token (classic)">
+                            </label>
+                        </div>
+                    </div>
+
                     <h2><span class="icon" data-name="settings">&#xf3dc;</span> Global Settings</h2>
                     <div class="form-group">
                         <label>
