@@ -350,7 +350,7 @@ class Rx {
         const keys = path.split(".");
         const lastKey = keys.pop();
         const target = keys.reduce((acc, key) => acc[key], obj);
-        target[lastKey] = value;
+        if (target?.hasOwnProperty(lastKey)) target[lastKey] = value;
     }
 
     on(event, callback) {

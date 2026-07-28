@@ -13,7 +13,7 @@ import Toast from "./js/toast.js";
 import "./js/consoleWarning.js";
 import gist, { setToken, getToken, hasToken, clearToken, GistApiError } from "./js/githubGist.js";
 import { bus } from './js/bus.js';
-import Rx from "./js/Rx.js";
+import Rx from "./js/rx.js";
 import { el, els, elNew, download, formatDateTime, params, LS, countLines } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from './js/project.js';
 import { Editor } from "./js/editor.js";
