@@ -238,10 +238,6 @@ class Rx {
         };
     }
 
-    escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }
-
     renderTemplate(templateInfo) {
         let result = templateInfo.template;
         templateInfo.variables.forEach(variable => {
@@ -249,7 +245,7 @@ class Rx {
             let displayValue = value !== undefined && value !== null ? value : "";
             if (variable.negate) displayValue = !displayValue;
             result = result.replace(
-                new RegExp(`\\{\\{\\s*${this.escapeRegex(variable.raw)}\\s*\\}\\}`, "g"),
+                new RegExp(`\\{\\{\\s*${RegExp.escape(variable.raw)}\\s*\\}\\}`, "g"),
                 displayValue
             );
         });
