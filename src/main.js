@@ -13,21 +13,18 @@ import Toast from "./js/toast.js";
 import "./js/consoleWarning.js";
 import gist, { setToken, getToken, hasToken, clearToken, GistApiError } from "./js/githubGist.js";
 import { bus } from './js/bus.js';
-import Rx from "./js/rx.js";
-import { el, els, elNew, download, formatDateTime, params, LS, countLines } from "./js/utils.js";
+
+import { reactive, effect, mount, persist } from './js/reactive.js';
+
+import { LS, el, els, elNew, download, formatDateTime, params, countLines } from "./js/utils.js";
 import { openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from './js/project.js';
 import { Editor } from "./js/editor.js";
 
+
 const lsSettings = LS("xode.settings");
-const tabWidth = lsSettings.read("tabWidth") || 4;
+const tabWidth = Number(lsSettings.read("tabWidth") ?? 4);
 const editors = {};
 const elPreview = el("#preview"); // the iframe
-
-let currentProject = {};
-
-const appRx = new Rx({
-    isGithubEnabled: hasToken(),
-}).state;
 
 const paneConsole = {
     init() {
@@ -53,84 +50,116 @@ const paneConsole = {
     }
 };
 
-const rxProjectHandler = ({ detail }) => {
-    // SAVE PROJECT if edited:
-    if (/^(name|description|isAutorun)$/.test(detail.prop)) {
-        if (detail.oldValue !== detail.value) {
-            saveProject(currentProject);
-        }
-    }
-    // Editors "input" event (via data-rx): save project data
-    else if (["html", "js", "css"].includes(detail.prop)) {
-        if (detail.oldValue !== detail.value) {
-            editors[detail.prop]?.highlight();
-            previewCurrentProject(detail.prop); // Update changes in iframe
-            saveProject(currentProject);
-        }
-    }
-    // Save panes toggle changes
-    else if (detail.prop.startsWith("panes.")) {
-        if (detail.oldValue !== detail.value) {
-            const pane = detail.prop.split("panes.")[1];
-            togglePanes(pane);  // Toggle single view pane
-            saveProject(currentProject);
-        }
-    }
-};
+// const rxProjectHandler = ({ detail }) => {
+//     // SAVE PROJECT if edited:
+//     if (/^(isAutorun)$/.test(detail.prop)) {
+//         if (detail.oldValue !== detail.value) {
+//             saveProject(currentProject);
+//         }
+//     }
+//     // Editors "input" event (via data-rx): save project data
+//     else if (["html", "js", "css"].includes(detail.prop)) {
+//         if (detail.oldValue !== detail.value) {
+//             editors[detail.prop]?.highlight();
+//             previewCurrentProject(detail.prop); // Update changes in iframe
+//             saveProject(currentProject);
+//         }
+//     }
+//     // Save panes toggle changes
+//     else if (detail.prop.startsWith("panes.")) {
+//         if (detail.oldValue !== detail.value) {
+//             const pane = detail.prop.split("panes.")[1];
+//             togglePanes(pane);  // Toggle single view pane
+//             saveProject(currentProject);
+//         }
+//     }
+// };
 
 // Toggle single `pane` or handle all panes depending on project panes state
 const togglePanes = (pane) => {
-    const allTabsCheckboxes = els("#top .tabs [data-rx]");
+    const allTabsCheckboxes = els("#top .tabs [data-rea-model]");
     const openedTabs = [...allTabsCheckboxes].reduce((acc, elTabCkb) => {
-        if (elTabCkb.checked) acc.push(elTabCkb.dataset.rx.replace(/^[^.]+\./, ""));
+        if (elTabCkb.checked) {
+            acc.push(elTabCkb.dataset.reaModel);
+        }
         return acc;
     }, []);
     // Toggle top tab if only preview is active
-    el("#top").classList.toggle("is-detached", openedTabs.length === 1 && openedTabs[0] === "preview");
+    el("#top").classList.toggle("is-detached", openedTabs.length === 1 && openedTabs[0] === "project.panes.preview");
 
     if (pane) {
-        el(`[data-view="${pane}"]`).dataset.open = currentProject.panes[pane];
+        el(`[data-view="${pane}"]`).dataset.reaOpen = currentProject.panes[pane];
     } else {
         els("[data-view]").forEach((elView) => {
             const isOpen = currentProject.panes[elView.dataset.view];
             if (typeof isOpen === "boolean") {
-                elView.dataset.open = isOpen;
+                elView.dataset.reaOpen = isOpen;
             }
         });
     }
 }
 
+function loadProjectInto(target, source) {
+    Object.keys(target).forEach(k => { if (!(k in source)) delete target[k]; });
+    Object.assign(target, source);
+}
+
 const projectInit = (isNew = true, id) => {
-    const project = isNew ?
-        // new? Create new project with the currently open panes
-        createProject({ panes: currentProject.panes }) :
-        // old: Open latest project or a specific one (by ID)
-        openProject(id);
+    const project = isNew
+        ? createProject({ panes: currentProject.panes })
+        : openProject(id);
 
-    currentProject = new Rx(project, {}).on("rx:change", rxProjectHandler).state;
+    loadProjectInto(currentProject, project);   // ← mutate, don't replace
+    setLastProjectId(currentProject.id);
 
-    setLastProjectId(currentProject.id); // Remember last opened project
-
-    togglePanes(); // Toggle views panes
-
-    // Reset undo/redo history for the newly loaded project so switching
-    // projects always starts with the loaded content as the first state.
+    togglePanes();
     [editors.html, editors.css, editors.js].forEach((editor) => {
         editor.resetHistory(editor.elTextarea.value);
-        editor.highlight(); // Force-clear editors highlight
+        editor.highlight();
     });
     paneConsole.clear();
 
-    // Update URI param if is Gist or not
-    if (currentProject.gistId) {
-        params.set("g", currentProject.gistId);
-    } else {
-        params.delete("g");
-    }
+    if (currentProject.gistId) params.set("g", currentProject.gistId);
+    else params.delete("g");
 
-    // Preview the project
     previewCurrentProject("all");
 };
+
+// const projectInit = (isNew = true, id) => {
+//     const project = isNew ?
+//         // new? Create new project with the currently open panes
+//         createProject({ panes: currentProject.panes }) :
+//         // old: Open latest project or a specific one (by ID)
+//         openProject(id);
+
+//     // currentProject = new Rx(project, {}).on("rx:change", rxProjectHandler).state;
+//     currentProject = reactive(project);
+//     mount(currentProject, "project");
+//     persist(currentProject, saveProject, 300);
+//     console.log(currentProject);
+
+//     setLastProjectId(currentProject.id); // Remember last opened project
+
+//     togglePanes(); // Toggle views panes
+
+//     // Reset undo/redo history for the newly loaded project so switching
+//     // projects always starts with the loaded content as the first state.
+//     [editors.html, editors.css, editors.js].forEach((editor) => {
+//         editor.resetHistory(editor.elTextarea.value);
+//         editor.highlight(); // Force-clear editors highlight
+//     });
+//     paneConsole.clear();
+
+//     // Update URI param if is Gist or not
+//     if (currentProject.gistId) {
+//         params.set("g", currentProject.gistId);
+//     } else {
+//         params.delete("g");
+//     }
+
+//     // Preview the project
+//     previewCurrentProject("all");
+// };
 
 /**
  * Construct HTML page output for preview, download, or iframe "thumbnails"
@@ -391,9 +420,9 @@ const updateElGithubToken = () => {
     else elGithubToken.placeholder = "GitHub Token (classic)";
     elGithubTokenDelete.disabled = !token;
     elGithubPublish.disabled = !token;
-    appRx.isGithubEnabled = !!token;
+    currentSettings.isGithubEnabled = !!token;
 };
-updateElGithubToken();
+
 elGithubToken.addEventListener("input", (evt) => {
     token = evt.target.value;
     if (token) setToken(token);
@@ -541,18 +570,18 @@ elTabWidth.addEventListener("input", () => {
 });
 elTabWidth.value = tabWidth;
 
-// // Tabs UI - Single pane toggle
+// Tabs UI - Single pane toggle
 const elTabs = el("#top .tabs");
-const elsTabsCheckboxes = els("[data-rx]", elTabs);
+const elsTabsCheckboxes = els("[data-rea-model]", elTabs);
 elTabs.addEventListener("click", (evt) => {
     const elTab = evt.target.closest(`.tab`);
     if (!elTab) return;
-    const elTabCheckbox = el("[data-rx]", elTab);
+    const elTabCheckbox = el("[data-rea-model]", elTab);
     if (!evt.ctrlKey || !elTabCheckbox) return;
-    const paneTab = elTabCheckbox.dataset.rx;
+    const paneTab = elTabCheckbox.dataset.reaModel;
     evt.preventDefault();
     elsTabsCheckboxes.forEach((elTabCkb) => {
-        const pane = elTabCkb.dataset.rx;
+        const pane = elTabCkb.dataset.reaModel;
         const isTarget = pane === paneTab;
         const syntax = pane.split("panes.")[1];
         currentProject.panes[syntax] = isTarget;
@@ -568,11 +597,46 @@ const generateEditors = () => {
     paneConsole.init();
 };
 
+function watchEditors(project, editors, previewCurrentProject) {
+    ['html', 'css', 'js'].forEach(prop => {
+        effect(() => {
+            void project[prop]; // read → this effect now depends ONLY on `prop`
+            editors[prop]?.highlight();
+            previewCurrentProject(prop);
+        });
+    });
+}
+
+function watchPanes(project, togglePanes) {
+    Object.keys(project.panes).forEach(pane => {
+        effect(() => {
+            void project.panes[pane]; // depends only on this one pane
+            togglePanes(pane);
+        });
+    });
+}
+
 // INIT
 generateEditors();
+// app boot — runs exactly once
+let currentProject = reactive(openProject()); // Open latest Project
+console.log(currentProject);
+mount(currentProject, "project"); // Mount project to DOM and bind events
+persist(currentProject, saveProject, 300); // Persist changes to project every 300ms
+watchEditors(currentProject, editors, previewCurrentProject);
+watchPanes(currentProject, togglePanes);
 if (params.get("g")) {
     void gistLoad(params.get("g")); // Load Gist Project
 } else {
     projectInit(false); // Load latest Project
 }
 drawProjects();
+
+// App settings
+const currentSettings = reactive({
+    isGithubEnabled: hasToken(),
+});
+mount(currentSettings, "settings");
+persist(currentProject, data => lsSettings.update(data)); // Persist changes to app settings
+
+updateElGithubToken();
