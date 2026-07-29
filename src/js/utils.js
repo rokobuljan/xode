@@ -8,6 +8,33 @@ export const download = (content, filename = "new_document.html", mimeType = "te
     });
     elA.click();
 };
+export const elsSiblings = (elem, sel) => [...els(sel, elem.parentElement)].filter(child => child !== elem);
+export const formatDateTime = (date) => new Date(date).toISOString().replace('T', ' ').slice(0, 19);
+export const params = {
+    get(key) {
+        const all = Object.fromEntries(new URLSearchParams(location.search));
+        return key ? all[key] : all;
+    },
+    set(key, value) {
+        if (value === null || value === undefined || value === "") {
+            return this.delete(key);
+        }
+        const url = new URL(window.location.href);
+        url.searchParams.set(key, value);
+        window.history.replaceState({}, "", url);
+    },
+    delete(key) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete(key);
+        window.history.replaceState({}, "", url);
+    }
+};
+export const generateUUID = () => crypto.randomUUID().replace(/-/g, '');
+export const debounce = (fn, ms) => {
+    let t;
+    return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+};
+export const countLines = str => str.split("\n").length;
 export const LS = (id = "main", defaultData = {}) => {
     return {
         dbName: `ls-${id}`,
@@ -39,30 +66,3 @@ export const LS = (id = "main", defaultData = {}) => {
         }
     }
 };
-export const elsSiblings = (elem, sel) => [...els(sel, elem.parentElement)].filter(child => child !== elem);
-export const formatDateTime = (date) => new Date(date).toISOString().replace('T', ' ').slice(0, 19);
-export const params = {
-    get(key) {
-        const all = Object.fromEntries(new URLSearchParams(location.search));
-        return key ? all[key] : all;
-    },
-    set(key, value) {
-        if (value === null || value === undefined || value === "") {
-            return this.delete(key);
-        }
-        const url = new URL(window.location.href);
-        url.searchParams.set(key, value);
-        window.history.replaceState({}, "", url);
-    },
-    delete(key) {
-        const url = new URL(window.location.href);
-        url.searchParams.delete(key);
-        window.history.replaceState({}, "", url);
-    }
-};
-export const generateUUID = () => crypto.randomUUID().replace(/-/g, '');
-export const debounce = (fn, ms) => {
-    let t;
-    return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
-};
-export const countLines = (value) => value.split("\n").length;

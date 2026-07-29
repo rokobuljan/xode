@@ -30,7 +30,7 @@
 
         <button type="button" data-modal="#modal-projects" title="Project Settings">
             <span class="icon" data-name="folder-simple">&#xfdf9;</span>
-            <span data-rx="name">Untitled</span>
+            <span data-rea-text="project.name">Untitled</span>
         </button>
         <button id="download" type="button" title="Download project">
             <span class="icon" data-name="download">&#xf3b7;</span>
@@ -38,36 +38,36 @@
 
         <div class="tabs">
             <label class="tab ckbtn" title="Toggle HTML panel">
-                <input type="checkbox" data-rx="panes.html">
+                <input type="checkbox" data-rea-model="project.panes.html">
                 <span>HTML</span>
             </label>
             <label class="tab ckbtn" title="Toggle CSS panel">
-                <input type="checkbox" data-rx="panes.css">
+                <input type="checkbox" data-rea-model="project.panes.css">
                 <span>CSS</span>
             </label>
             <label class="tab ckbtn" title="Toggle JS panel">
-                <input type="checkbox" data-rx="panes.js">
+                <input type="checkbox" data-rea-model="project.panes.js">
                 <span>JS</span>
             </label>
             <label class="tab ckbtn" title="Toggle Console">
-                <input type="checkbox" data-rx="panes.console">
+                <input type="checkbox" data-rea-model="project.panes.console">
                 <span class="icon" data-name="terminal">&#xf478;</span>
             </label>
             <label class="tab ckbtn" title="Toggle Live preview">
-                <input type="checkbox" data-rx="panes.preview">
+                <input type="checkbox" data-rea-model="project.panes.preview">
                 <span>View</span>
             </label>
             <label class="tab ckbtn" title="Toggle Rich Editor">
-                <input type="checkbox" data-rx="panes.richEditor" data-action="designMode">
+                <input type="checkbox" data-rea-model="project.panes.richEditor" data-action="designMode">
                 <span class="icon" data-name="pencil-line">&#xf113;</span>
             </label>
             <label class="tab ckbtn" title="Toggle AI Chat">
-                <input type="checkbox" data-rx="panes.chat">
+                <input type="checkbox" data-rea-model="project.panes.chat">
                 <span>AI</span>
             </label>
         </div>
         <label title="Autorun JS">
-            <input id="autorun" type="checkbox" data-rx="isAutorun">
+            <input id="autorun" type="checkbox" data-rea-model="project.isAutorun">
             <span>Auto</span>
         </label>
         <button id="run" type="button" title="Run JS">Run <span class="icon" data-name="play">&#xf42d;</span></button>
@@ -76,26 +76,26 @@
     <main id="app" class="splitview">
         <div class="splitview col">
             <div class="splitview">
-                <div class="splitview" data-view="html" data-open="{{panes.html}}">
+                <div class="splitview" data-view="html" data-rea-open="project.panes.html">
                     <div class="editor" id="editor-html"></div>
                 </div>
                 <div class="splitter"></div>
-                <div class="splitview" data-view="css" data-open="{{panes.css}}">
+                <div class="splitview" data-view="css" data-rea-open="project.panes.css">
                     <div class="editor" id="editor-css"></div>
                 </div>
                 <div class="splitter"></div>
-                <div class="splitview" data-view="js" data-open="{{panes.js}}">
+                <div class="splitview" data-view="js" data-rea-open="project.panes.js">
                     <div class="editor" id="editor-js"></div>
                 </div>
                 <div class="splitter"></div>
-                <div class="splitview" data-view="console" data-open="{{panes.console}}">
+                <div class="splitview" data-view="console" data-rea-open="project.panes.console">
                     <div class="console"></div>
                     <button class="console-clear" type="button" title="Clear Console">Clear</button>
                 </div>
             </div>
             <div class="splitter"></div>
-            <div class="splitview col" data-view="preview" data-open="{{panes.preview}}">
-                <div data-view="richEditor" data-open-inner data-open="{{panes.richEditor}}">
+            <div class="splitview col" data-view="preview" data-rea-open="project.panes.preview">
+                <div data-view="richEditor" data-rea-open-inner data-rea-open="project.panes.richEditor">
                     <div class="cmd-group">
                         <span data-cmd="bold" title="Bold" class="icon" data-name="bold">&#xf320;</span>
                         <span data-cmd="italic" alt="Italic" title="Italic" class="icon"
@@ -170,7 +170,7 @@
             </div>
         </div>
         <div class="splitter"></div>
-        <aside class="splitview chat" data-view="chat" data-open="{{panes.chat}}" style="--grow: 25;">
+        <aside class="splitview chat" data-view="chat" data-rea-open="project.panes.chat" style="--grow: 25;">
             <div class="chat-output"></div>
             <div class="chat-question">
                 <div class="glow-input">
@@ -230,12 +230,13 @@
                     <div class="col">
                         <label>
                             <span><span class="icon" data-name="folder">&#xf045;</span> Name</span>
-                            <input data-rx="name" class="currentProjectName" type="text" placeholder="Project Name"
-                                value="" maxlength="20" minlength="3">
+                            <input data-rea-model="project.name" class="currentProjectName" type="text"
+                                placeholder="Project Name" value="" maxlength="20" minlength="3">
                         </label>
                         <label>
                             <span><span class="icon" data-name="info">&#xf2e0;</span> Description</span>
-                            <textarea data-rx="description" placeholder="Project Description"></textarea>
+                            <textarea data-rea-model="project.description" class="currentProjectDescription"
+                                placeholder="Project Description"></textarea>
                         </label>
                         <button type="button" id="githubPublish" class="accent" title="Publish to GitHub Gist">
                             <span class="icon" data-name="github-logo">&#xf772;</span>
@@ -258,14 +259,14 @@
                         <span class="icon" data-name="github-logo">&#xf772;</span>
                         <span>GitHub Connect</span>
                     </h2>
-                    <div data-open="{{isGithubEnabled}}">
+                    <div data-rea-open="settings.isGithubEnabled">
                         <span class="icon" data-name="check-fat">&#xf056;</span>
                         Connected &emsp;
                         <button type="button" id="githubTokenDelete" title="Delete token and disconnect">
                             <span class="icon" data-name="trash">&#xf202;</span>
                         </button>
                     </div>
-                    <div data-open="{{!isGithubEnabled}}">
+                    <div data-rea-open="!settings.isGithubEnabled">
                         <p class="note">
                             XODE saves projects locally. For a permanent solution, and to share your
                             creations, <a href="https://github.com/settings/tokens" target="_blank"

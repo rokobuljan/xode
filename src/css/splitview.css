@@ -50,34 +50,34 @@
     }
 }
 
-/* === [data-open] logic === */
+/* === [data-rea-open] logic === */
 
 
 .splitview .splitview {
     display: none;
 
-    &[data-open="true"],
-    &:has([data-open="true"]:not([data-open-inner])) {
+    &[data-rea-open="true"],
+    &:has([data-rea-open="true"]:not([data-rea-open-inner])) {
         display: flex;
     }
 }
 
-[data-open="false"] {
+[data-rea-open="false"] {
     display: none;
 }
 
-[data-open="false"]+.splitter {
+[data-rea-open="false"]+.splitter {
     display: none;
 }
 
-.splitter:has(+[data-open="false"]) {
+.splitter:has(+[data-rea-open="false"]) {
     display: none;
 }
 
-[data-open="true"]:has(~[data-open="true"])+.splitter {
+[data-rea-open="true"]:has(~[data-rea-open="true"])+.splitter {
     display: initial;
 }
 
-.splitview:has([data-open]):not(:has([data-open="true"]))+.splitter {
+.splitview:has([data-rea-open]):not(:has([data-rea-open="true"]))+.splitter {
     display: none;
 }

@@ -183,7 +183,7 @@
 }
 
 /* Hide rich editor button if preview is hidden */
-:has([data-rx="panes.preview"]:not(:checked)) label:has([data-rx="panes.richEditor"]) {
+:has([data-rea-model="project.panes.preview"]:not(:checked)) label:has([data-rea-model="project.panes.richEditor"]) {
     display: none;
 }
 

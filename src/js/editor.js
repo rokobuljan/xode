@@ -105,7 +105,7 @@ export class Editor {
         this.elLines.dataset.label = this.syntax;
         this.elArea = elNew("div", { className: "editor-area" });
         this.elArea.innerHTML = `<pre class="editor-highlight" inert><code class="language-${this.syntax}"></code></pre>
-            <textarea class="editor-textarea" data-rx="${this.syntax}" placeholder="${this.syntax}" data-syntax="${this.syntax}"
+            <textarea class="editor-textarea" data-rea-model="project.${this.syntax}" placeholder="${this.syntax}" data-syntax="${this.syntax}"
                     spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>`;
         this.elSelectionStat = elNew("div", { className: "editor-selection-stat" });
 
@@ -129,7 +129,7 @@ export class Editor {
                 }
                 // Tab = insert spaces (no Emmet expansion was made)
                 else {
-                    this.insertAtCaret(" ".repeat(lsSettings.read("tabWidth")));
+                    this.insertAtCaret(" ".repeat(Number(lsSettings.read("tabWidth"))));
                 }
             }
             // Undo / Redo — handled entirely by our own stack, not the browser's
@@ -416,7 +416,7 @@ export class Editor {
         // 3. Expand the abbreviation and replace the text
         try {
             let expanded = expand(abbreviation, { syntax: this.syntax, type });
-            expanded = expanded.replace(/\t/g, " ".repeat(lsSettings.read("tabWidth"))); // Replace tabs with 4 spaces
+            expanded = expanded.replace(/\t/g, " ".repeat(Number(lsSettings.read("tabWidth")))); // Replace tabs with 4 spaces
             // Replace the extracted abbreviation with the expanded code
             const newValue = source.substring(0, start) + expanded + source.substring(end);
             const newCaretPos = start + expanded.length;
