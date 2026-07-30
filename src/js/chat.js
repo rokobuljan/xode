@@ -215,7 +215,7 @@ function renderMarkdownFallback(rawText) {
             card.append(pre);
 
             insertBtn.addEventListener('click', () => {
-                const snapshot = el(`[data-rx="${pane}"]`).value;
+                const snapshot = editorsTextarea[pane].value;
                 bus.emit('ai:update', { syntax: pane, content: seg.code });
 
                 header.innerHTML = '';
@@ -289,23 +289,29 @@ const elModel = el(".chat-model");
 const elInput = el(".chat-input");
 const elOutput = el(".chat-output");
 const elSend = el(".chat-send");
+const editorsTextarea = {
+    // textarea editors elements assigned on chat init
+    html: null,
+    css: null,
+    js: null,
+};
 
 // Prompt
 const systemPrompt = () => `You are an expert web developer helping edit an HTML/CSS/JS prototype.
 Current code:
 HTML:
 \`\`\`html
-${el(`[data-rx="html"]`).value}
+${editorsTextarea.html.value}
 \`\`\`
 
 CSS:
 \`\`\`css
-${el(`[data-rx="css"]`).value}
+${editorsTextarea.css.value}
 \`\`\`
 
 JS:
 \`\`\`js
-${el(`[data-rx="js"]`).value}
+${editorsTextarea.js.value}
 \`\`\`
 
 Keep the explanation short and concise, plain language, no code fences inside "explanation" key.
@@ -472,9 +478,9 @@ async function sendMessage(msg) {
 
     try {
         const currentCode = {
-            html: el(`[data-rx="html"]`).value,
-            css: el(`[data-rx="css"]`).value,
-            js: el(`[data-rx="js"]`).value
+            html: editorsTextarea.html.value,
+            css: editorsTextarea.css.value,
+            js: editorsTextarea.js.value
         };
         const aiResult = await callAI(
             userText + `\n\nCurrent code: ${JSON.stringify(currentCode)}`
@@ -511,7 +517,7 @@ function renderSuggestion(aiResponse) {
     // 0. Snapshot current pane values BEFORE applying
     const snapshot = {};
     changedPanes.forEach((syntax) => {
-        snapshot[syntax] = el(`[data-rx="${syntax}"]`).value;
+        snapshot[syntax] = editorsTextarea[syntax].value;
     });
 
     // 1. Apply immediately one Editor pane at a time
@@ -779,3 +785,5 @@ elApiKey.addEventListener("change", async () => {
     console.error(error);
 });
 
+// Export initialization to get textarea editors
+export const init = (editorsBySyntax) => Object.assign(editorsTextarea, editorsBySyntax);
