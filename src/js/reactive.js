@@ -66,10 +66,7 @@ export function mount(data, varName = 'state', root = document.body) {
     root.querySelectorAll('[data-rea-text], [data-rea-class], [data-rea-open], [data-rea-value]').forEach(el => {
         bind(el.dataset.reaText, v => el.textContent = v);
         bind(el.dataset.reaClass, v => el.className = v);
-        bind(el.dataset.reaOpen, v => {
-            console.log(v);
-            el.style.display = v ? '' : 'none'
-        });
+        bind(el.dataset.reaOpen, v => el.dataset.open = v);
         bind(el.dataset.reaValue, v => { if (el.value !== v) el.value = v; });
     });
 
@@ -80,17 +77,21 @@ export function mount(data, varName = 'state', root = document.body) {
         if (!ownsExpr(expr)) return;         // belongs to a different mount() call — skip
         const keys = expr.split('.').slice(1);      // drop leading varName segment
         const last = keys.pop();
-        const obj = keys.reduce((o, k) => o[k], data);
+        // Re-resolve the parent fresh on every read/write instead of caching
+        // it once — otherwise if `data.panes` (etc.) is ever reassigned to a
+        // new object later (e.g. loading a different project), this binding
+        // would keep reading/writing the old, discarded object forever.
+        const resolveParent = () => keys.reduce((o, k) => o[k], data);
 
         if (el.type === 'checkbox') {
-            effect(() => { el.checked = !!obj[last]; });
-            el.addEventListener('change', () => { obj[last] = el.checked; });
+            effect(() => { el.checked = !!resolveParent()[last]; });
+            el.addEventListener('change', () => { resolveParent()[last] = el.checked; });
         } else if (el.type === 'radio') {
-            effect(() => { el.checked = (el.value === obj[last]); });
-            el.addEventListener('change', () => { if (el.checked) obj[last] = el.value; });
+            effect(() => { el.checked = (el.value === resolveParent()[last]); });
+            el.addEventListener('change', () => { if (el.checked) resolveParent()[last] = el.value; });
         } else {
-            effect(() => { if (el.value !== obj[last]) el.value = obj[last]; });
-            el.addEventListener('input', () => { obj[last] = el.value; });
+            effect(() => { if (el.value !== resolveParent()[last]) el.value = resolveParent()[last]; });
+            el.addEventListener('input', () => { resolveParent()[last] = el.value; });
         }
     });
 
