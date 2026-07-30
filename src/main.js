@@ -218,9 +218,11 @@ const drawProjects = () => {
             if (confirm(`Delete project: "${projectData.name}"?`)) {
                 requestAnimationFrame(() => {
                     el(`#project-${projectData.id}`).remove();
-                    const isActiveProject = currentProject.id === projectData.id;
-                    if (isActiveProject) {
-                        params.delete("g"); // Remove from URI params to load load again the same project from GitHub gists
+                    const wasActiveProject = currentProject.id === projectData.id;
+                    // Delete from storage first so subsequent listProjects() reflects the removal
+                    deleteProject(projectData.id);
+                    if (wasActiveProject) {
+                        params.delete("g"); // Remove from URI params to avoid reloading deleted gist
                         const firstProject = listProjects()[0];
                         if (firstProject) {
                             projectInit(false, firstProject.id);
@@ -228,7 +230,6 @@ const drawProjects = () => {
                             projectInit(); // init a new empty project
                         }
                     }
-                    deleteProject(projectData.id);
                 });
             }
         }, { capture: true });
