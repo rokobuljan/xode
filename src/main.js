@@ -565,9 +565,9 @@ const currentSettings = reactive({
 });
 mount(currentSettings, "settings");
 persist(currentSettings, data => lsSettings.update(data)); // Persist changes to app settings
-console.log(currentSettings)
 
 updateElGithubToken();
+
 // Initialize chat
 initChat({
     html: editors.html.elTextarea,
