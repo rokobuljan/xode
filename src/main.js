@@ -8,7 +8,7 @@ import DOMPurify from 'dompurify';
 import "./css/index.css";
 import "./js/splitview.js";
 import "./js/modal.js";
-import "./js/chat.js";
+import { init as initChat } from "./js/chat.js";
 import Toast from "./js/toast.js";
 import "./js/consoleWarning.js";
 import gist, { setToken, getToken, hasToken, clearToken, GistApiError } from "./js/githubGist.js";
@@ -86,42 +86,6 @@ const projectInit = (isNew = true, id) => {
 
     previewCurrentProject("all");
 };
-
-// const projectInit = (isNew = true, id) => {
-//     const project = isNew ?
-//         // new? Create new project with the currently open panes
-//         createProject({ panes: currentProject.panes }) :
-//         // old: Open latest project or a specific one (by ID)
-//         openProject(id);
-
-//     // currentProject = new Rx(project, {}).on("rx:change", rxProjectHandler).state;
-//     currentProject = reactive(project);
-//     mount(currentProject, "project");
-//     persist(currentProject, saveProject, 300);
-//     console.log(currentProject);
-
-//     setLastProjectId(currentProject.id); // Remember last opened project
-
-//     handlePanes(); // Toggle views panes
-
-//     // Reset undo/redo history for the newly loaded project so switching
-//     // projects always starts with the loaded content as the first state.
-//     [editors.html, editors.css, editors.js].forEach((editor) => {
-//         editor.resetHistory(editor.elTextarea.value);
-//         editor.highlight(); // Force-clear editors highlight
-//     });
-//     paneConsole.clear();
-
-//     // Update URI param if is Gist or not
-//     if (currentProject.gistId) {
-//         params.set("g", currentProject.gistId);
-//     } else {
-//         params.delete("g");
-//     }
-
-//     // Preview the project
-//     previewCurrentProject("all");
-// };
 
 /**
  * Construct HTML page output for preview, download, or iframe "thumbnails"
@@ -580,8 +544,7 @@ function watchPanes(project, handlePanes) {
 // INIT
 generateEditors();
 // app boot — runs exactly once
-let currentProject = reactive(openProject()); // Open latest Project
-console.log(currentProject);
+const currentProject = reactive(openProject()); // Open latest Project
 mount(currentProject, "project"); // Mount project to DOM and bind events
 persist(currentProject, saveProject, 300); // Persist changes to project every 300ms
 watchEditors(currentProject, editors, previewCurrentProject);
@@ -601,3 +564,9 @@ mount(currentSettings, "settings");
 persist(currentSettings, data => lsSettings.update(data)); // Persist changes to app settings
 
 updateElGithubToken();
+// Initialize chat
+initChat({
+    html: editors.html.elTextarea,
+    css: editors.css.elTextarea,
+    js: editors.js.elTextarea
+});
