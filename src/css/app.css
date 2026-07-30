@@ -176,6 +176,7 @@
     opacity: 0;
     transition: opacity 0.2s;
     background-color: color-mix(in srgb, var(--bg), #0000 50%);
+    font-size: 0.8rem;
 }
 
 [data-view="console"]:hover .console-clear {
