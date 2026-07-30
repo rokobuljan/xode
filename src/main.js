@@ -31,6 +31,12 @@ const paneConsole = {
         this.el = el(`[data-view="console"] .console`);
         this.elBtnClear = el(`[data-view="console"] .console-clear`);
         this.elBtnClear.addEventListener("click", () => this.clear());
+        this.el.onkeydown = (evt) => {
+            if ((evt.ctrlKey || evt.metaKey) && evt.key === "k") {
+                evt.preventDefault();
+                this.clear();
+            }
+        };
     },
     print({ type, args, line }) {
         const logType = type.split(":")[1] || "log";
@@ -68,11 +74,11 @@ function loadProjectInto(target, source) {
 
 const projectInit = (isNew = true, id) => {
     const project = isNew
-        ? createProject({ panes: currentProject.panes })
+        ? createProject({ panes: currentProjectState.panes })
         : openProject(id);
 
-    loadProjectInto(currentProject, project);   // ← mutate, don't replace
-    setLastProjectId(currentProject.id);
+    loadProjectInto(currentProjectState, project);   // ← mutate, don't replace
+    setLastProjectId(currentProjectState.id);
 
     handlePanes();
     [editors.html, editors.css, editors.js].forEach((editor) => {
@@ -81,10 +87,10 @@ const projectInit = (isNew = true, id) => {
     });
     paneConsole.clear();
 
-    if (currentProject.gistId) params.set("g", currentProject.gistId);
+    if (currentProjectState.gistId) params.set("g", currentProjectState.gistId);
     else params.delete("g");
 
-    previewCurrentProject("all");
+    previewcurrentProject("all");
 };
 
 /**
@@ -117,21 +123,21 @@ const generatePreviewHTML = (project, isApp = true) => {
 };
 
 let previewTimeoutId;
-const previewCurrentProject = (pane = "all", isForce = false) => {
+const previewcurrentProject = (pane = "all", isForce = false) => {
     // If richEditor and iframe have focus - do NOT preview changes (prevent infinite editing loop)
-    if (currentProject.panes.richEditor && document.activeElement === elPreview) {
+    if (currentProjectState.panes.richEditor && document.activeElement === elPreview) {
         return;
     }
 
     let previewTask = null;
-    if (isForce || (["all", "js", "html"].includes(pane) && currentProject.isAutorun)) {
-        previewTask = () => elPreview.srcdoc = generatePreviewHTML(currentProject);
-    } else if (pane === "all" && !currentProject.isAutorun) {
-        previewTask = () => elPreview.srcdoc = generatePreviewHTML({ ...currentProject, js: "", html: DOMPurify.sanitize(currentProject.html) });
+    if (isForce || (["all", "js", "html"].includes(pane) && currentProjectState.isAutorun)) {
+        previewTask = () => elPreview.srcdoc = generatePreviewHTML(currentProjectState);
+    } else if (pane === "all" && !currentProjectState.isAutorun) {
+        previewTask = () => elPreview.srcdoc = generatePreviewHTML({ ...currentProjectState, js: "", html: DOMPurify.sanitize(currentProjectState.html) });
     } else if (pane === "css") {
-        previewTask = () => elPreview.contentWindow.postMessage({ type: "action", args: ["patchCSS", currentProject.css] }, "*");
+        previewTask = () => elPreview.contentWindow.postMessage({ type: "action", args: ["patchCSS", currentProjectState.css] }, "*");
     } else if (pane === "html") {
-        previewTask = () => elPreview.contentWindow.postMessage({ type: "action", args: ["patchHTML", DOMPurify.sanitize(currentProject.html)] }, "*");
+        previewTask = () => elPreview.contentWindow.postMessage({ type: "action", args: ["patchHTML", DOMPurify.sanitize(currentProjectState.html)] }, "*");
     }
 
     clearTimeout(previewTimeoutId);
@@ -147,7 +153,7 @@ addEventListener("message", async (evt) => {
         body.querySelector("#◆xode-js")?.remove();
         const html = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
         editors.html.setValue(html, { history: false, origin: "external" });
-        currentProject.html = html; // Update with new value + save project
+        currentProjectState.html = html; // Update with new value + save project
         // Reset focus back into Iframe
     }
     // Console messages
@@ -218,7 +224,7 @@ const drawProjects = () => {
             if (confirm(`Delete project: "${projectData.name}"?`)) {
                 requestAnimationFrame(() => {
                     el(`#project-${projectData.id}`).remove();
-                    const wasActiveProject = currentProject.id === projectData.id;
+                    const wasActiveProject = currentProjectState.id === projectData.id;
                     // Delete from storage first so subsequent listProjects() reflects the removal
                     deleteProject(projectData.id);
                     if (wasActiveProject) {
@@ -266,7 +272,7 @@ elProjectsSearch.addEventListener("input", () => {
 
 // RUN --> Preview
 const elRun = el("#run");
-elRun.addEventListener("click", () => previewCurrentProject("all", true));
+elRun.addEventListener("click", () => previewcurrentProject("all", true));
 
 // Download project by ID
 const downloadProject = (id) => {
@@ -277,7 +283,7 @@ const downloadProject = (id) => {
 
 // Download current project
 el("#download").addEventListener("click", () => {
-    downloadProject(currentProject.id);
+    downloadProject(currentProjectState.id);
 });
 
 // Editor exec commander for richEditor mode (text editing buttons)
@@ -305,8 +311,8 @@ addEventListener("click", (evt) => {
     }, "*");
     if (action === "designMode") {
         // Toggle rich editor
-        currentProject.panes.richEditor = elBtnAction.checked;
-        saveProject(currentProject);
+        currentProjectState.panes.richEditor = elBtnAction.checked;
+        saveProject(currentProjectState);
     }
 });
 
@@ -314,7 +320,7 @@ addEventListener("click", (evt) => {
 elPreview.addEventListener('load', () => {
     elPreview.contentWindow.postMessage({
         type: "action",
-        args: ["designMode", currentProject.panes.richEditor]
+        args: ["designMode", currentProjectState.panes.richEditor]
     }, "*");
 });
 
@@ -326,7 +332,7 @@ el("#project-new").addEventListener("click", () => {
 
 // Update html from AI
 bus.on('ai:update', ({ syntax, content }) => {
-    currentProject[syntax] = content; // Update and save
+    currentProjectState[syntax] = content; // Update and save
 });
 
 // GISTS
@@ -346,8 +352,8 @@ const updateElGithubToken = () => {
     else elGithubToken.placeholder = "GitHub Token (classic)";
     elGithubTokenDelete.disabled = !token;
     elGithubPublish.disabled = !token;
-    currentSettings.isGithubEnabled = !!token;
-    currentSettings.isGithubDisabled = !token;
+    settingsState.isGithubEnabled = !!token;
+    settingsState.isGithubDisabled = !token;
 };
 
 elGithubToken.addEventListener("input", (evt) => {
@@ -487,7 +493,7 @@ const gistPublish = async (project) => {
 };
 
 elGithubPublish.addEventListener("click", () => {
-    void gistPublish(currentProject);
+    void gistPublish(currentProjectState);
 });
 
 // Tab width - Change indentation spaces for code format (prettier)
@@ -511,29 +517,22 @@ elTabs.addEventListener("click", (evt) => {
         const pane = elTabCkb.dataset.reaModel;
         const isTarget = pane === paneTab;
         const syntax = pane.split("panes.")[1];
-        currentProject.panes[syntax] = isTarget;
+        currentProjectState.panes[syntax] = isTarget;
     });
 });
 
 
-// One-time call to generate UI panes
-const generateEditors = () => {
-    editors.html = new Editor(el("#editor-html"), { syntax: "html" });
-    editors.css = new Editor(el("#editor-css"), { syntax: "css" });
-    editors.js = new Editor(el("#editor-js"), { syntax: "js" });
-    paneConsole.init();
-};
-
-function watchEditors(project, editors, previewCurrentProject) {
+// One-time call to watch changes in editors
+function watchEditors(project, editors, previewcurrentProject) {
     ['html', 'css', 'js'].forEach(prop => {
         effect(() => {
             void project[prop]; // read → this effect now depends ONLY on `prop`
             editors[prop]?.highlight();
-            previewCurrentProject(prop);
+            previewcurrentProject(prop);
         });
     });
 }
-
+// One-time call to watch panes (toggle panes)
 function watchPanes(project, handlePanes) {
     Object.keys(project.panes).forEach(pane => {
         effect(() => {
@@ -544,13 +543,18 @@ function watchPanes(project, handlePanes) {
 }
 
 // INIT
-generateEditors();
+editors.html = new Editor(el("#editor-html"), { syntax: "html" });
+editors.css = new Editor(el("#editor-css"), { syntax: "css" });
+editors.js = new Editor(el("#editor-js"), { syntax: "js" });
+paneConsole.init();
+
 // app boot — runs exactly once
-const currentProject = reactive(openProject()); // Open latest Project
-mount(currentProject, "project"); // Mount project to DOM and bind events
-persist(currentProject, saveProject, 300); // Persist changes to project every 300ms
-watchEditors(currentProject, editors, previewCurrentProject);
-watchPanes(currentProject, handlePanes);
+const currentProjectState = reactive(openProject()); // Open latest Project
+mount(currentProjectState, "project"); // Mount project to DOM and bind events
+persist(currentProjectState, saveProject, 300); // Persist changes to project every 300ms
+watchEditors(currentProjectState, editors, previewcurrentProject);
+watchPanes(currentProjectState, handlePanes);
+
 if (params.get("g")) {
     void gistLoad(params.get("g")); // Load Gist Project
 } else {
@@ -559,12 +563,12 @@ if (params.get("g")) {
 drawProjects();
 
 // App settings
-const currentSettings = reactive({
+const settingsState = reactive({
     isGithubEnabled: hasToken(),
     isGithubDisabled: !hasToken(),
 });
-mount(currentSettings, "settings");
-persist(currentSettings, data => lsSettings.update(data)); // Persist changes to app settings
+mount(settingsState, "settings");
+persist(settingsState, data => lsSettings.update(data)); // Persist changes to app settings
 
 updateElGithubToken();
 
