@@ -346,6 +346,7 @@ const updateElGithubToken = () => {
     elGithubTokenDelete.disabled = !token;
     elGithubPublish.disabled = !token;
     currentSettings.isGithubEnabled = !!token;
+    currentSettings.isGithubDisabled = !token;
 };
 
 elGithubToken.addEventListener("input", (evt) => {
@@ -559,9 +560,11 @@ drawProjects();
 // App settings
 const currentSettings = reactive({
     isGithubEnabled: hasToken(),
+    isGithubDisabled: !hasToken(),
 });
 mount(currentSettings, "settings");
 persist(currentSettings, data => lsSettings.update(data)); // Persist changes to app settings
+console.log(currentSettings)
 
 updateElGithubToken();
 // Initialize chat
