@@ -371,7 +371,7 @@ elGithubTokenDelete.addEventListener("click", () => {
 });
 
 elGithubLoad.addEventListener("click", async () => {
-    const gistId = elGithubLoadId.value;
+    const gistId = elGithubLoadId.value.trim().match(/[0-9a-f]{32}$/)?.[0];
     if (!gistId) return;
     await gistLoad(gistId);
     elGithubLoadId.value = "";
