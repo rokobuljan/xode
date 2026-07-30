@@ -50,53 +50,15 @@ const paneConsole = {
     }
 };
 
-// const rxProjectHandler = ({ detail }) => {
-//     // SAVE PROJECT if edited:
-//     if (/^(isAutorun)$/.test(detail.prop)) {
-//         if (detail.oldValue !== detail.value) {
-//             saveProject(currentProject);
-//         }
-//     }
-//     // Editors "input" event (via data-rx): save project data
-//     else if (["html", "js", "css"].includes(detail.prop)) {
-//         if (detail.oldValue !== detail.value) {
-//             editors[detail.prop]?.highlight();
-//             previewCurrentProject(detail.prop); // Update changes in iframe
-//             saveProject(currentProject);
-//         }
-//     }
-//     // Save panes toggle changes
-//     else if (detail.prop.startsWith("panes.")) {
-//         if (detail.oldValue !== detail.value) {
-//             const pane = detail.prop.split("panes.")[1];
-//             togglePanes(pane);  // Toggle single view pane
-//             saveProject(currentProject);
-//         }
-//     }
-// };
-
 // Toggle single `pane` or handle all panes depending on project panes state
-const togglePanes = (pane) => {
+const handlePanes = () => {
     const allTabsCheckboxes = els("#top .tabs [data-rea-model]");
     const openedTabs = [...allTabsCheckboxes].reduce((acc, elTabCkb) => {
-        if (elTabCkb.checked) {
-            acc.push(elTabCkb.dataset.reaModel);
-        }
+        if (elTabCkb.checked) acc.push(elTabCkb.dataset.reaModel);
         return acc;
     }, []);
     // Toggle top tab if only preview is active
     el("#top").classList.toggle("is-detached", openedTabs.length === 1 && openedTabs[0] === "project.panes.preview");
-
-    if (pane) {
-        el(`[data-view="${pane}"]`).dataset.reaOpen = currentProject.panes[pane];
-    } else {
-        els("[data-view]").forEach((elView) => {
-            const isOpen = currentProject.panes[elView.dataset.view];
-            if (typeof isOpen === "boolean") {
-                elView.dataset.reaOpen = isOpen;
-            }
-        });
-    }
 }
 
 function loadProjectInto(target, source) {
@@ -112,7 +74,7 @@ const projectInit = (isNew = true, id) => {
     loadProjectInto(currentProject, project);   // ← mutate, don't replace
     setLastProjectId(currentProject.id);
 
-    togglePanes();
+    handlePanes();
     [editors.html, editors.css, editors.js].forEach((editor) => {
         editor.resetHistory(editor.elTextarea.value);
         editor.highlight();
@@ -140,7 +102,7 @@ const projectInit = (isNew = true, id) => {
 
 //     setLastProjectId(currentProject.id); // Remember last opened project
 
-//     togglePanes(); // Toggle views panes
+//     handlePanes(); // Toggle views panes
 
 //     // Reset undo/redo history for the newly loaded project so switching
 //     // projects always starts with the loaded content as the first state.
@@ -167,7 +129,6 @@ const projectInit = (isNew = true, id) => {
  * @param {boolean} isApp Diffferentiate whilst in-app vs downloaded document or thumbnail
  * @returns {string} HTML
  */
-
 const generatePreviewHTML = (project, isApp = true) => {
     const injectScript = /*html*/`<script id="◆xode-inject" {{◆xode-previewOffsets}} src="inject.js?t=${Date.now()}"></script>`;
     let previewPrefix = /*html*/`<!DOCTYPE html>
@@ -607,11 +568,11 @@ function watchEditors(project, editors, previewCurrentProject) {
     });
 }
 
-function watchPanes(project, togglePanes) {
+function watchPanes(project, handlePanes) {
     Object.keys(project.panes).forEach(pane => {
         effect(() => {
-            void project.panes[pane]; // depends only on this one pane
-            togglePanes(pane);
+            void project.panes[pane];
+            handlePanes(pane);
         });
     });
 }
@@ -624,7 +585,7 @@ console.log(currentProject);
 mount(currentProject, "project"); // Mount project to DOM and bind events
 persist(currentProject, saveProject, 300); // Persist changes to project every 300ms
 watchEditors(currentProject, editors, previewCurrentProject);
-watchPanes(currentProject, togglePanes);
+watchPanes(currentProject, handlePanes);
 if (params.get("g")) {
     void gistLoad(params.get("g")); // Load Gist Project
 } else {
@@ -637,6 +598,6 @@ const currentSettings = reactive({
     isGithubEnabled: hasToken(),
 });
 mount(currentSettings, "settings");
-persist(currentProject, data => lsSettings.update(data)); // Persist changes to app settings
+persist(currentSettings, data => lsSettings.update(data)); // Persist changes to app settings
 
 updateElGithubToken();
