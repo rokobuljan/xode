@@ -438,7 +438,7 @@ const gistPublish = async (project) => {
                 head: "Error",
                 type: "error",
                 body: `Could not publish: ${err.message}`,
-                time: 3000
+                time: 0
             });
         }
     }
