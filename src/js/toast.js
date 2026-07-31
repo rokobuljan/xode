@@ -30,12 +30,13 @@ class Toast {
             },
         );
 
-        this.el = elNew('div', {
-            className: `toast ${this.type}`,
-            innerHTML: `<button class="toast-close" type="button"></button>
-                        <div class="toast-head">${this.head}</div>
-                        <div class="toast-body">${this.body}</div>`,
-        });
+        this.el = elNew('div', { className: `toast ${this.type}` });
+        this.el.innerHTML = `
+            <button class="toast-close" type="button"></button>
+            <div class="toast-head">${this.head}</div>
+            <div class="toast-body"></div>
+        `;
+        el(".toast-body", this.el).setHTML(this.body);
 
         el('.toast-close', this.el).addEventListener('click', () => {
             this.hide();

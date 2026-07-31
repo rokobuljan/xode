@@ -84,4 +84,8 @@
     .toast-head {
         font-weight: 600;
     }
+
+    .toast-body {
+        word-wrap: break-word;
+    }
 }

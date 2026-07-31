@@ -8,6 +8,7 @@ import prettierPluginPostcss from "prettier/plugins/postcss";
 
 import { el, elNew, LS } from "./utils.js";
 import { extractColors } from "./colorExtract.js";
+import Toast from "./toast.js";
 
 const lsSettings = LS("xode.settings");
 
@@ -319,9 +320,18 @@ export class Editor {
     }
 
     async format() {
-        const formatted = await formatCode(this.elTextarea.value, this.syntax);
-        this.setValue(formatted); // immediate history snapshot, it's a deliberate action
-        return formatted;
+        try {
+            const formatted = await formatCode(this.elTextarea.value, this.syntax);
+            this.setValue(formatted); // immediate history snapshot, it's a deliberate action
+            return formatted;
+        } catch (err) {
+            new Toast({
+                head: "Error",
+                type: "error",
+                body: `Could not format ${this.syntax.toUpperCase()}: ${err.message}`,
+                time: 0
+            });
+        }
     }
 
     // Determine extra indentation based on syntax and context
