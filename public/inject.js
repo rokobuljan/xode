@@ -66,10 +66,10 @@ const getAllMethods = (obj) => {
 
 // let i = 0;
 getAllMethods(window.console).forEach((method) => {
-    // const _orig = console[method].bind(console);
+    const _orig = console[method].bind(console);
     console[method] = (...args) => {
         // if (++i > 2) return;
-        // _orig(...args);
+        _orig(...args);
         window.parent.postMessage({
             type: `console:${method}`,
             args: Array.from(args).map(serialize),
