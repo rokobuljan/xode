@@ -6,4 +6,9 @@ export default defineConfig({
     "*": "vp check --fix",
   },
   lint: { options: { typeAware: true, typeCheck: true } },
+  fmt: {
+    tabWidth: 4,
+    singleQuote: false,
+    printWidth: 240,
+  },
 });
