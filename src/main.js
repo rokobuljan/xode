@@ -8,6 +8,7 @@ import DOMPurify from 'dompurify';
 import "./css/index.css";
 import "./js/splitview.js";
 import "./js/modal.js";
+import paneConsole from "./js/console.js";
 import { init as initChat } from "./js/chat.js";
 import Toast from "./js/toast.js";
 import "./js/consoleWarning.js";
@@ -25,36 +26,6 @@ const lsSettings = LS("xode.settings");
 const tabWidth = Number(lsSettings.read("tabWidth") ?? 4);
 const editors = {};
 const elPreview = el("#preview"); // the iframe
-
-const paneConsole = {
-    init() {
-        this.el = el(`[data-view="console"] .console`);
-        this.elBtnClear = el(`[data-view="console"] .console-clear`);
-        this.elBtnClear.addEventListener("click", () => this.clear());
-        this.el.onkeydown = (evt) => {
-            if ((evt.ctrlKey || evt.metaKey) && evt.key === "k") {
-                evt.preventDefault();
-                this.clear();
-            }
-        };
-    },
-    print({ type, args, line }) {
-        const logType = type.split(":")[1] || "log";
-        const elBlock = elNew("code", {
-            className: `log ${logType}`,
-            textContent: args.join("\n").trimStart(),
-        });
-        const elLine = elNew("span", {
-            className: "log-line",
-            textContent: line,
-        });
-        elBlock.append(elLine);
-        this.el.append(elBlock);
-    },
-    clear() {
-        this.el.innerHTML = "";
-    }
-};
 
 // Toggle single `pane` or handle all panes depending on project panes state
 const handlePanes = () => {
@@ -90,24 +61,42 @@ const projectInit = (isNew = true, id) => {
     if (currentProjectState.gistId) params.set("g", currentProjectState.gistId);
     else params.delete("g");
 
-    previewcurrentProject("all");
+    previewCurrentProject("all");
 };
 
 /**
  * Construct HTML page output for preview, download, or iframe "thumbnails"
  * @param {object} project Project data
- * @param {boolean} isApp Diffferentiate whilst in-app vs downloaded document or thumbnail
+ * @param {boolean} consumer ("app", "preview", "download") Differentiate whilst in-app vs downloaded document or thumbnail
  * @returns {string} HTML
  */
-const generatePreviewHTML = (project, isApp = true) => {
+const generatePreviewHTML = (project, consumer = "app") => {
+    const isApp = consumer === "app";
+    const isPreview = consumer === "preview";
     const injectScript = /*html*/`<script id="◆xode-inject" {{◆xode-previewOffsets}} src="inject.js?t=${Date.now()}"></script>`;
-    let previewPrefix = /*html*/`<!DOCTYPE html>
+    let previewHTML = /*html*/`<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${project.name}</title>
         <style${isApp ? ' id="◆xode-css"' : ''}>${project.css}</style>
+        ${isPreview ? `<script>
+(function() {
+    // Neutralize every API that can cause cross-frame scroll propagation
+    const noop = function() {};
+    Element.prototype.scrollIntoView = noop;
+    Element.prototype.scrollIntoViewIfNeeded = noop; // non-standard, Safari/Chrome
+    window.scrollTo = noop;
+    window.scroll = noop;
+    window.scrollBy = noop;
+    // .focus() can also trigger native scroll-into-view; strip that behavior
+    const originalFocus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function(options) {
+        return originalFocus.call(this, { ...options, preventScroll: true });
+    };
+})();
+</script>` : ""}
         ${isApp ? injectScript : ""}
     </head>
     <body${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
@@ -116,14 +105,14 @@ const generatePreviewHTML = (project, isApp = true) => {
     </body>
     </html>`;
     const previewOffsets = {
-        htmlStartLine: countLines(previewPrefix.split(/<body(?:.*?>)?/)[0]) + 1,
-        jsStartLine: countLines(previewPrefix) + countLines(project.html),
+        htmlStartLine: countLines(previewHTML.split(/<body(?:.*?>)?/)[0]) + 1,
+        jsStartLine: countLines(previewHTML) + countLines(project.html),
     };
-    return previewPrefix.replace(`{{◆xode-previewOffsets}}`, `data-previewoffsets='${JSON.stringify(previewOffsets)}'`);
+    return previewHTML.replace(`{{◆xode-previewOffsets}}`, `data-previewoffsets='${JSON.stringify(previewOffsets)}'`);
 };
 
 let previewTimeoutId;
-const previewcurrentProject = (pane = "all", isForce = false) => {
+const previewCurrentProject = (pane = "all", isForce = false) => {
     // If richEditor and iframe have focus - do NOT preview changes (prevent infinite editing loop)
     if (currentProjectState.panes.richEditor && document.activeElement === elPreview) {
         return;
@@ -193,8 +182,8 @@ const drawProjects = () => {
             </script>
             ` + projectData.html;
         const elThumbnailIframe = elNew("iframe", {
-            className: "iframe-thumbnail",
-            srcdoc: generatePreviewHTML(projectData, false),
+            className: "thumbnail-iframe",
+            srcdoc: generatePreviewHTML(projectData, "preview"),
             sandbox: "allow-scripts", // ⚠️ DO NOT add allow-same-origin — breaks localStorage isolation
             loading: "lazy",
             scrolling: "no"
@@ -272,13 +261,13 @@ elProjectsSearch.addEventListener("input", () => {
 
 // RUN --> Preview
 const elRun = el("#run");
-elRun.addEventListener("click", () => previewcurrentProject("all", true));
+elRun.addEventListener("click", () => previewCurrentProject("all", true));
 
 // Download project by ID
 const downloadProject = (id) => {
     const project = openProject(id);
     const projectName = project.name.trim() ? project.name.trim().replace(/\W/g, "-") : "untitled";
-    download(generatePreviewHTML(project, false), `${projectName.toLowerCase()}.xode.html`);
+    download(generatePreviewHTML(project, "download"), `${projectName.toLowerCase()}.xode.html`);
 };
 
 // Download current project
@@ -523,12 +512,12 @@ elTabs.addEventListener("click", (evt) => {
 
 
 // One-time call to watch changes in editors
-function watchEditors(project, editors, previewcurrentProject) {
+function watchEditors(project, editors, previewCurrentProject) {
     ['html', 'css', 'js'].forEach(prop => {
         effect(() => {
             void project[prop]; // read → this effect now depends ONLY on `prop`
             editors[prop]?.highlight();
-            previewcurrentProject(prop);
+            previewCurrentProject(prop);
         });
     });
 }
@@ -552,7 +541,7 @@ paneConsole.init();
 const currentProjectState = reactive(openProject()); // Open latest Project
 mount(currentProjectState, "project"); // Mount project to DOM and bind events
 persist(currentProjectState, saveProject, 300); // Persist changes to project every 300ms
-watchEditors(currentProjectState, editors, previewcurrentProject);
+watchEditors(currentProjectState, editors, previewCurrentProject);
 watchPanes(currentProjectState, handlePanes);
 
 if (params.get("g")) {
