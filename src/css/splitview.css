@@ -57,13 +57,9 @@
     display: none;
 
     &[data-open="true"],
-    &:has([data-open="true"]:not([data-open-inner])) {
+    &:has([data-open="true"]:not([data-rea-open-inner])) {
         display: flex;
     }
-}
-
-[data-open="false"] {
-    display: none;
 }
 
 [data-open="false"]+.splitter {
@@ -79,5 +75,9 @@
 }
 
 .splitview:has([data-open]):not(:has([data-open="true"]))+.splitter {
+    display: none;
+}
+
+[data-open="false"] {
     display: none;
 }
