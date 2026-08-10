@@ -81,14 +81,6 @@
         }
     }
 
-    &:after {
-        content: "\00a0";
-        display: block;
-        overflow-anchor: auto;
-        height: 0ch;
-    }
-
-
     /* The input line that's part of the output */
     .input-line {
         display: flex;
