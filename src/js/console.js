@@ -167,7 +167,7 @@ const paneConsole = {
                 }
             } catch (_err) {
                 // If that fails, try direct eval
-                const result = eval(input);
+                const result = window.eval(input);
                 if (result !== undefined) {
                     this.print({ type: "console:result", args: [this.formatValue(result)] });
                 }
