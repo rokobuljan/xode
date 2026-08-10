@@ -142,6 +142,7 @@ window.addEventListener("message", (evt) => {
         }
         document.execCommand("styleWithCSS", false, false);
         document.execCommand(cmd, false, par);
-        notifyParent({ type: "content-changed", html: document.documentElement.outerHTML })
+        console.log("NOT PAR")
+        // notifyParent({ type: "content-changed", html: document.documentElement.outerHTML })
     }
 });
