@@ -271,8 +271,8 @@ const downloadProject = (id) => {
 };
 
 // Download current project
-el("#download").addEventListener("click", () => {
-    downloadProject(currentProjectState.id);
+els(".downloadCurrentProject").forEach(elBtnDownload => {
+    elBtnDownload.addEventListener("click", () => downloadProject(currentProjectState.id));
 });
 
 // Editor exec commander for richEditor mode (text editing buttons)

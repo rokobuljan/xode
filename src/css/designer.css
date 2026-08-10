@@ -1,20 +1,23 @@
 [data-view="richEditor"] {
     display: flex;
-    width: 100%;
+    max-width: 100%;
     align-items: center;
-    justify-content: center;
+    justify-content: safe center;
     background: var(--bg);
     color: var(--fg);
     border-bottom: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
+    overflow: hidden;
+    overflow-x: auto;
 }
 
 .cmd-group {
+    flex-shrink: 0;
     position: relative;
-    overflow: hidden;
     padding: 4px;
     display: inline-flex;
     align-items: center;
     border-right: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
+    flex-wrap: nowrap;
 
     >* {
         position: relative;

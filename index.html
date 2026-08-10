@@ -28,11 +28,11 @@
             <use href="#logo-xode"></use>
         </svg>
 
-        <button type="button" data-modal="#modal-projects" title="Project Settings">
+        <button class="md-show" type="button" data-modal="#modal-projects" title="Project Settings">
             <span class="icon" data-name="folder-simple">&#xfdf9;</span>
             <span data-rea-text="project.name">Untitled</span>
         </button>
-        <button id="download" type="button" title="Download project">
+        <button class="downloadCurrentProject md-show" type="button" title="Download project">
             <span class="icon" data-name="download">&#xf3b7;</span>
         </button>
 
@@ -68,9 +68,12 @@
         </div>
         <label title="Autorun JS">
             <input id="autorun" type="checkbox" data-rea-model="project.isAutorun">
-            <span>Auto</span>
+            <span class="md-show">Auto</span>
         </label>
-        <button id="run" type="button" title="Run JS">Run <span class="icon" data-name="play">&#xf42d;</span></button>
+        <button id="run" type="button" title="Run JS">
+            <span class="md-show">Run</span>
+            <span class="icon" data-name="play">&#xf42d;</span>
+        </button>
     </nav>
 
     <main id="app" class="splitview">
@@ -241,10 +244,17 @@
                             <textarea data-rea-model="project.description" class="currentProjectDescription"
                                 placeholder="Project Description"></textarea>
                         </label>
-                        <button type="button" id="githubPublish" class="accent" title="Publish to GitHub Gist">
-                            <span class="icon" data-name="github-logo">&#xf772;</span>
-                            Publish
-                        </button>
+                        <div class="row">
+                            <br>
+                            <button class="downloadCurrentProject" type="button" title="Download project">
+                                <span class="icon" data-name="download">&#xf3b7;</span>
+                                <span class="md-show">Download</span>
+                            </button>
+                            <button type="button" id="githubPublish" class="accent" title="Publish to GitHub Gist">
+                                <span class="icon" data-name="github-logo">&#xf772;</span>
+                                Publish
+                            </button>
+                        </div>
                     </div>
                     <h2>
                         <span class="icon" data-name="cloud-download">&#xf094;</span>
