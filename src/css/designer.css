@@ -8,6 +8,7 @@
     border-bottom: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
     overflow: hidden;
     overflow-x: auto;
+    flex: 0 0 auto;
 }
 
 .cmd-group {
