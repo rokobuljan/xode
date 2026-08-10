@@ -151,7 +151,6 @@ input[type="password"] {
 }
 
 .ckbtn {
-    font-size: 0.85rem;
     /* border: 1px solid color-mix(in srgb, var(--fg), var(--bg) 80%); */
     padding: 0.5em 0.6em;
     line-height: 1;

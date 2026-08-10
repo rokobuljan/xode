@@ -25,13 +25,13 @@
 }
 
 .md-show {
-    @media (width < 768px) {
+    @media (width <=768px) {
         display: none !important;
     }
 }
 
 .md-hide {
-    @media (width >=768px) {
+    @media (width > 768px) {
         display: none !important;
     }
 }
