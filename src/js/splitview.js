@@ -3,7 +3,7 @@
  * Resizable split-view panels
  */
 
-const getGrow = (el) => Number(el.style.getPropertyValue("--grow") || getComputedStyle(el).getPropertyValue("--grow"));
+const getPropVal = (el, prop) => Number(el.style.getPropertyValue(prop) || getComputedStyle(el).getPropertyValue(prop));
 const debouncedResize = () => {
     let timeout;
     return () => {
@@ -35,13 +35,13 @@ const splitViewStart = (ev) => {
     const isCol = elSplitter.closest(".splitview").matches(".col");
     const offset = isCol ? "offsetHeight" : "offsetWidth";
     const clientXY = isCol ? "clientY" : "clientX";
-    const growSum = getGrow(elPrev) + getGrow(elNext);
+    const growSum = getPropVal(elPrev, "--grow") + getPropVal(elNext, "--grow");
     const clientXYStart = ev[clientXY];
     const sizePrev = elPrev[offset];
     const sizeNext = elNext[offset];
     const sizeSum = sizePrev + sizeNext;
-    const sizeMinPrev = Number(elPrev.style.getPropertyValue("--min") || SIZE_MIN);
-    const sizeMinNext = Number(elNext.style.getPropertyValue("--min") || SIZE_MIN);
+    const sizeMinPrev = Number(getPropVal(elPrev, "--min") || SIZE_MIN);
+    const sizeMinNext = Number(getPropVal(elNext, "--min") || SIZE_MIN);
 
     const splitViewMove = (ev) => {
         const posDiff = ev[clientXY] - clientXYStart;
