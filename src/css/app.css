@@ -1,5 +1,9 @@
 #logo {
     cursor: pointer;
+
+    @media (width <=576px) {
+        width: 2.5rem;
+    }
 }
 
 #top {
@@ -91,7 +95,9 @@
 .tabs {
     display: flex;
     flex: 1;
-    justify-content: center;
+    overflow: hidden;
+    overflow-x: auto;
+    justify-content: safe center;
 }
 
 /* Hide rich editor button if preview is hidden */

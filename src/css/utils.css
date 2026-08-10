@@ -23,3 +23,15 @@
 .flex-1 {
     flex: 1;
 }
+
+.sm-show {
+    @media (width < 576px) {
+        display: none !important;
+    }
+}
+
+.md-show {
+    @media (width < 768px) {
+        display: none !important;
+    }
+}
