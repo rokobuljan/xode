@@ -24,14 +24,14 @@
     flex: 1;
 }
 
-.sm-show {
-    @media (width < 576px) {
+.md-show {
+    @media (width < 768px) {
         display: none !important;
     }
 }
 
-.md-show {
-    @media (width < 768px) {
+.md-hide {
+    @media (width >=768px) {
         display: none !important;
     }
 }
