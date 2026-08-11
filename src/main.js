@@ -26,6 +26,63 @@ const lsSettings = LS("xode.settings");
 const tabWidth = Number(lsSettings.read("tabWidth") ?? 4);
 const editors = {};
 const elPreview = el("#preview"); // the iframe
+const sandboxUrl = import.meta.env.VITE_SANDBOX_URL || "/sandbox.html";
+const iframeTargetOrigin = import.meta.env.VITE_IFRAME_ORIGIN || "*";
+const allowedMessageOrigins = (import.meta.env.VITE_ALLOWED_MESSAGE_ORIGINS ?? "*").split(/\s+/).filter(Boolean);
+const shouldAcceptMessageOrigin = (origin) => allowedMessageOrigins.includes("*") || allowedMessageOrigins.includes(origin);
+
+let previewLoaded = false;
+let previewMessageQueue = [];
+
+const cloneForPostMessage = (value) => {
+    if (typeof structuredClone === "function") {
+        try {
+            return structuredClone(value);
+        } catch {
+            // fall back to JSON serialize below
+        }
+    }
+    try {
+        return JSON.parse(JSON.stringify(value));
+    } catch {
+        return value;
+    }
+};
+
+const sendToPreview = (message) => {
+    const payload = cloneForPostMessage(message);
+    if (!elPreview.src) {
+        elPreview.src = sandboxUrl;
+    }
+    if (previewLoaded && elPreview.contentWindow) {
+        elPreview.contentWindow.postMessage(payload, iframeTargetOrigin);
+    } else {
+        previewMessageQueue.push(payload);
+    }
+};
+
+const flushPreviewQueue = () => {
+    if (!previewLoaded || !elPreview.contentWindow) return;
+    while (previewMessageQueue.length) {
+        const message = previewMessageQueue.shift();
+        elPreview.contentWindow.postMessage(message, iframeTargetOrigin);
+    }
+};
+
+const normalizeProjectForPreview = (project) => {
+    try {
+        return JSON.parse(JSON.stringify(project));
+    } catch {
+        return project;
+    }
+};
+
+const updatePreviewProject = (project) => {
+    sendToPreview({
+        type: "app:update",
+        project: normalizeProjectForPreview(project),
+    });
+};
 
 // Toggle single `pane` or handle all panes depending on project panes state
 const handlePanes = () => {
@@ -120,13 +177,13 @@ const previewCurrentProject = (pane = "all", isForce = false) => {
 
     let previewTask = null;
     if (isForce || (["all", "js", "html"].includes(pane) && currentProjectState.isAutorun)) {
-        previewTask = () => elPreview.srcdoc = generatePreviewHTML(currentProjectState);
+        previewTask = () => updatePreviewProject(currentProjectState);
     } else if (pane === "all" && !currentProjectState.isAutorun) {
-        previewTask = () => elPreview.srcdoc = generatePreviewHTML({ ...currentProjectState, js: "", html: DOMPurify.sanitize(currentProjectState.html) });
+        previewTask = () => updatePreviewProject({ ...currentProjectState, js: "", html: DOMPurify.sanitize(currentProjectState.html) });
     } else if (pane === "css") {
-        previewTask = () => elPreview.contentWindow.postMessage({ type: "action", args: ["patchCSS", currentProjectState.css] }, "*");
+        previewTask = () => sendToPreview({ type: "action", args: ["patchCSS", currentProjectState.css] });
     } else if (pane === "html") {
-        previewTask = () => elPreview.contentWindow.postMessage({ type: "action", args: ["patchHTML", DOMPurify.sanitize(currentProjectState.html)] }, "*");
+        previewTask = () => sendToPreview({ type: "action", args: ["patchHTML", DOMPurify.sanitize(currentProjectState.html)] });
     }
 
     clearTimeout(previewTimeoutId);
@@ -137,6 +194,9 @@ const previewCurrentProject = (pane = "all", isForce = false) => {
 
 // Rich Editor --to--> HTML
 addEventListener("message", async (evt) => {
+    if (!shouldAcceptMessageOrigin(evt.origin)) return;
+    if (evt.source !== elPreview.contentWindow) return;
+
     if (evt.data.type === "content-changed") {
         const body = new DOMParser().parseFromString(evt.data.html, "text/html").body;
         body.querySelector("#◆xode-js")?.remove();
@@ -144,6 +204,10 @@ addEventListener("message", async (evt) => {
         editors.html.setValue(html, { history: false, origin: "external" });
         currentProjectState.html = html; // Update with new value + save project
         // Reset focus back into Iframe
+    }
+    else if (evt.data.type === "sandbox:ready") {
+        previewLoaded = true;
+        flushPreviewQueue();
     }
     // Console messages
     else if (evt.data.type.startsWith("console:")) {
@@ -279,10 +343,10 @@ els(".downloadCurrentProject").forEach(elBtnDownload => {
 addEventListener("click", (evt) => {
     const elBtnCmd = evt.target.closest("[data-cmd]");
     if (!elBtnCmd) return;
-    elPreview.contentWindow.postMessage({
+    sendToPreview({
         type: "cmd",
         args: [elBtnCmd.dataset.cmd, elBtnCmd.dataset.par]
-    }, "*");
+    });
 });
 
 // Actions from parent window to #preview iframe
@@ -294,10 +358,10 @@ addEventListener("click", (evt) => {
     const val = elBtnAction.matches("[type=checkbox]") ?
         elBtnAction.checked :
         elBtnAction.value ?? elBtnAction.dataset.val;
-    elPreview.contentWindow.postMessage({
+    sendToPreview({
         type: "action",
         args: [action, val]
-    }, "*");
+    });
     if (action === "designMode") {
         // Toggle rich editor
         currentProjectState.panes.richEditor = elBtnAction.checked;
@@ -307,10 +371,11 @@ addEventListener("click", (evt) => {
 
 // Activate RTE
 elPreview.addEventListener('load', () => {
-    elPreview.contentWindow.postMessage({
+    sendToPreview({ type: "set-parent-origin" });
+    sendToPreview({
         type: "action",
         args: ["designMode", currentProjectState.panes.richEditor]
-    }, "*");
+    });
 });
 
 // NEW PROJECT

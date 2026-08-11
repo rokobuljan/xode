@@ -1,7 +1,73 @@
+const previewOffsetDataset = document.querySelector("#◆xode-inject")?.dataset?.previewoffsets;
 const DEFAULT_SOURCE_OFFSETS = Object.assign({
     htmlStartLine: 1,
     jsStartLine: 1,
-}, JSON.parse(document.querySelector("#◆xode-inject").dataset.previewoffsets));
+}, previewOffsetDataset ? JSON.parse(previewOffsetDataset) : {});
+
+let parentOrigin = null;
+const resolveParentOrigin = () => {
+    if (parentOrigin) return parentOrigin;
+    if (window.location.ancestorOrigins && window.location.ancestorOrigins.length) {
+        parentOrigin = window.location.ancestorOrigins[0];
+        return parentOrigin;
+    }
+    if (document.referrer) {
+        try {
+            parentOrigin = new URL(document.referrer).origin;
+            return parentOrigin;
+        } catch {
+            // ignore invalid referrer
+        }
+    }
+    try {
+        parentOrigin = window.parent.location.origin;
+        return parentOrigin;
+    } catch {
+        return null;
+    }
+};
+
+const postToParent = (data) => {
+    const origin = resolveParentOrigin();
+    if (!origin) return;
+    window.parent.postMessage(data, origin);
+};
+
+const applyProject = (project = {}) => {
+    const css = project.css || "";
+    const html = project.html || "";
+    const js = project.js || "";
+
+    let style = document.getElementById("◆xode-css");
+    if (!style) {
+        style = document.createElement("style");
+        style.id = "◆xode-css";
+        document.head.appendChild(style);
+    }
+    style.textContent = css;
+
+    document.body.innerHTML = html;
+
+    const existingScript = document.getElementById("◆xode-js");
+    if (existingScript) existingScript.remove();
+    const script = document.createElement("script");
+    script.id = "◆xode-js";
+    script.type = "module";
+    script.textContent = `${js}\n//# sourceURL=project.js`;
+    document.body.appendChild(script);
+};
+
+window.addEventListener("message", (evt) => {
+    if (evt.data?.type === "set-parent-origin") {
+        parentOrigin = evt.origin;
+        return;
+    }
+    if (!parentOrigin || evt.origin !== parentOrigin) return;
+
+    if (evt.data.type === "app:update") {
+        applyProject(evt.data.project);
+    }
+});
 
 const getSourceName = (file = "") => {
     if (file === "js") return "js";
@@ -70,36 +136,35 @@ getAllMethods(window.console).forEach((method) => {
     console[method] = (...args) => {
         // if (++i > 2) return;
         _orig(...args);
-        window.parent.postMessage({
+        postToParent({
             type: `console:${method}`,
             args: Array.from(args).map(serialize),
             line: getLineNumber(),
-        }, "*");
+        });
     };
 });
 window.addEventListener("error", (evt) => {
     const location = evt.error?.stack ? extractLocation(evt.error.stack) : null;
-    window.parent.postMessage({
+    postToParent({
         type: "console:error",
         args: [evt.message],
         line: location ? formatLocation(location.file, location.line) : formatLocation(evt.filename, evt.lineno),
-    }, "*");
+    });
 });
 window.addEventListener("unhandledrejection", (evt) => {
     const location = extractLocation(evt.reason?.stack || "");
-    window.parent.postMessage({
+    postToParent({
         type: "console:error",
         args: [location ? `Uncaught (in promise): at ${location.line}` : "Uncaught (in promise)"],
         line: location ? formatLocation(location.file, location.line) : "",
-    }, "*");
+    });
 });
 
 // Rich Editor mode
 // Inside the iframe's document
 let debounceTimer = null;
 const notifyParent = (data) => {
-    // restrict to your real origin in production
-    window.parent.postMessage(data, "*");
+    postToParent(data);
 };
 document.addEventListener("input", () => {
     // Prevent notifying parent whilst i.e: writing into a textarea
