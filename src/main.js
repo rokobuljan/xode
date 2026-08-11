@@ -27,9 +27,14 @@ const tabWidth = Number(lsSettings.read("tabWidth") ?? 4);
 const editors = {};
 const elPreview = el("#preview"); // the iframe
 const sandboxUrl = import.meta.env.VITE_SANDBOX_URL || "/sandbox.html";
-const iframeTargetOrigin = import.meta.env.VITE_IFRAME_ORIGIN || "*";
-const allowedMessageOrigins = (import.meta.env.VITE_ALLOWED_MESSAGE_ORIGINS ?? "*").split(/\s+/).filter(Boolean);
-const shouldAcceptMessageOrigin = (origin) => allowedMessageOrigins.includes("*") || allowedMessageOrigins.includes(origin);
+const iframeTargetOrigin = import.meta.env.VITE_IFRAME_ORIGIN || window.location.origin;
+const allowedMessageOrigins = (import.meta.env.VITE_ALLOWED_MESSAGE_ORIGINS ?? iframeTargetOrigin)
+    .split(/\s+/)
+    .filter(Boolean);
+const shouldAcceptMessageOrigin = (origin, source) => {
+    if (source !== elPreview.contentWindow) return false;
+    return allowedMessageOrigins.includes(origin);
+};
 
 let previewLoaded = false;
 let previewMessageQueue = [];
@@ -194,8 +199,8 @@ const previewCurrentProject = (pane = "all", isForce = false) => {
 
 // Rich Editor --to--> HTML
 addEventListener("message", async (evt) => {
-    if (!shouldAcceptMessageOrigin(evt.origin)) return;
     if (evt.source !== elPreview.contentWindow) return;
+    if (!shouldAcceptMessageOrigin(evt.origin, evt.source)) return;
 
     if (evt.data.type === "content-changed") {
         const body = new DOMParser().parseFromString(evt.data.html, "text/html").body;
@@ -371,7 +376,9 @@ addEventListener("click", (evt) => {
 
 // Activate RTE
 elPreview.addEventListener('load', () => {
-    sendToPreview({ type: "set-parent-origin" });
+    if (elPreview.contentWindow) {
+        elPreview.contentWindow.postMessage({ type: "set-parent-origin" }, iframeTargetOrigin);
+    }
     sendToPreview({
         type: "action",
         args: ["designMode", currentProjectState.panes.richEditor]
