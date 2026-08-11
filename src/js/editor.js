@@ -221,9 +221,9 @@ export class Editor {
         });
 
         // Selection changed via drag, double-click, keyboard, etc.
-        this.elTextarea.addEventListener('select', this.updateHighlights);
-        this.elTextarea.addEventListener('mouseup', this.updateHighlights);
-        this.elTextarea.addEventListener('keyup', this.updateHighlights);
+        this.elTextarea.addEventListener('select', () => this.updateHighlights());
+        this.elTextarea.addEventListener('mouseup', () => this.updateHighlights());
+        this.elTextarea.addEventListener('keyup', () => this.updateHighlights());
         document.addEventListener('selectionchange', () => {
             if (document.activeElement === this.elTextarea) this.updateHighlights();
         });
