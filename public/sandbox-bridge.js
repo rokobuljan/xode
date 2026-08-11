@@ -128,6 +128,9 @@ window.addEventListener("message", (evt) => {
         }
         document.execCommand("styleWithCSS", false, false);
         document.execCommand(cmd, false, par);
+        if (document.designMode === "on") {
+            document.body.focus();
+        }
         return;
     }
 });

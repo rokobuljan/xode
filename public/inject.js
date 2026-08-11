@@ -202,11 +202,14 @@ window.addEventListener("message", (evt) => {
         let [cmd, par] = evt.data.args;
         if (cmd === "InsertImage") par = prompt("Image URL:", "");
         else if (cmd === "CreateLink") {
-            par = prompt("Link URL:", "http://");
-            if (par === "" || par == "http://") cmd = "Unlink";
+            par = prompt("Link URL:", "https://");
+            if (par === "" || par == "https://") cmd = "Unlink";
         }
         document.execCommand("styleWithCSS", false, false);
         document.execCommand(cmd, false, par);
+        if (document.designMode === "on") {
+            document.body.focus();
+        }
         console.log("NOT PAR")
         // notifyParent({ type: "content-changed", html: document.documentElement.outerHTML })
     }
