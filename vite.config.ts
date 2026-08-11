@@ -1,6 +1,10 @@
 import { defineConfig } from "vite-plus";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { mkdirSync, copyFileSync } from "node:fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const appDist = "dist/xode.roxon.hr";
 const sandboxDist = "dist/xode.box.roxon.hr";

@@ -2,33 +2,13 @@ const root = document.createElement("div");
 root.id = "sandbox-root";
 document.body.appendChild(root);
 
+const parentWindow = window.parent;
 let parentOrigin = null;
-const resolveParentOrigin = () => {
-    if (parentOrigin) return parentOrigin;
-    if (window.location.ancestorOrigins && window.location.ancestorOrigins.length) {
-        parentOrigin = window.location.ancestorOrigins[0];
-        return parentOrigin;
-    }
-    if (document.referrer) {
-        try {
-            parentOrigin = new URL(document.referrer).origin;
-            return parentOrigin;
-        } catch {
-            // ignore invalid referrer
-        }
-    }
-    try {
-        parentOrigin = window.parent.location.origin;
-        return parentOrigin;
-    } catch {
-        return null;
-    }
-};
 
-const postToParent = (data) => {
-    const origin = resolveParentOrigin();
+const postToParent = (data, targetOrigin = null) => {
+    const origin = targetOrigin || parentOrigin;
     if (!origin) return;
-    window.parent.postMessage(data, origin);
+    parentWindow.postMessage(data, origin);
 };
 
 const serializeArg = (arg) => {
@@ -56,8 +36,6 @@ const instrumentConsole = () => {
         };
     });
 };
-
-const notifyParent = (data) => postToParent(data);
 
 const createStyle = (css) => {
     let style = document.getElementById("◆xode-css");
@@ -122,12 +100,13 @@ document.addEventListener("keyup", (evt) => {
 window.addEventListener("message", (evt) => {
     if (!evt.data || typeof evt.data.type !== "string") return;
     if (evt.data.type === "set-parent-origin") {
+        if (!evt.origin) return;
         parentOrigin = evt.origin;
+        postToParent({ type: "sandbox:ready" }, parentOrigin);
         return;
     }
 
-    const origin = resolveParentOrigin();
-    if (!origin || evt.origin !== origin) return;
+    if (!parentOrigin || evt.origin !== parentOrigin) return;
 
     if (evt.data.type === "app:update") {
         renderProject(evt.data.project || {});
@@ -161,4 +140,3 @@ window.addEventListener("unhandledrejection", (evt) => {
 });
 
 instrumentConsole();
-postToParent({ type: "sandbox:ready" });
