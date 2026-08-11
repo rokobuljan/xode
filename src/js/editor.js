@@ -11,6 +11,32 @@ import { extractColors } from "./colorExtract.js";
 import Toast from "./toast.js";
 
 const lsSettings = LS("xode.settings");
+const supportsHighlightAPI = 'highlights' in CSS && typeof Highlight !== 'undefined';
+
+
+// Walk every text node under `root`, recording the absolute character
+// range [start, end) it covers, so we can later go from "offset 57" to
+// "this specific text node, at offset 4 within it" regardless of how
+// many <span>s the offset happens to fall inside.
+function getTextNodeMap(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const map = [];
+    let node, offset = 0;
+    while ((node = walker.nextNode())) {
+        map.push({ node, start: offset, end: offset + node.nodeValue.length });
+        offset += node.nodeValue.length;
+    }
+    return map;
+}
+
+function locate(map, pos) {
+    for (const entry of map) {
+        if (pos >= entry.start && pos <= entry.end) {
+            return { node: entry.node, offset: pos - entry.start };
+        }
+    }
+    return null; // pos didn't land in any text node (shouldn't happen if map is complete)
+}
 
 function scrollToCaret(evt) {
     evt.preventDefault();
@@ -187,6 +213,21 @@ export class Editor {
             });
         });
 
+        // Highlight
+
+        // Text changed -> resync mirror + recompute highlights
+        this.elTextarea.addEventListener('input', () => {
+            this.updateHighlights();
+        });
+
+        // Selection changed via drag, double-click, keyboard, etc.
+        this.elTextarea.addEventListener('select', this.updateHighlights);
+        this.elTextarea.addEventListener('mouseup', this.updateHighlights);
+        this.elTextarea.addEventListener('keyup', this.updateHighlights);
+        document.addEventListener('selectionchange', () => {
+            if (document.activeElement === this.elTextarea) this.updateHighlights();
+        });
+
         // Auto-indent on Enter
         this.setupAutoIndent();
     }
@@ -284,14 +325,12 @@ export class Editor {
         this.historyTimer = null;
         this.history.push(this.elTextarea.value, this.elTextarea.selectionStart, this.elTextarea.selectionEnd);
     }
-
     resetHistory(value = this.elTextarea.value) {
         clearTimeout(this.historyTimer);
         this.historyTimer = null;
         this.value = value;
         this.history = new HistoryStack(value, value.length, value.length);
     }
-
     undo() {
         // If there's an uncommitted (still-debounced) edit, commit it first so
         // the very first Ctrl+Z undoes the last thing the user actually did.
@@ -474,4 +513,36 @@ export class Editor {
             }, 300);
         }
     }
+    updateHighlights() {
+
+        const text = this.elTextarea.value; // must match code.textContent exactly
+        const start = this.elTextarea.selectionStart;
+        const end = this.elTextarea.selectionEnd;
+        const selected = text.slice(start, end);
+
+        if (!selected.trim()) {
+            CSS.highlights.delete('word-highlight');
+            return;
+        }
+
+        // Recompute the map every time: `render()` rebuilds the spans on each
+        // keystroke, so old text node references are stale.
+        const map = getTextNodeMap(this.elCode);
+        const ranges = [];
+        let idx = 0;
+        while ((idx = text.indexOf(selected, idx)) !== -1) {
+            const s = locate(map, idx);
+            const e = locate(map, idx + selected.length);
+            if (s && e) {
+                const range = new Range();
+                range.setStart(s.node, s.offset);
+                range.setEnd(e.node, e.offset); // fine even if s.node !== e.node
+                ranges.push(range);
+            }
+            idx += selected.length;
+        }
+
+        CSS.highlights.set('word-highlight', new Highlight(...ranges));
+    }
+
 }
