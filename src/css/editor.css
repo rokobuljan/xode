@@ -1,5 +1,10 @@
 /* EDITOR */
 
+/* the actual highlight styling, courtesy of CSS.highlights */
+::highlight(word-highlight) {
+    background-color: color-mix(in srgb, var(--c1), #0000 80%);
+}
+
 .editor {
     --gutter-width: 1;
     display: flex;
