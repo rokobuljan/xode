@@ -282,6 +282,38 @@ const getAIConfig = () => {
     };
 };
 
+// ---------------------------------------------------------------------
+// Conversation history
+// ---------------------------------------------------------------------
+// The model does NOT need the full HTML/CSS/JS re-sent for every past
+// turn — it only ever needs the *current* code, which is already sent
+// fresh on every call via systemPrompt() (see below). Re-sending code
+// snapshots for old turns would multiply request size by every file's
+// size times the number of turns, which gets into multi-MB territory
+// fast for anything beyond a trivial prototype.
+//
+// So history here is intentionally text-only: what the user asked for,
+// and a one-line summary of what the AI changed. That's enough for the
+// model to track intent across turns ("make it bigger" referring to a
+// button from 3 messages ago) without ever re-transmitting code that's
+// already present, current, and authoritative in the system prompt.
+//
+// Capped to the most recent MAX_HISTORY_TURNS user+assistant pairs.
+const MAX_HISTORY_TURNS = 30; // "units" = one user turn + one assistant turn
+const HISTORY_ENTRY_MAX_CHARS = 2000; // guard against a single huge turn (e.g. pasted error log)
+
+let chatHistory = []; // [{ role: "user" | "assistant", content: "..." }] — text only, never code
+
+function pushHistory(role, content) {
+    const trimmed = content.length > HISTORY_ENTRY_MAX_CHARS
+        ? content.slice(0, HISTORY_ENTRY_MAX_CHARS) + "…"
+        : content;
+    chatHistory.push({ role, content: trimmed });
+    if (chatHistory.length > MAX_HISTORY_TURNS * 2) {
+        chatHistory = chatHistory.slice(-MAX_HISTORY_TURNS * 2);
+    }
+}
+
 // DOM refs
 const elProvider = el(".chat-provider");
 const elApiKey = el(".chat-apiKey");
@@ -296,7 +328,9 @@ const editorsTextarea = {
     js: null,
 };
 
-// Prompt
+// Prompt — always reflects the LIVE, current editor state. This is the
+// single source of truth for code; it's sent fresh on every call, so
+// history never needs to (and must not) carry code snapshots.
 const systemPrompt = () => `You are an expert web developer helping edit an HTML/CSS/JS prototype.
 Current code:
 HTML:
@@ -326,18 +360,30 @@ All string values must have newlines escaped as \\n and double quotes inside cod
   "js": "full new JS or null",
   "explanation": "brief explanation of changes"
 }
-If in conversation, don't necessarily respond with code. Provide html, js, css only if code oor code suggestions are requested.
+If in conversation, don't necessarily respond with code. Provide html, js, css only if code or code suggestions are requested.
 Only return changed panes as full strings. Keep the code functional.`;
 
 // ADAPTERS (chat calls)
+// Each adapter now takes (config, systemText, history, userPrompt).
+// `history` is the lightweight, text-only chatHistory array — never code.
 
-async function callGemini(config, fullPrompt) {
+async function callGemini(config, systemText, history, userPrompt) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
+
+    const contents = [
+        ...history.map(m => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }]
+        })),
+        { role: "user", parts: [{ text: userPrompt }] }
+    ];
+
     const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            contents: [{ parts: [{ text: fullPrompt }] }],
+            systemInstruction: { parts: [{ text: systemText }] },
+            contents,
             generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
         })
     });
@@ -346,12 +392,18 @@ async function callGemini(config, fullPrompt) {
     return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
-async function callOpenAICompatible(config, fullPrompt) {
+async function callOpenAICompatible(config, systemText, history, userPrompt) {
     const { baseUrl } = PROVIDERS[config.provider];
     const headers = { "Content-Type": "application/json" };
     if (config.apiKey) {
         headers.Authorization = `Bearer ${config.apiKey}`;
     }
+
+    const messages = [
+        { role: "system", content: systemText },
+        ...history.map(m => ({ role: m.role, content: m.content })),
+        { role: "user", content: userPrompt }
+    ];
 
     const res = await fetch(baseUrl, {
         method: "POST",
@@ -360,9 +412,11 @@ async function callOpenAICompatible(config, fullPrompt) {
             model: config.model,
             temperature: 0.1,
             response_format: { type: "json_object" },
-            messages: [{ role: "user", content: fullPrompt }]
+            messages
         })
     });
+
+    console.log(res);
 
     if (!res.ok) {
         const raw = await res.text();
@@ -379,7 +433,12 @@ async function callOpenAICompatible(config, fullPrompt) {
     return data.choices?.[0]?.message?.content || "";
 }
 
-async function callAnthropic(config, fullPrompt) {
+async function callAnthropic(config, systemText, history, userPrompt) {
+    const messages = [
+        ...history.map(m => ({ role: m.role, content: m.content })),
+        { role: "user", content: userPrompt }
+    ];
+
     const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -391,7 +450,8 @@ async function callAnthropic(config, fullPrompt) {
         body: JSON.stringify({
             model: config.model,
             max_tokens: 4096,
-            messages: [{ role: "user", content: fullPrompt }]
+            system: systemText,
+            messages
         })
     });
     const data = await res.json();
@@ -418,18 +478,33 @@ async function callAI(userPrompt) {
         return null;
     }
 
-    const fullPrompt = `${systemPrompt()}\n\nUser request: ${userPrompt}`;
+    // Current code goes ONLY into the system prompt — sent fresh every
+    // call, exactly once. History (below) never carries code.
+    const systemText = systemPrompt();
 
     try {
         let text;
-        if (providerInfo.kind === "gemini") text = await callGemini(config, fullPrompt);
-        else if (providerInfo.kind === "anthropic") text = await callAnthropic(config, fullPrompt);
-        else text = await callOpenAICompatible(config, fullPrompt);
+        if (providerInfo.kind === "gemini") text = await callGemini(config, systemText, chatHistory, userPrompt);
+        else if (providerInfo.kind === "anthropic") text = await callAnthropic(config, systemText, chatHistory, userPrompt);
+        else text = await callOpenAICompatible(config, systemText, chatHistory, userPrompt);
 
+        // Only commit to history once we have a usable reply, and only
+        // ever commit lightweight text — never the code payload.
         try {
-            return { type: "json", data: tryParseAIJson(text) };
+            const parsed = tryParseAIJson(text);
+
+            pushHistory("user", userPrompt);
+            const changedPanes = ['html', 'css', 'js'].filter(k => parsed[k] !== null && parsed[k] !== undefined);
+            const summary = changedPanes.length
+                ? `${parsed.explanation || 'Change applied.'} (updated: ${changedPanes.join(', ')})`
+                : (parsed.explanation || 'No changes needed.');
+            pushHistory("assistant", summary);
+
+            return { type: "json", data: parsed };
         } catch (parseErr) {
             if (looksLikeMarkdown(text)) {
+                pushHistory("user", userPrompt);
+                pushHistory("assistant", text); // pushHistory itself truncates long entries
                 return { type: "markdown", raw: text };
             }
             throw parseErr; // genuinely unusable output — falls through to the catch below
@@ -477,14 +552,11 @@ async function sendMessage(msg) {
     addMessage("system", '<span class="loader"></span> <em class="thinking">Thinking...</em>', thinkingId);
 
     try {
-        const currentCode = {
-            html: editorsTextarea.html.value,
-            css: editorsTextarea.css.value,
-            js: editorsTextarea.js.value
-        };
-        const aiResult = await callAI(
-            userText + `\n\nCurrent code: ${JSON.stringify(currentCode)}`
-        );
+        // No code appended here anymore — the current HTML/CSS/JS is
+        // already sent fresh via systemPrompt() inside callAI(), so
+        // appending it again here would just duplicate the same
+        // payload a second time on every request.
+        const aiResult = await callAI(userText);
         if (aiResult?.type === "json") {
             renderSuggestion(aiResult.data);
         } else if (aiResult?.type === "markdown") {
