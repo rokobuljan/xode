@@ -81,7 +81,7 @@ const generatePreviewHTML = (project, consumer = "app") => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${project.name}</title>
         <style${isApp ? ' id="◆xode-css"' : ''}>${project.css}</style>
-        ${isPreview ? `<script>
+        ${isApp || isPreview ? `<script>
 (function() {
     // Neutralize every API that can cause cross-frame scroll propagation
     const noop = function() {};
