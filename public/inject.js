@@ -142,7 +142,9 @@ window.addEventListener("message", (evt) => {
         }
         document.execCommand("styleWithCSS", false, false);
         document.execCommand(cmd, false, par);
-        console.log("NOT PAR")
+        if (document.designMode === "on") {
+            document.body.focus?.({ preventScroll: true });
+        }
         // notifyParent({ type: "content-changed", html: document.documentElement.outerHTML })
     }
 });
