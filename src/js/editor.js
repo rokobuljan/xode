@@ -14,6 +14,13 @@ const lsSettings = LS("xode.settings");
 const supportsHighlightAPI = 'highlights' in CSS && typeof Highlight !== 'undefined';
 
 
+const customEmmetSnippets = {
+    html: {
+        '!': '!!!+html[lang="en"]>(head>meta[charset="UTF-8"]+meta[http-equiv="X-UA-Compatible"][content="IE=edge"]+meta[name="viewport"][content="width=device-width, initial-scale=1.0"]+meta[name="description"][content="Project description"]+link[rel="favicon"][type="image/svg+xml"][href="#!"]+title{${1:Untitled}})+body'
+    }
+};
+
+
 // Walk every text node under `root`, recording the absolute character
 // range [start, end) it covers, so we can later go from "offset 57" to
 // "this specific text node, at offset 4 within it" regardless of how
@@ -464,7 +471,7 @@ export class Editor {
         const { abbreviation, start, end } = extraction;
         // 3. Expand the abbreviation and replace the text
         try {
-            let expanded = expand(abbreviation, { syntax: this.syntax, type });
+            let expanded = expand(abbreviation, { syntax: this.syntax, type, snippets: customEmmetSnippets[this.syntax] ?? {} });
             expanded = expanded.replace(/\t/g, " ".repeat(Number(lsSettings.read("tabWidth")))); // Replace tabs with 4 spaces
             // Replace the extracted abbreviation with the expanded code
             const newValue = source.substring(0, start) + expanded + source.substring(end);
