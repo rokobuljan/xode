@@ -11,4 +11,7 @@ export default defineConfig({
         singleQuote: false,
         printWidth: 240,
     },
+    test: {
+        globals: true,
+    },
 });

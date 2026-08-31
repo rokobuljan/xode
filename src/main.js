@@ -4,7 +4,7 @@
  * @url https://roxon.hr
  */
 
-import DOMPurify from 'dompurify';
+import DOMPurify from "dompurify";
 import "./css/index.css";
 import "./js/splitview.js";
 import "./js/modal.js";
@@ -13,14 +13,16 @@ import { init as initChat } from "./js/chat.js";
 import Toast from "./js/toast.js";
 import "./js/consoleWarning.js";
 import gist, { setToken, getToken, hasToken, clearToken, GistApiError } from "./js/githubGist.js";
-import { bus } from './js/bus.js';
+import { bus } from "./js/bus.js";
 
-import { reactive, effect, mount, persist } from './js/reactive.js';
+import { reactive, effect, mount, persist } from "./js/reactive.js";
 
 import { LS, el, els, elNew, download, formatDateTime, params, countLines } from "./js/utils.js";
-import { openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from './js/project.js';
+import { initProjectStorage, openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from "./js/project.js";
 import { Editor } from "./js/editor.js";
 
+await initProjectStorage();
+const initialProject = await openProject();
 
 const lsSettings = LS("xode.settings");
 const tabWidth = Number(lsSettings.read("tabWidth") ?? 4);
@@ -36,19 +38,19 @@ const handlePanes = () => {
     }, []);
     // Toggle top tab if only preview is active
     el("#top").classList.toggle("is-detached", openedTabs.length === 1 && openedTabs[0] === "project.panes.preview");
-}
+};
 
 function loadProjectInto(target, source) {
-    Object.keys(target).forEach(k => { if (!(k in source)) delete target[k]; });
+    Object.keys(target).forEach((k) => {
+        if (!(k in source)) delete target[k];
+    });
     Object.assign(target, source);
 }
 
-const projectInit = (isNew = true, id) => {
-    const project = isNew
-        ? createProject({ panes: currentProjectState.panes })
-        : openProject(id);
+const projectInit = async (isNew = true, id) => {
+    const project = isNew ? await createProject({ panes: currentProjectState.panes }) : await openProject(id);
 
-    loadProjectInto(currentProjectState, project);   // ← mutate, don't replace
+    loadProjectInto(currentProjectState, project); // ← mutate, don't replace
     setLastProjectId(currentProjectState.id);
 
     handlePanes();
@@ -73,15 +75,17 @@ const projectInit = (isNew = true, id) => {
 const generatePreviewHTML = (project, consumer = "app") => {
     const isApp = consumer === "app";
     const isPreview = consumer === "preview";
-    const injectScript = /*html*/`<script id="◆xode-inject" {{◆xode-previewOffsets}} src="inject.js?t=${Date.now()}"></script>`;
-    let previewHTML = /*html*/`<!DOCTYPE html>
+    const injectScript = /*html*/ `<script id="◆xode-inject" {{◆xode-previewOffsets}} src="inject.js?t=${Date.now()}"></script>`;
+    let previewHTML = /*html*/ `<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${project.name}</title>
-        <style${isApp ? ' id="◆xode-css"' : ''}>${project.css}</style>
-        ${isApp || isPreview ? `<script>
+        <style${isApp ? ' id="◆xode-css"' : ""}>${project.css}</style>
+        ${
+            isApp || isPreview
+                ? `<script>
 (function() {
     // Neutralize every API that can cause cross-frame scroll propagation
     const noop = function() {};
@@ -96,12 +100,14 @@ const generatePreviewHTML = (project, consumer = "app") => {
         return originalFocus.call(this, { ...options, preventScroll: true });
     };
 })();
-</script>` : ""}
+</script>`
+                : ""
+        }
         ${isApp ? injectScript : ""}
     </head>
-    <body${isApp ? ' id="◆xode-html" spellcheck="false"' : ''}>
+    <body${isApp ? ' id="◆xode-html" spellcheck="false"' : ""}>
         ${project.html}
-        <script${isApp ? ' id="◆xode-js"' : ''} type="module">${project.js}${isApp ? "//# sourceURL=js" : ""}</script>
+        <script${isApp ? ' id="◆xode-js"' : ""} type="module">${project.js}${isApp ? "//# sourceURL=js" : ""}</script>
     </body>
     </html>`;
     const previewOffsets = {
@@ -120,9 +126,9 @@ const previewCurrentProject = (pane = "all", isForce = false) => {
 
     let previewTask = null;
     if (isForce || (["all", "js", "html"].includes(pane) && currentProjectState.isAutorun)) {
-        previewTask = () => elPreview.srcdoc = generatePreviewHTML(currentProjectState);
+        previewTask = () => (elPreview.srcdoc = generatePreviewHTML(currentProjectState));
     } else if (pane === "all" && !currentProjectState.isAutorun) {
-        previewTask = () => elPreview.srcdoc = generatePreviewHTML({ ...currentProjectState, js: "", html: DOMPurify.sanitize(currentProjectState.html) });
+        previewTask = () => (elPreview.srcdoc = generatePreviewHTML({ ...currentProjectState, js: "", html: DOMPurify.sanitize(currentProjectState.html) }));
     } else if (pane === "css") {
         previewTask = () => elPreview.contentWindow.postMessage({ type: "action", args: ["patchCSS", currentProjectState.css] }, "*");
     } else if (pane === "html") {
@@ -130,9 +136,12 @@ const previewCurrentProject = (pane = "all", isForce = false) => {
     }
 
     clearTimeout(previewTimeoutId);
-    previewTimeoutId = setTimeout(() => {
-        previewTask?.();
-    }, pane === "css" ? 250 : 320);
+    previewTimeoutId = setTimeout(
+        () => {
+            previewTask?.();
+        },
+        pane === "css" ? 250 : 320,
+    );
 };
 
 // Rich Editor --to--> HTML
@@ -157,14 +166,20 @@ addEventListener("message", async (evt) => {
 });
 
 const elProjectsList = el("#projects-list");
-const drawProjects = () => {
+let drawProjectsSequence = 0;
+const drawProjects = async () => {
+    const sequence = ++drawProjectsSequence;
+    const projectSummaries = await listProjects();
+    const projects = (await Promise.all(projectSummaries.map(({ id }) => loadProject(id)))).filter(Boolean);
+    if (sequence !== drawProjectsSequence) return;
+
     elProjectsList.innerHTML = "";
-    listProjects().forEach((project) => {
-        const projectData = openProject(project.id);
+    projects.forEach((projectData) => {
         const title = `${projectData.name} ${projectData.description ? " — " + projectData.description : ""} | ${formatDateTime(projectData.updatedAt)}`;
         const elThumbnail = elNew("div", { className: "thumbnail", title });
-        elThumbnail.dataset.modal = "";
-        projectData.html = `
+        // elThumbnail.dataset.modal = "";
+        projectData.html =
+            `
             <script>
             // XODE-injected: suppress ALL console output + uncaught errors from bubbling to DevTools
             const methods = ['log', 'warn', 'error', 'info', 'debug'];
@@ -186,11 +201,13 @@ const drawProjects = () => {
             srcdoc: generatePreviewHTML(projectData, "preview"),
             sandbox: "allow-scripts", // ⚠️ DO NOT add allow-same-origin — breaks localStorage isolation
             loading: "lazy",
-            scrolling: "no"
+            scrolling: "no",
         });
 
         elThumbnail.append(elThumbnailIframe);
-        const gistLinkHTML = projectData.gistId ? `<a href="https://gist.github.com/${projectData.gistId}" target="_blank" rel="noopener noreferrer" title="External Github Gist"><span class="icon" data-name="github-logo">&#xf772;</span></a>` : "";
+        const gistLinkHTML = projectData.gistId
+            ? `<a href="https://gist.github.com/${projectData.gistId}" target="_blank" rel="noopener noreferrer" title="External Github Gist"><span class="icon" data-name="github-logo">&#xf772;</span></a>`
+            : "";
         const elProject = elNew("div", {
             id: `project-${projectData.id}`,
             className: "project",
@@ -202,40 +219,44 @@ const drawProjects = () => {
                     <button data-download-id="${projectData.id}" type="button" title="Download"><span class="icon" data-name="download">&#xf3b7;</span></button>
                     <button data-delete-id="${projectData.id}" type="button" title="Delete"><span class="icon" data-name="trash">&#xf202;</span></button>
                 </span>
-            </div>`
+            </div>`,
         });
         const elName = el(".project-name", elProject);
         elName.textContent = projectData.name; // safe — no HTML parsing
         elName.title = title; // safe — DOM property, not string-parsed
         elProject.prepend(elThumbnail);
 
-        el(`[data-delete-id]`, elProject).addEventListener("click", () => {
-            if (confirm(`Delete project: "${projectData.name}"?`)) {
-                requestAnimationFrame(() => {
-                    el(`#project-${projectData.id}`).remove();
-                    const wasActiveProject = currentProjectState.id === projectData.id;
-                    // Delete from storage first so subsequent listProjects() reflects the removal
-                    deleteProject(projectData.id);
-                    if (wasActiveProject) {
-                        params.delete("g"); // Remove from URI params to avoid reloading deleted gist
-                        const firstProject = listProjects()[0];
-                        if (firstProject) {
-                            projectInit(false, firstProject.id);
-                        } else {
-                            projectInit(); // init a new empty project
+        el(`[data-delete-id]`, elProject).addEventListener(
+            "click",
+            () => {
+                if (confirm(`Delete project: "${projectData.name}"?`)) {
+                    requestAnimationFrame(async () => {
+                        el(`#project-${projectData.id}`).remove();
+                        const wasActiveProject = currentProjectState.id === projectData.id;
+                        // Delete from storage first so subsequent listProjects() reflects the removal
+                        await deleteProject(projectData.id);
+                        if (wasActiveProject) {
+                            params.delete("g"); // Remove from URI params to avoid reloading deleted gist
+                            const [firstProject] = await listProjects();
+                            if (firstProject) {
+                                await projectInit(false, firstProject.id);
+                            } else {
+                                await projectInit(); // init a new empty project
+                            }
                         }
-                    }
-                });
-            }
-        }, { capture: true });
+                    });
+                }
+            },
+            { capture: true },
+        );
 
         el(`[data-download-id]`, elProject).addEventListener("click", () => {
-            downloadProject(projectData.id);
+            void downloadProject(projectData.id);
         });
 
         // Close modal on iframe click:
         elThumbnail.addEventListener("click", () => {
-            projectInit(false, projectData.id);
+            void projectInit(false, projectData.id);
         });
 
         elProjectsList.append(elProject);
@@ -244,13 +265,17 @@ const drawProjects = () => {
 
 // Search projects
 const elProjectsSearch = el("#projects-search");
-elProjectsSearch.addEventListener("input", () => {
+let projectSearchSequence = 0;
+elProjectsSearch.addEventListener("input", async () => {
+    const sequence = ++projectSearchSequence;
     const search = elProjectsSearch.value.trim().toLowerCase();
     const elsProjects = els(".project", elProjectsList);
-    const projectsListId = listProjects().reduce((acc, proj) => (acc[proj.id] = proj, acc), {});
+    const projectsListId = (await listProjects()).reduce((acc, proj) => ((acc[proj.id] = proj), acc), {});
+    if (sequence !== projectSearchSequence) return;
     elsProjects.forEach((elProject) => {
         const elId = elProject.id.replace("project-", "");
         const project = projectsListId[elId];
+        if (!project) return;
         const full = `${project.name.trim()} ${project.description.trim()} ${project.id} ${new Date(project.updatedAt).toLocaleString()}`;
         const matchName = full.toLowerCase().includes(search);
         elProject.classList.toggle("is-hidden", !matchName);
@@ -264,25 +289,29 @@ const elRun = el("#run");
 elRun.addEventListener("click", () => previewCurrentProject("all", true));
 
 // Download project by ID
-const downloadProject = (id) => {
-    const project = openProject(id);
+const downloadProject = async (id) => {
+    const project = await loadProject(id);
+    if (!project) return;
     const projectName = project.name.trim() ? project.name.trim().replace(/\W/g, "-") : "untitled";
     download(generatePreviewHTML(project, "download"), `${projectName.toLowerCase()}.xode.html`);
 };
 
 // Download current project
-els(".downloadCurrentProject").forEach(elBtnDownload => {
-    elBtnDownload.addEventListener("click", () => downloadProject(currentProjectState.id));
+els(".downloadCurrentProject").forEach((elBtnDownload) => {
+    elBtnDownload.addEventListener("click", () => void downloadProject(currentProjectState.id));
 });
 
 // Editor exec commander for richEditor mode (text editing buttons)
 addEventListener("click", (evt) => {
     const elBtnCmd = evt.target.closest("[data-cmd]");
     if (!elBtnCmd) return;
-    elPreview.contentWindow.postMessage({
-        type: "cmd",
-        args: [elBtnCmd.dataset.cmd, elBtnCmd.dataset.par]
-    }, "*");
+    elPreview.contentWindow.postMessage(
+        {
+            type: "cmd",
+            args: [elBtnCmd.dataset.cmd, elBtnCmd.dataset.par],
+        },
+        "*",
+    );
 });
 
 // Actions from parent window to #preview iframe
@@ -291,36 +320,40 @@ addEventListener("click", (evt) => {
     if (!elBtnAction) return;
     // Else
     const action = elBtnAction.dataset.action;
-    const val = elBtnAction.matches("[type=checkbox]") ?
-        elBtnAction.checked :
-        elBtnAction.value ?? elBtnAction.dataset.val;
-    elPreview.contentWindow.postMessage({
-        type: "action",
-        args: [action, val]
-    }, "*");
+    const val = elBtnAction.matches("[type=checkbox]") ? elBtnAction.checked : (elBtnAction.value ?? elBtnAction.dataset.val);
+    elPreview.contentWindow.postMessage(
+        {
+            type: "action",
+            args: [action, val],
+        },
+        "*",
+    );
     if (action === "designMode") {
         // Toggle rich editor
         currentProjectState.panes.richEditor = elBtnAction.checked;
-        saveProject(currentProjectState);
+        void saveProject(currentProjectState);
     }
 });
 
 // Activate RTE
-elPreview.addEventListener('load', () => {
-    elPreview.contentWindow.postMessage({
-        type: "action",
-        args: ["designMode", currentProjectState.panes.richEditor]
-    }, "*");
+elPreview.addEventListener("load", () => {
+    elPreview.contentWindow.postMessage(
+        {
+            type: "action",
+            args: ["designMode", currentProjectState.panes.richEditor],
+        },
+        "*",
+    );
 });
 
 // NEW PROJECT
-el("#project-new").addEventListener("click", () => {
-    projectInit(); // Create new project
-    drawProjects(); // redraw old ones
+el("#project-new").addEventListener("click", async () => {
+    await projectInit(); // Create new project
+    await drawProjects(); // redraw old ones
 });
 
 // Update html from AI
-bus.on('ai:update', ({ syntax, content }) => {
+bus.on("ai:update", ({ syntax, content }) => {
     currentProjectState[syntax] = content; // Update and save
 });
 
@@ -367,7 +400,7 @@ elGithubLoad.addEventListener("click", async () => {
 });
 
 const gistLoad = async (gistId) => {
-    const existsLocally = loadProject(gistId);
+    const existsLocally = await loadProject(gistId);
     if (!existsLocally) {
         const data = await gist.read(gistId);
         const files = { html: "", css: "", js: "" };
@@ -388,21 +421,20 @@ const gistLoad = async (gistId) => {
             css: files.css,
             js: files.js,
         };
-        const project = createProject(newProjectData);
-        saveProject(project);
-        drawProjects();
+        await createProject(newProjectData);
+        await drawProjects();
     }
 
-    projectInit(false, gistId);
+    await projectInit(false, gistId);
 };
 
 const gistPublish = async (project) => {
     const files = {};
-    if (project.html?.trim()) files['index.html'] = { content: project.html };
-    if (project.js?.trim()) files['script.js'] = { content: project.js };
-    if (project.css?.trim()) files['style.css'] = { content: project.css };
+    if (project.html?.trim()) files["index.html"] = { content: project.html };
+    if (project.js?.trim()) files["script.js"] = { content: project.js };
+    if (project.css?.trim()) files["style.css"] = { content: project.css };
     if (Object.keys(files).length === 0) {
-        console.warn('Nothing to publish — all panes are empty');
+        console.warn("Nothing to publish — all panes are empty");
         return;
     }
     const projName = project.name?.trim() || "Untitled";
@@ -413,21 +445,25 @@ const gistPublish = async (project) => {
     if (!project.gistId) {
         try {
             const res = await gist.create({ description, files });
+            const oldId = project.id;
             project.id = res.id;
             project.gistId = res.id;
-            saveProject(project); // Save a local copy with the new ID
+            await saveProject(project); // Save a local copy with the new ID
+            if (oldId && oldId !== project.id) {
+                await deleteProject(oldId);
+            }
             new Toast({
                 head: "Published",
                 body: `Successfully publised to <a href="https://gist.github.com/${project.gistId}" target="_blank">${project.name}</a>`,
                 type: "success",
-                time: 3000
+                time: 3000,
             });
         } catch (err) {
             new Toast({
                 head: "Error",
                 type: "error",
                 body: `Could not publish: ${err.message}`,
-                time: 0
+                time: 0,
             });
         }
     }
@@ -439,7 +475,7 @@ const gistPublish = async (project) => {
                 head: "Updated",
                 type: "success",
                 body: `Successfully updated: <a href="https://gist.github.com/${project.gistId}" target="_blank">${project.name}</a>`,
-                time: 3000
+                time: 3000,
             });
         } catch (err) {
             if (err instanceof GistApiError && err.status === 404) {
@@ -448,23 +484,23 @@ const gistPublish = async (project) => {
                     const oldId = project.id;
                     project.id = forked.id;
                     project.gistId = forked.id;
-                    saveProject(project);
+                    await saveProject(project);
                     if (oldId && oldId !== project.id) {
-                        deleteProject(oldId);
+                        await deleteProject(oldId);
                     }
                     params.set("g", project.gistId);
                     new Toast({
                         head: "Forked",
                         type: "success",
                         body: `This gist belonged to another user. A fork was created: <a href="https://gist.github.com/${project.gistId}" target="_blank">${project.name}</a>`,
-                        time: 4000
+                        time: 4000,
                     });
                 } catch (forkErr) {
                     new Toast({
                         head: "Error",
                         type: "error",
                         body: `Could not fork gist: ${forkErr.message}`,
-                        time: 3000
+                        time: 3000,
                     });
                 }
             } else {
@@ -472,13 +508,12 @@ const gistPublish = async (project) => {
                     head: "Error",
                     type: "error",
                     body: `Could not publish ${project.name}: ${err.message}`,
-                    time: 3000
+                    time: 3000,
                 });
             }
         }
-
     }
-    drawProjects();
+    await drawProjects();
 };
 
 elGithubPublish.addEventListener("click", () => {
@@ -510,10 +545,9 @@ elTabs.addEventListener("click", (evt) => {
     });
 });
 
-
 // One-time call to watch changes in editors
 function watchEditors(project, editors, previewCurrentProject) {
-    ['html', 'css', 'js'].forEach(prop => {
+    ["html", "css", "js"].forEach((prop) => {
         effect(() => {
             void project[prop]; // read → this effect now depends ONLY on `prop`
             editors[prop]?.highlight();
@@ -523,7 +557,7 @@ function watchEditors(project, editors, previewCurrentProject) {
 }
 // One-time call to watch panes (toggle panes)
 function watchPanes(project, handlePanes) {
-    Object.keys(project.panes).forEach(pane => {
+    Object.keys(project.panes).forEach((pane) => {
         effect(() => {
             void project.panes[pane];
             handlePanes(pane);
@@ -538,18 +572,10 @@ editors.js = new Editor(el("#editor-js"), { syntax: "js" });
 paneConsole.init();
 
 // app boot — runs exactly once
-const currentProjectState = reactive(openProject()); // Open latest Project
+const currentProjectState = reactive(initialProject); // Open latest Project
 mount(currentProjectState, "project"); // Mount project to DOM and bind events
-persist(currentProjectState, saveProject, 300); // Persist changes to project every 300ms
 watchEditors(currentProjectState, editors, previewCurrentProject);
 watchPanes(currentProjectState, handlePanes);
-
-if (params.get("g")) {
-    void gistLoad(params.get("g")); // Load Gist Project
-} else {
-    projectInit(false); // Load latest Project
-}
-drawProjects();
 
 // App settings
 const settingsState = reactive({
@@ -557,13 +583,20 @@ const settingsState = reactive({
     isGithubDisabled: !hasToken(),
 });
 mount(settingsState, "settings");
-persist(settingsState, data => lsSettings.update(data)); // Persist changes to app settings
-
+persist(settingsState, (data) => lsSettings.update(data)); // Persist changes to app settings
 updateElGithubToken();
+
+if (params.get("g")) {
+    await gistLoad(params.get("g")); // Load Gist Project
+} else {
+    await projectInit(false); // Load latest Project
+}
+persist(currentProjectState, saveProject, 300); // Persist changes to project every 300ms
+await drawProjects();
 
 // Initialize chat
 initChat({
     html: editors.html.elTextarea,
     css: editors.css.elTextarea,
-    js: editors.js.elTextarea
+    js: editors.js.elTextarea,
 });
