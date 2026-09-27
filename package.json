@@ -21,14 +21,8 @@
     },
     "devDependencies": {
         "typescript": "~6.0.2",
-        "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-        "vite-plus": "latest"
+        "vite": "catalog:",
+        "vite-plus": "catalog:"
     },
-    "packageManager": "pnpm@11.9.0",
-    "pnpm": {
-        "overrides": {
-            "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-            "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
-        }
-    }
+    "packageManager": "pnpm@11.9.0"
 }
