@@ -4,12 +4,12 @@ export const elNew = (tag, prop = {}) => Object.assign(document.createElement(ta
 export const download = (content, filename = "new_document.html", mimeType = "text/html") => {
     const elA = elNew("a", {
         href: URL.createObjectURL(new Blob([content], { type: mimeType })),
-        download: filename
+        download: filename,
     });
     elA.click();
 };
-export const elsSiblings = (elem, sel) => [...els(sel, elem.parentElement)].filter(child => child !== elem);
-export const formatDateTime = (date) => new Date(date).toISOString().replace('T', ' ').slice(0, 19);
+export const elsSiblings = (elem, sel) => [...els(sel, elem.parentElement)].filter((child) => child !== elem);
+export const formatDateTime = (date) => new Date(date).toISOString().replace("T", " ").slice(0, 19);
 export const params = {
     get(key) {
         const all = Object.fromEntries(new URLSearchParams(location.search));
@@ -27,14 +27,17 @@ export const params = {
         const url = new URL(window.location.href);
         url.searchParams.delete(key);
         window.history.replaceState({}, "", url);
-    }
+    },
 };
-export const generateUUID = () => crypto.randomUUID().replace(/-/g, '');
+export const generateUUID = () => crypto.randomUUID().replace(/-/g, "");
 export const debounce = (fn, ms) => {
     let t;
-    return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+    return (...a) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...a), ms);
+    };
 };
-export const countLines = str => str.split("\n").length;
+export const countLines = (str) => str.split("\n").length;
 export const LS = (id = "main", defaultData = {}) => {
     return {
         dbName: `ls-${id}`,
@@ -63,6 +66,6 @@ export const LS = (id = "main", defaultData = {}) => {
         },
         clear() {
             delete localStorage[this.dbName];
-        }
-    }
+        },
+    };
 };

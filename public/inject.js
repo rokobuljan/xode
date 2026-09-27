@@ -1,7 +1,10 @@
-const DEFAULT_SOURCE_OFFSETS = Object.assign({
-    htmlStartLine: 1,
-    jsStartLine: 1,
-}, JSON.parse(document.querySelector("#◆xode-inject").dataset.previewoffsets));
+const DEFAULT_SOURCE_OFFSETS = Object.assign(
+    {
+        htmlStartLine: 1,
+        jsStartLine: 1,
+    },
+    JSON.parse(document.querySelector("#◆xode-inject").dataset.previewoffsets),
+);
 
 const getSourceName = (file = "") => {
     if (file === "js") return "js";
@@ -42,8 +45,11 @@ const serialize = (arg) => {
     if (arg === undefined) return "undefined";
     if (arg instanceof Error) return arg.name + ": " + arg.message;
     if (typeof arg === "object") {
-        try { return JSON.stringify(arg, null, 2); }
-        catch { return Object.prototype.toString.call(arg); }
+        try {
+            return JSON.stringify(arg, null, 2);
+        } catch {
+            return Object.prototype.toString.call(arg);
+        }
     }
     return String(arg);
 };
@@ -62,7 +68,7 @@ const getAllMethods = (obj) => {
         current = Object.getPrototypeOf(current);
     }
     return [...methods];
-}
+};
 
 // let i = 0;
 getAllMethods(window.console).forEach((method) => {
@@ -70,28 +76,37 @@ getAllMethods(window.console).forEach((method) => {
     console[method] = (...args) => {
         // if (++i > 2) return;
         _orig(...args);
-        window.parent.postMessage({
-            type: `console:${method}`,
-            args: Array.from(args).map(serialize),
-            line: getLineNumber(),
-        }, "*");
+        window.parent.postMessage(
+            {
+                type: `console:${method}`,
+                args: Array.from(args).map(serialize),
+                line: getLineNumber(),
+            },
+            "*",
+        );
     };
 });
 window.addEventListener("error", (evt) => {
     const location = evt.error?.stack ? extractLocation(evt.error.stack) : null;
-    window.parent.postMessage({
-        type: "console:error",
-        args: [evt.message],
-        line: location ? formatLocation(location.file, location.line) : formatLocation(evt.filename, evt.lineno),
-    }, "*");
+    window.parent.postMessage(
+        {
+            type: "console:error",
+            args: [evt.message],
+            line: location ? formatLocation(location.file, location.line) : formatLocation(evt.filename, evt.lineno),
+        },
+        "*",
+    );
 });
 window.addEventListener("unhandledrejection", (evt) => {
     const location = extractLocation(evt.reason?.stack || "");
-    window.parent.postMessage({
-        type: "console:error",
-        args: [location ? `Uncaught (in promise): at ${location.line}` : "Uncaught (in promise)"],
-        line: location ? formatLocation(location.file, location.line) : "",
-    }, "*");
+    window.parent.postMessage(
+        {
+            type: "console:error",
+            args: [location ? `Uncaught (in promise): at ${location.line}` : "Uncaught (in promise)"],
+            line: location ? formatLocation(location.file, location.line) : "",
+        },
+        "*",
+    );
 });
 
 // Rich Editor mode
@@ -106,7 +121,7 @@ document.addEventListener("input", () => {
     if (document.designMode === "off") return;
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-        notifyParent({ type: "content-changed", html: document.documentElement.outerHTML })
+        notifyParent({ type: "content-changed", html: document.documentElement.outerHTML });
     }, 250);
 });
 const actions = {
@@ -120,7 +135,7 @@ const actions = {
     patchHTML: (val) => {
         const elTarget = document.getElementById("◆xode-html");
         if (elTarget) elTarget.innerHTML = val;
-    }
+    },
 };
 // Messages from parent window
 window.addEventListener("message", (evt) => {

@@ -10,13 +10,13 @@
     &.col {
         flex-direction: column;
 
-        &>.splitter {
+        & > .splitter {
             /* Horizontal splitters */
             cursor: ns-resize;
         }
     }
 
-    >.splitter {
+    > .splitter {
         /* Vertical splitters */
         position: relative;
         flex: 0 0 1px;
@@ -26,7 +26,7 @@
         transition: background-color 0.24s;
 
         /* Hide splitter if not followed by a .splitview */
-        &:not(:has(+.splitview)) {
+        &:not(:has(+ .splitview)) {
             display: none;
         }
 
@@ -52,7 +52,6 @@
 
 /* === [data-open] logic === */
 
-
 .splitview .splitview {
     display: none;
 
@@ -62,19 +61,19 @@
     }
 }
 
-[data-open="false"]+.splitter {
+[data-open="false"] + .splitter {
     display: none;
 }
 
-.splitter:has(+[data-open="false"]) {
+.splitter:has(+ [data-open="false"]) {
     display: none;
 }
 
-[data-open="true"]:has(~[data-open="true"])+.splitter {
+[data-open="true"]:has(~ [data-open="true"]) + .splitter {
     display: initial;
 }
 
-.splitview:has([data-open]):not(:has([data-open="true"]))+.splitter {
+.splitview:has([data-open]):not(:has([data-open="true"])) + .splitter {
     display: none;
 }
 

@@ -1,8 +1,7 @@
 import { el, elNew, LS } from "./utils.js";
-import { bus } from './bus.js';
-import DOMPurify from 'dompurify';
-import { marked } from 'marked';
-
+import { bus } from "./bus.js";
+import DOMPurify from "dompurify";
+import { marked } from "marked";
 
 // Provider registry — static config only (labels, endpoints, key help).
 // Model lists are NOT hardcoded here; they're fetched live per-provider
@@ -19,35 +18,35 @@ const PROVIDERS = {
         label: "Anthropic Claude",
         kind: "anthropic",
         keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>`
+        keyHelp: `Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>`,
     },
     openai: {
         label: "OpenAI",
         kind: "openai-compatible",
         baseUrl: "https://api.openai.com/v1/chat/completions",
         keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>`
+        keyHelp: `Create one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>`,
     },
     deepseek: {
         label: "DeepSeek",
         kind: "openai-compatible",
         baseUrl: "https://api.deepseek.com/v1/chat/completions",
         keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://platform.deepseek.com/api_keys" target="_blank">platform.deepseek.com/api_keys</a>`
+        keyHelp: `Create one at <a href="https://platform.deepseek.com/api_keys" target="_blank">platform.deepseek.com/api_keys</a>`,
     },
     xai: {
         label: "xAI Grok",
         kind: "openai-compatible",
         baseUrl: "https://api.x.ai/v1/chat/completions",
         keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://console.x.ai" target="_blank">console.x.ai</a>`
+        keyHelp: `Create one at <a href="https://console.x.ai" target="_blank">console.x.ai</a>`,
     },
     mistral: {
         label: "Mistral",
         kind: "openai-compatible",
         baseUrl: "https://api.mistral.ai/v1/chat/completions",
         keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://console.mistral.ai/api-keys" target="_blank">console.mistral.ai</a>`
+        keyHelp: `Create one at <a href="https://console.mistral.ai/api-keys" target="_blank">console.mistral.ai</a>`,
     },
     ollama: {
         label: "Ollama (local)",
@@ -55,7 +54,7 @@ const PROVIDERS = {
         baseUrl: "http://localhost:11434/v1/chat/completions",
         requiresKey: false,
         keyPlaceholder: "Not required",
-        keyHelp: `Runs entirely on your machine — no key needed. Make sure Ollama is running locally (<code>ollama serve</code>) on port :11434, and that it allows this site's origin (<code>OLLAMA_ORIGINS</code>) if requests fail.`
+        keyHelp: `Runs entirely on your machine — no key needed. Make sure Ollama is running locally (<code>ollama serve</code>) on port :11434, and that it allows this site's origin (<code>OLLAMA_ORIGINS</code>) if requests fail.`,
     },
     LMStudio: {
         label: "LM Studio (Local)",
@@ -63,12 +62,12 @@ const PROVIDERS = {
         baseUrl: "http://localhost:1234/v1/chat/completions",
         requiresKey: false,
         keyPlaceholder: "Not required",
-        keyHelp: `Runs entirely on your machine — no key needed. Make sure LM Studio is running locally on port :1234 (and that you loaded a model and started the LM Studio local server. Enable CORS if Models list is not loading).`
-    }
+        keyHelp: `Runs entirely on your machine — no key needed. Make sure LM Studio is running locally on port :1234 (and that you loaded a model and started the LM Studio local server. Enable CORS if Models list is not loading).`,
+    },
 };
 
 function extractFirstJsonObject(text) {
-    const start = text.indexOf('{');
+    const start = text.indexOf("{");
     if (start === -1) throw new Error("No JSON found in response");
 
     let depth = 0;
@@ -82,7 +81,7 @@ function extractFirstJsonObject(text) {
             escapeNext = false;
             continue;
         }
-        if (char === '\\') {
+        if (char === "\\") {
             escapeNext = true;
             continue;
         }
@@ -92,8 +91,8 @@ function extractFirstJsonObject(text) {
         }
         if (inString) continue;
 
-        if (char === '{') depth++;
-        if (char === '}') {
+        if (char === "{") depth++;
+        if (char === "}") {
             depth--;
             if (depth === 0) {
                 return text.slice(start, i + 1); // exact matching object, garbage after ignored
@@ -106,7 +105,10 @@ function extractFirstJsonObject(text) {
 
 function tryParseAIJson(rawText) {
     let text = rawText.trim();
-    text = text.replace(/```json\s*/i, '').replace(/```\s*$/, '').trim();
+    text = text
+        .replace(/```json\s*/i, "")
+        .replace(/```\s*$/, "")
+        .trim();
 
     const jsonStr = extractFirstJsonObject(text); // was: text.match(/\{[\s\S]*\}/)[0]
 
@@ -114,11 +116,7 @@ function tryParseAIJson(rawText) {
         return JSON.parse(jsonStr);
     } catch (err) {
         const repaired = jsonStr.replace(/"((?:[^"\\]|\\.)*)"/gs, (match, inner) => {
-            const fixed = inner
-                .replace(/\\/g, '\\\\')
-                .replace(/\n/g, '\\n')
-                .replace(/\r/g, '\\r')
-                .replace(/\t/g, '\\t');
+            const fixed = inner.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t");
             return `"${fixed}"`;
         });
         try {
@@ -153,30 +151,30 @@ function splitMarkdownSegments(text) {
     let match;
     while ((match = regex.exec(text)) !== null) {
         if (match.index > last) {
-            segments.push({ type: 'text', content: text.slice(last, match.index) });
+            segments.push({ type: "text", content: text.slice(last, match.index) });
         }
-        segments.push({ type: 'code', lang: (match[1] || '').toLowerCase(), code: match[2].trim() });
+        segments.push({ type: "code", lang: (match[1] || "").toLowerCase(), code: match[2].trim() });
         last = regex.lastIndex;
     }
     if (last < text.length) {
-        segments.push({ type: 'text', content: text.slice(last) });
+        segments.push({ type: "text", content: text.slice(last) });
     }
     return segments;
 }
 
 // Maps a fence's language tag to one of our editor panes, if recognized.
 function mapLangToPane(lang) {
-    if (['js', 'javascript', 'jsx', 'ts', 'typescript', 'mjs'].includes(lang)) return 'js';
-    if (['html', 'htm', 'xml'].includes(lang)) return 'html';
-    if (['css', 'scss', 'less'].includes(lang)) return 'css';
+    if (["js", "javascript", "jsx", "ts", "typescript", "mjs"].includes(lang)) return "js";
+    if (["html", "htm", "xml"].includes(lang)) return "html";
+    if (["css", "scss", "less"].includes(lang)) return "css";
     return null;
 }
 
 // Best-effort guess when a fence has no (or an unrecognized) language tag.
 function sniffPane(code) {
-    if (/<\/?[a-z][\s\S]*>/i.test(code)) return 'html';
-    if (/[.#]?[\w-]+\s*\{[\s\S]*:[^;]+;/.test(code)) return 'css';
-    return 'js';
+    if (/<\/?[a-z][\s\S]*>/i.test(code)) return "html";
+    if (/[.#]?[\w-]+\s*\{[\s\S]*:[^;]+;/.test(code)) return "css";
+    return "js";
 }
 
 // Renders a markdown-fallback message: prose through marked+DOMPurify,
@@ -186,71 +184,81 @@ function sniffPane(code) {
 function renderMarkdownFallback(rawText) {
     const segments = splitMarkdownSegments(rawText);
 
-    const wrapper = elNew('div', { className: 'chat-message role-system markdown-fallback' });
+    const wrapper = elNew("div", { className: "chat-message role-system markdown-fallback" });
 
-    segments.forEach(seg => {
-        if (seg.type === 'text') {
+    segments.forEach((seg) => {
+        if (seg.type === "text") {
             if (!seg.content.trim()) return;
-            const textEl = elNew('div', { className: 'markdown-fallback-text' });
+            const textEl = elNew("div", { className: "markdown-fallback-text" });
             const html = marked.parse(seg.content, { breaks: true });
             textEl.innerHTML = DOMPurify.sanitize(html, {
-                ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'code', 'pre', 'ul', 'ol', 'li', 'br', 'blockquote', 'h1', 'h2', 'h3'],
-                ALLOWED_ATTR: ['href', 'target', 'rel']
+                ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "code", "pre", "ul", "ol", "li", "br", "blockquote", "h1", "h2", "h3"],
+                ALLOWED_ATTR: ["href", "target", "rel"],
             });
             wrapper.append(textEl);
         } else {
             const pane = mapLangToPane(seg.lang) || sniffPane(seg.code);
 
-            const card = elNew('div', { className: 'code-fence-card' });
-            const header = elNew('div', { className: 'code-fence-header' });
-            header.append(elNew('span', { className: 'code-fence-lang', textContent: (seg.lang || pane).toUpperCase() }));
+            const card = elNew("div", { className: "code-fence-card" });
+            const header = elNew("div", { className: "code-fence-header" });
+            header.append(elNew("span", { className: "code-fence-lang", textContent: (seg.lang || pane).toUpperCase() }));
 
-            const insertBtn = elNew('button', { type: "button", className: 'btn-insert accent', textContent: `Insert into ${pane.toUpperCase()}` });
+            const insertBtn = elNew("button", { type: "button", className: "btn-insert accent", textContent: `Insert into ${pane.toUpperCase()}` });
             header.append(insertBtn);
             card.append(header);
 
-            const pre = elNew('pre');
-            const codeEl = elNew('code', { textContent: seg.code }); // textContent — never rendered as HTML/markdown
+            const pre = elNew("pre");
+            const codeEl = elNew("code", { textContent: seg.code }); // textContent — never rendered as HTML/markdown
             pre.append(codeEl);
             card.append(pre);
 
-            insertBtn.addEventListener('click', () => {
-                const snapshot = editorsTextarea[pane].value;
-                bus.emit('ai:update', { syntax: pane, content: seg.code });
+            insertBtn.addEventListener(
+                "click",
+                () => {
+                    const snapshot = editorsTextarea[pane].value;
+                    bus.emit("ai:update", { syntax: pane, content: seg.code });
 
-                header.innerHTML = '';
-                header.append(elNew('span', {
-                    className: 'code-fence-lang',
-                    textContent: (seg.lang || pane).toUpperCase()
-                }));
-                const status = elNew('span', {
-                    className: 'suggestion-panes',
-                    innerHTML: `<span class="icon" data-name="check">&#xf313;</span> Inserted into ${pane.toUpperCase()}`
-                });
-                const undoBtn = elNew('button', { className: 'btn-discard accent', textContent: 'Undo' });
-                header.append(status, undoBtn);
+                    header.innerHTML = "";
+                    header.append(
+                        elNew("span", {
+                            className: "code-fence-lang",
+                            textContent: (seg.lang || pane).toUpperCase(),
+                        }),
+                    );
+                    const status = elNew("span", {
+                        className: "suggestion-panes",
+                        innerHTML: `<span class="icon" data-name="check">&#xf313;</span> Inserted into ${pane.toUpperCase()}`,
+                    });
+                    const undoBtn = elNew("button", { className: "btn-discard accent", textContent: "Undo" });
+                    header.append(status, undoBtn);
 
-                undoBtn.addEventListener('click', () => {
-                    bus.emit('ai:update', { syntax: pane, content: snapshot });
-                    status.textContent = 'Reverted';
-                    undoBtn.remove();
-                }, { once: true });
-            }, { once: true });
+                    undoBtn.addEventListener(
+                        "click",
+                        () => {
+                            bus.emit("ai:update", { syntax: pane, content: snapshot });
+                            status.textContent = "Reverted";
+                            undoBtn.remove();
+                        },
+                        { once: true },
+                    );
+                },
+                { once: true },
+            );
 
             wrapper.append(card);
         }
     });
 
     elOutput.append(wrapper);
-    elOutput.scrollTo({ top: elOutput.scrollHeight, behavior: 'smooth' });
+    elOutput.scrollTo({ top: elOutput.scrollHeight, behavior: "smooth" });
     return wrapper;
 }
 
 // Storage: keyed by provider so keys don't collide
 const ls = LS("xode.settings", {
     provider: "gemini",
-    model: "",   // no default — populated once a live model list loads
-    apiKeys: {}  // { gemini: "...", openai: "...", anthropic: "...", ... }
+    model: "", // no default — populated once a live model list loads
+    apiKeys: {}, // { gemini: "...", openai: "...", anthropic: "...", ... }
 });
 
 // Cache of live-fetched model lists, keyed by provider.
@@ -278,7 +286,7 @@ const getAIConfig = () => {
     return {
         provider: settings.provider,
         model: elModel.value,
-        apiKey: (settings.apiKeys || {})[settings.provider] || ""
+        apiKey: (settings.apiKeys || {})[settings.provider] || "",
     };
 };
 
@@ -305,9 +313,7 @@ const HISTORY_ENTRY_MAX_CHARS = 2000; // guard against a single huge turn (e.g. 
 let chatHistory = []; // [{ role: "user" | "assistant", content: "..." }] — text only, never code
 
 function pushHistory(role, content) {
-    const trimmed = content.length > HISTORY_ENTRY_MAX_CHARS
-        ? content.slice(0, HISTORY_ENTRY_MAX_CHARS) + "…"
-        : content;
+    const trimmed = content.length > HISTORY_ENTRY_MAX_CHARS ? content.slice(0, HISTORY_ENTRY_MAX_CHARS) + "…" : content;
     chatHistory.push({ role, content: trimmed });
     if (chatHistory.length > MAX_HISTORY_TURNS * 2) {
         chatHistory = chatHistory.slice(-MAX_HISTORY_TURNS * 2);
@@ -371,11 +377,11 @@ async function callGemini(config, systemText, history, userPrompt) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
 
     const contents = [
-        ...history.map(m => ({
+        ...history.map((m) => ({
             role: m.role === "assistant" ? "model" : "user",
-            parts: [{ text: m.content }]
+            parts: [{ text: m.content }],
         })),
-        { role: "user", parts: [{ text: userPrompt }] }
+        { role: "user", parts: [{ text: userPrompt }] },
     ];
 
     const res = await fetch(url, {
@@ -384,8 +390,8 @@ async function callGemini(config, systemText, history, userPrompt) {
         body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemText }] },
             contents,
-            generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
-        })
+            generationConfig: { temperature: 0.1, responseMimeType: "application/json" },
+        }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || "Gemini request failed");
@@ -399,11 +405,7 @@ async function callOpenAICompatible(config, systemText, history, userPrompt) {
         headers.Authorization = `Bearer ${config.apiKey}`;
     }
 
-    const messages = [
-        { role: "system", content: systemText },
-        ...history.map(m => ({ role: m.role, content: m.content })),
-        { role: "user", content: userPrompt }
-    ];
+    const messages = [{ role: "system", content: systemText }, ...history.map((m) => ({ role: m.role, content: m.content })), { role: "user", content: userPrompt }];
 
     const res = await fetch(baseUrl, {
         method: "POST",
@@ -412,8 +414,8 @@ async function callOpenAICompatible(config, systemText, history, userPrompt) {
             model: config.model,
             temperature: 0.1,
             response_format: { type: "json_object" },
-            messages
-        })
+            messages,
+        }),
     });
 
     console.log(res);
@@ -425,7 +427,9 @@ async function callOpenAICompatible(config, systemText, history, userPrompt) {
         try {
             const parsed = JSON.parse(raw);
             message = parsed.error?.message || parsed.message || parsed.error || message;
-        } catch { /* raw wasn't JSON, keep the generic message but it's logged above */ }
+        } catch {
+            /* raw wasn't JSON, keep the generic message but it's logged above */
+        }
         throw new Error(message);
     }
 
@@ -434,10 +438,7 @@ async function callOpenAICompatible(config, systemText, history, userPrompt) {
 }
 
 async function callAnthropic(config, systemText, history, userPrompt) {
-    const messages = [
-        ...history.map(m => ({ role: m.role, content: m.content })),
-        { role: "user", content: userPrompt }
-    ];
+    const messages = [...history.map((m) => ({ role: m.role, content: m.content })), { role: "user", content: userPrompt }];
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -445,18 +446,18 @@ async function callAnthropic(config, systemText, history, userPrompt) {
             "Content-Type": "application/json",
             "x-api-key": config.apiKey,
             "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true"
+            "anthropic-dangerous-direct-browser-access": "true",
         },
         body: JSON.stringify({
             model: config.model,
             max_tokens: 4096,
             system: systemText,
-            messages
-        })
+            messages,
+        }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || "Anthropic request failed");
-    return data.content?.find(b => b.type === "text")?.text || "";
+    return data.content?.find((b) => b.type === "text")?.text || "";
 }
 
 // Main AI call, dispatches by provider kind.
@@ -494,10 +495,8 @@ async function callAI(userPrompt) {
             const parsed = tryParseAIJson(text);
 
             pushHistory("user", userPrompt);
-            const changedPanes = ['html', 'css', 'js'].filter(k => parsed[k] !== null && parsed[k] !== undefined);
-            const summary = changedPanes.length
-                ? `${parsed.explanation || 'Change applied.'} (updated: ${changedPanes.join(', ')})`
-                : (parsed.explanation || 'No changes needed.');
+            const changedPanes = ["html", "css", "js"].filter((k) => parsed[k] !== null && parsed[k] !== undefined);
+            const summary = changedPanes.length ? `${parsed.explanation || "Change applied."} (updated: ${changedPanes.join(", ")})` : parsed.explanation || "No changes needed.";
             pushHistory("assistant", summary);
 
             return { type: "json", data: parsed };
@@ -509,7 +508,6 @@ async function callAI(userPrompt) {
             }
             throw parseErr; // genuinely unusable output — falls through to the catch below
         }
-
     } catch (err) {
         console.error("Error in callAI:", err);
         addMessage("ai", `❌ Error: ${err.message}`);
@@ -522,33 +520,33 @@ async function sendMessage(msg) {
     const userText = msg ?? elInput.value.trim();
     if (!userText) return;
 
-    const msgUser = addMessage('user', userText);
-    const elBtns = elNew('div', { className: 'chat-message-btns' });
-    const elBtnRetry = elNew('button', {
+    const msgUser = addMessage("user", userText);
+    const elBtns = elNew("div", { className: "chat-message-btns" });
+    const elBtnRetry = elNew("button", {
         type: "button",
-        className: 'chat-retry',
+        className: "chat-retry",
         innerHTML: '<span class="icon" data-name="arrow-clockwise">&#x10028;</span>',
         title: "Retry",
         onclick() {
             void sendMessage(userText);
-        }
+        },
     });
-    const elBtnEdit = elNew('button', {
+    const elBtnEdit = elNew("button", {
         type: "button",
-        className: 'chat-edit',
+        className: "chat-edit",
         innerHTML: '<span class="icon" data-name="pencil">&#xf18c;</span>',
         title: "Edit ",
         onclick() {
             elInput.value = userText;
             elInput.focus();
-        }
+        },
     });
     elBtns.append(elBtnRetry, elBtnEdit);
     msgUser.append(elBtns);
 
     elInput.value = "";
 
-    const thinkingId = 'thinking-msg-' + Date.now();
+    const thinkingId = "thinking-msg-" + Date.now();
     addMessage("system", '<span class="loader"></span> <em class="thinking">Thinking...</em>', thinkingId);
 
     try {
@@ -579,10 +577,10 @@ async function sendMessage(msg) {
 let lastAppliedMsgEl = null;
 
 function renderSuggestion(aiResponse) {
-    const changedPanes = ['html', 'css', 'js'].filter(k => aiResponse[k] !== null && aiResponse[k] !== undefined);
+    const changedPanes = ["html", "css", "js"].filter((k) => aiResponse[k] !== null && aiResponse[k] !== undefined);
 
     if (!changedPanes.length) {
-        addMessage('ai', `${aiResponse.explanation || 'No changes needed.'}`);
+        addMessage("ai", `${aiResponse.explanation || "No changes needed."}`);
         return;
     }
 
@@ -594,30 +592,33 @@ function renderSuggestion(aiResponse) {
 
     // 1. Apply immediately one Editor pane at a time
     changedPanes.forEach((syntax) => {
-        bus.emit('ai:update', { syntax, content: aiResponse[syntax] });
+        bus.emit("ai:update", { syntax, content: aiResponse[syntax] });
     });
 
     // A newer change just landed on top of any previous pending one — freeze its Discard button
     if (lastAppliedMsgEl) {
-        const prevActions = el('.suggestion-actions', lastAppliedMsgEl);
+        const prevActions = el(".suggestion-actions", lastAppliedMsgEl);
         if (prevActions) {
             prevActions.innerHTML = `<span class="suggestion-superseded">Superseded by a later change</span>`;
         }
     }
 
-    const msgEl = addMessage("system", `
-        <p>${aiResponse.explanation || 'Change applied.'}</p>
+    const msgEl = addMessage(
+        "system",
+        `
+        <p>${aiResponse.explanation || "Change applied."}</p>
         <div class="suggestion-actions">
-            <span class="suggestion-panes"><span class="icon" data-name="check">&#xf313;</span> Applied to: ${changedPanes.join(', ').toUpperCase()}</span>
+            <span class="suggestion-panes"><span class="icon" data-name="check">&#xf313;</span> Applied to: ${changedPanes.join(", ").toUpperCase()}</span>
             <button class="btn-discard accent">Discard</button>
         </div>
-    `);
+    `,
+    );
 
-    el('.btn-discard', msgEl)?.addEventListener('click', () => {
+    el(".btn-discard", msgEl)?.addEventListener("click", () => {
         changedPanes.forEach((syntax) => {
-            bus.emit('ai:update', { syntax, content: snapshot[syntax] });
+            bus.emit("ai:update", { syntax, content: snapshot[syntax] });
         });
-        el('.suggestion-actions', msgEl).innerHTML = `<span class="suggestion-discarded">Discarded — reverted to previous version</span>`;
+        el(".suggestion-actions", msgEl).innerHTML = `<span class="suggestion-discarded">Discarded — reverted to previous version</span>`;
 
         if (lastAppliedMsgEl === msgEl) lastAppliedMsgEl = null;
     });
@@ -626,7 +627,7 @@ function renderSuggestion(aiResponse) {
 }
 
 function addMessage(role, content, customId = null) {
-    const elMessage = elNew('div', {
+    const elMessage = elNew("div", {
         className: `chat-message role-${role}`,
     });
     if (customId) elMessage.id = customId;
@@ -639,12 +640,12 @@ function addMessage(role, content, customId = null) {
         const html = marked.parse(content, { breaks: true });
         elMessage.innerHTML = DOMPurify.sanitize(html, {
             ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "code", "pre", "ul", "ol", "li", "br", "blockquote", "h1", "h2", "h3"],
-            ALLOWED_ATTR: ["href", "target", "rel"]
+            ALLOWED_ATTR: ["href", "target", "rel"],
         });
     }
 
     elOutput.append(elMessage);
-    elOutput.scrollTo({ top: elOutput.scrollHeight, behavior: 'smooth' });
+    elOutput.scrollTo({ top: elOutput.scrollHeight, behavior: "smooth" });
 
     return elMessage;
 }
@@ -655,12 +656,12 @@ function removeThinkingMessage(id) {
 }
 
 // Events
-elInput.addEventListener('focus', () => {
+elInput.addEventListener("focus", () => {
     // Close chat Options on message input focus
-    el('.chat-options').open = false;
+    el(".chat-options").open = false;
 });
-elInput.addEventListener('keydown', function (evt) {
-    if (evt.key === 'Enter' && !evt.shiftKey) {
+elInput.addEventListener("keydown", function (evt) {
+    if (evt.key === "Enter" && !evt.shiftKey) {
         evt.preventDefault();
         if (elInput.value.trim()) {
             void sendMessage();
@@ -670,7 +671,7 @@ elInput.addEventListener('keydown', function (evt) {
 elSend.addEventListener("click", () => sendMessage());
 
 // Live model discovery
-// 
+//
 // No hardcoded model IDs anywhere below — model lists are always fetched
 // live from each provider once an API key is present. If a fetch fails,
 // the UI shows an explicit error state rather than silently falling back
@@ -680,15 +681,30 @@ elSend.addEventListener("click", () => sendMessage());
 // unpinned "-latest" aliases, excluded so saved projects stay reproducible
 // when reopened later (an alias could silently repoint to a new model).
 const CHAT_EXCLUDE_PATTERNS = [
-    /tts/i, /image/i, /native-audio/i, /embedding/i, /embed/i, /robotics/i,
-    /computer-use/i, /aqa/i, /antigravity/i, /deep-research/i,
-    /lyria/i, /veo/i, /imagen/i, /nano-banana/i,
-    /-latest$/i, /customtools/i,
-    /whisper/i, /dall-e/i, /moderation/i, /davinci|babbage|curie|ada-/i // legacy OpenAI non-chat
+    /tts/i,
+    /image/i,
+    /native-audio/i,
+    /embedding/i,
+    /embed/i,
+    /robotics/i,
+    /computer-use/i,
+    /aqa/i,
+    /antigravity/i,
+    /deep-research/i,
+    /lyria/i,
+    /veo/i,
+    /imagen/i,
+    /nano-banana/i,
+    /-latest$/i,
+    /customtools/i,
+    /whisper/i,
+    /dall-e/i,
+    /moderation/i,
+    /davinci|babbage|curie|ada-/i, // legacy OpenAI non-chat
 ];
 
 function isChatModel(id) {
-    return !CHAT_EXCLUDE_PATTERNS.some(re => re.test(id));
+    return !CHAT_EXCLUDE_PATTERNS.some((re) => re.test(id));
 }
 
 async function fetchModelsGemini(apiKey) {
@@ -697,9 +713,9 @@ async function fetchModelsGemini(apiKey) {
     if (!res.ok) throw new Error("Failed to fetch Gemini models");
     const data = await res.json();
     return data.models
-        .filter(m => m.supportedGenerationMethods?.includes("generateContent"))
-        .map(m => ({ id: m.name.replace("models/", ""), label: m.displayName || m.name }))
-        .filter(m => isChatModel(m.id));
+        .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
+        .map((m) => ({ id: m.name.replace("models/", ""), label: m.displayName || m.name }))
+        .filter((m) => isChatModel(m.id));
 }
 
 async function fetchModelsOpenAICompatible(providerKey, apiKey) {
@@ -713,9 +729,7 @@ async function fetchModelsOpenAICompatible(providerKey, apiKey) {
     const res = await fetch(listUrl, { headers });
     if (!res.ok) throw new Error(`Failed to fetch ${providerKey} models`);
     const data = await res.json();
-    return data.data
-        .map(m => ({ id: m.id, label: m.id.replace(/-/g, " ") }))
-        .filter(m => isChatModel(m.id));
+    return data.data.map((m) => ({ id: m.id, label: m.id.replace(/-/g, " ") })).filter((m) => isChatModel(m.id));
 }
 
 async function fetchModelsAnthropic(apiKey) {
@@ -723,12 +737,12 @@ async function fetchModelsAnthropic(apiKey) {
         headers: {
             "x-api-key": apiKey,
             "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true"
-        }
+            "anthropic-dangerous-direct-browser-access": "true",
+        },
     });
     if (!res.ok) throw new Error("Failed to fetch Anthropic models");
     const data = await res.json();
-    return data.data.map(m => ({ id: m.id, label: m.display_name || m.id }));
+    return data.data.map((m) => ({ id: m.id, label: m.display_name || m.id }));
 }
 
 const MODEL_FETCHERS = {
@@ -774,7 +788,7 @@ async function refreshModelOptions(providerKey, apiKey) {
     const cacheKey = apiKey || "__no_key__"; // keyless providers share one cache slot
     const cache = modelCache.read();
     const cached = cache[providerKey];
-    const isFresh = cached && cached.forKey === cacheKey && (Date.now() - cached.fetchedAt) < MODEL_CACHE_TTL;
+    const isFresh = cached && cached.forKey === cacheKey && Date.now() - cached.fetchedAt < MODEL_CACHE_TTL;
     if (isFresh) {
         renderModelState("ready", cached.models);
         return;
@@ -826,7 +840,7 @@ async function loadProviderIntoUI(providerKey) {
 
     // restore last-used model for this provider if it's still present in the loaded list
     const savedModel = settings.model;
-    if (savedModel && [...elModel.options].some(o => o.value === savedModel)) {
+    if (savedModel && [...elModel.options].some((o) => o.value === savedModel)) {
         elModel.value = savedModel;
     }
 }
@@ -847,7 +861,7 @@ elApiKey.addEventListener("change", async () => {
 });
 
 // Init
-; (async () => {
+(async () => {
     const initialSettings = ls.read();
     elProvider.value = initialSettings.provider || "gemini";
     await loadProviderIntoUI(elProvider.value);

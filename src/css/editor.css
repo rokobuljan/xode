@@ -36,7 +36,9 @@
 .editor-textarea,
 .editor-lines {
     background: transparent;
-    font: normal normal 13px/1.4 "Fira Code", monospace;
+    font:
+        normal normal 13px/1.4 "Fira Code",
+        monospace;
 }
 
 .editor-highlight code,
@@ -135,7 +137,7 @@
         color: hsl(54, 100%, 50%);
     }
 
-    >span {
+    > span {
         position: relative;
         display: block;
         padding: 0 0.8rem 0 0.5rem;
@@ -154,10 +156,14 @@
             top: 0;
             width: 6px;
             height: 100%;
-            background: linear-gradient(var(--swatch), var(--swatch)), repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 6px 6px;
+            background:
+                linear-gradient(var(--swatch), var(--swatch)),
+                repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 6px 6px;
             opacity: 1;
             box-shadow: 1px 0 0 0 color-mix(in srgb, var(--bg), var(--fg) 10%);
-            transition: width 0.1s, opacity 0.2s;
+            transition:
+                width 0.1s,
+                opacity 0.2s;
 
             @starting-style {
                 opacity: 0;

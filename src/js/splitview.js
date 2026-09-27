@@ -47,8 +47,8 @@ const splitViewStart = (ev) => {
         const posDiff = ev[clientXY] - clientXYStart;
         const sizePrevNew = Math.max(sizeMinPrev, Math.min(sizeSum - sizeMinNext, sizePrev + posDiff));
         const sizeNextNew = Math.max(sizeMinNext, Math.min(sizeSum - sizeMinPrev, sizeNext - posDiff));
-        const growPrevNew = (growSum * sizePrevNew / sizeSum);
-        const growNextNew = (growSum * sizeNextNew / sizeSum);
+        const growPrevNew = (growSum * sizePrevNew) / sizeSum;
+        const growNextNew = (growSum * sizeNextNew) / sizeSum;
         elPrev.style.setProperty("--grow", growPrevNew.toFixed(1));
         elNext.style.setProperty("--grow", growNextNew.toFixed(1));
         triggerGlobalResizeEvent();
@@ -61,6 +61,6 @@ const splitViewStart = (ev) => {
 
     addEventListener("pointermove", splitViewMove);
     addEventListener("pointerup", splitViewEnd);
-}
+};
 
 addEventListener("pointerdown", splitViewStart);

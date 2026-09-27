@@ -11,15 +11,13 @@ import { extractColors } from "./colorExtract.js";
 import Toast from "./toast.js";
 
 const lsSettings = LS("xode.settings");
-const supportsHighlightAPI = 'highlights' in CSS && typeof Highlight !== 'undefined';
-
+const supportsHighlightAPI = "highlights" in CSS && typeof Highlight !== "undefined";
 
 const customEmmetSnippets = {
     html: {
-        '!': '!!!+html[lang="en"]>(head>meta[charset="UTF-8"]+meta[http-equiv="X-UA-Compatible"][content="IE=edge"]+meta[name="viewport"][content="width=device-width, initial-scale=1.0"]+meta[name="description"][content="Project description"]+link[rel="favicon"][type="image/svg+xml"][href="#!"]+title{${1:Untitled}})+body'
-    }
+        "!": '!!!+html[lang="en"]>(head>meta[charset="UTF-8"]+meta[http-equiv="X-UA-Compatible"][content="IE=edge"]+meta[name="viewport"][content="width=device-width, initial-scale=1.0"]+meta[name="description"][content="Project description"]+link[rel="favicon"][type="image/svg+xml"][href="#!"]+title{${1:Untitled}})+body',
+    },
 };
-
 
 // Walk every text node under `root`, recording the absolute character
 // range [start, end) it covers, so we can later go from "offset 57" to
@@ -28,7 +26,8 @@ const customEmmetSnippets = {
 function getTextNodeMap(root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const map = [];
-    let node, offset = 0;
+    let node,
+        offset = 0;
     while ((node = walker.nextNode())) {
         map.push({ node, start: offset, end: offset + node.nodeValue.length });
         offset += node.nodeValue.length;
@@ -72,7 +71,7 @@ const formatCode = async (code, language) => {
         singleQuote: true,
         tabWidth: Number(lsSettings.read("tabWidth")),
         htmlWhitespaceSensitivity: "ignore",
-        bracketSameLine: true
+        bracketSameLine: true,
     });
 };
 
@@ -124,11 +123,15 @@ class HistoryStack {
 
 export class Editor {
     constructor(elParent, options) {
-        this.elParent = elParent
-        Object.assign(this, {
-            syntax: "", // "html", "css", ...
-            value: "",
-        }, options);
+        this.elParent = elParent;
+        Object.assign(
+            this,
+            {
+                syntax: "", // "html", "css", ...
+                value: "",
+            },
+            options,
+        );
         this.history = new HistoryStack(this.value);
         this.historyTimer = null;
         this.historyDebounceMs = 400;
@@ -170,8 +173,7 @@ export class Editor {
             else if (this.isUndoShortcut(evt)) {
                 evt.preventDefault();
                 this.undo();
-            }
-            else if (this.isRedoShortcut(evt)) {
+            } else if (this.isRedoShortcut(evt)) {
                 evt.preventDefault();
                 this.redo();
             }
@@ -200,14 +202,11 @@ export class Editor {
         this.elTextarea.addEventListener("blur", () => this.flushHistory());
 
         // Fix textaarea scroll on click - change line focus
-        this.elTextarea.addEventListener('click', (evt) => {
+        this.elTextarea.addEventListener("click", (evt) => {
             scrollToCaret(evt);
         });
-        this.elTextarea.addEventListener('keyup', (evt) => {
-            if (
-                ["Enter", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(evt.key)
-                || evt.ctrlKey && (evt.key === "z" || evt.key === "y")
-            ) {
+        this.elTextarea.addEventListener("keyup", (evt) => {
+            if (["Enter", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(evt.key) || (evt.ctrlKey && (evt.key === "z" || evt.key === "y"))) {
                 scrollToCaret(evt);
             }
         });
@@ -223,15 +222,15 @@ export class Editor {
         // Highlight
 
         // Text changed -> resync mirror + recompute highlights
-        this.elTextarea.addEventListener('input', () => {
+        this.elTextarea.addEventListener("input", () => {
             this.updateHighlights();
         });
 
         // Selection changed via drag, double-click, keyboard, etc.
-        this.elTextarea.addEventListener('select', () => this.updateHighlights());
-        this.elTextarea.addEventListener('mouseup', () => this.updateHighlights());
-        this.elTextarea.addEventListener('keyup', () => this.updateHighlights());
-        document.addEventListener('selectionchange', () => {
+        this.elTextarea.addEventListener("select", () => this.updateHighlights());
+        this.elTextarea.addEventListener("mouseup", () => this.updateHighlights());
+        this.elTextarea.addEventListener("keyup", () => this.updateHighlights());
+        document.addEventListener("selectionchange", () => {
             if (document.activeElement === this.elTextarea) this.updateHighlights();
         });
 
@@ -252,18 +251,19 @@ export class Editor {
      *   - "init": first mount; useful for seeding the iframe initially.
      */
     notifyChange(origin = "user") {
-        this.elParent.dispatchEvent(new CustomEvent("editor:change", {
-            detail: { value: this.value, origin, syntax: this.syntax },
-            bubbles: true,
-        }));
+        this.elParent.dispatchEvent(
+            new CustomEvent("editor:change", {
+                detail: { value: this.value, origin, syntax: this.syntax },
+                bubbles: true,
+            }),
+        );
     }
 
     isUndoShortcut(evt) {
         return (evt.ctrlKey || evt.metaKey) && !evt.shiftKey && evt.key.toLowerCase() === "z";
     }
     isRedoShortcut(evt) {
-        return (evt.ctrlKey || evt.metaKey) &&
-            (evt.key.toLowerCase() === "y" || (evt.shiftKey && evt.key.toLowerCase() === "z"));
+        return (evt.ctrlKey || evt.metaKey) && (evt.key.toLowerCase() === "y" || (evt.shiftKey && evt.key.toLowerCase() === "z"));
     }
 
     // Inserts text at the caret without execCommand (which is deprecated and
@@ -375,30 +375,30 @@ export class Editor {
                 head: "Error",
                 type: "error",
                 body: `Could not format ${this.syntax.toUpperCase()}: ${err.message}`,
-                time: 0
+                time: 0,
             });
         }
     }
 
     // Determine extra indentation based on syntax and context
     getExtraIndent(value, position) {
-        const prevChar = position > 0 ? value[position - 1] : '';
+        const prevChar = position > 0 ? value[position - 1] : "";
 
         // Don't add extra indent for closing brackets
-        if (['}', ']', ')'].includes(prevChar)) return '';
+        if (["}", "]", ")"].includes(prevChar)) return "";
 
         // Add indent after opening brackets/braces (works for all syntaxes)
-        if (['{', '[', '('].includes(prevChar)) {
+        if (["{", "[", "("].includes(prevChar)) {
             return " ".repeat(Number(lsSettings.read("tabWidth")));
         }
 
-        return '';
+        return "";
     }
 
     // Setup auto-indent on Enter key
     setupAutoIndent() {
-        this.elTextarea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
+        this.elTextarea.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
                 e.preventDefault();
 
                 const ta = this.elTextarea;
@@ -406,25 +406,25 @@ export class Editor {
                 const value = ta.value;
 
                 // Get current line's indentation
-                const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                const lineStart = value.lastIndexOf("\n", start - 1) + 1;
                 const currentLine = value.substring(lineStart, start);
-                const indent = currentLine.match(/^\s*/)[0] || '';
+                const indent = currentLine.match(/^\s*/)[0] || "";
 
                 // Determine extra indentation
                 const extraIndent = this.getExtraIndent(value, start);
 
                 // Use insertAtCaret to ensure highlight, history, and events all work
-                this.insertAtCaret('\n' + indent + extraIndent);
+                this.insertAtCaret("\n" + indent + extraIndent);
             }
             // Smart backspace: remove full indent level if on whitespace-only line
-            else if (e.key === 'Backspace') {
+            else if (e.key === "Backspace") {
                 const ta = this.elTextarea;
                 const start = ta.selectionStart;
                 const value = ta.value;
 
                 // Only apply smart backspace if no selection and cursor not at position 0
                 if (ta.selectionStart === ta.selectionEnd && start > 0) {
-                    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
                     const currentLine = value.substring(lineStart, start);
 
                     // Check if line contains only spaces before cursor
@@ -457,9 +457,7 @@ export class Editor {
         const charCount = selectedText.length;
         const lineCount = selectedText.split("\n").length;
         const hasCount = charCount > 0;
-        this.elSelectionStat.innerHTML = hasCount
-            ? `<span class= "icon" data-name="text-t">&#x10125;</span> ${charCount} &nbsp; <span class="icon" data-name="wrap-text">&#xf11d;</span> ${lineCount}`
-            : "";
+        this.elSelectionStat.innerHTML = hasCount ? `<span class= "icon" data-name="text-t">&#x10125;</span> ${charCount} &nbsp; <span class="icon" data-name="wrap-text">&#xf11d;</span> ${lineCount}` : "";
     }
     emmetExpand() {
         const source = this.elTextarea.value;
@@ -512,7 +510,7 @@ export class Editor {
                     const elLine = this.elLines.children[color.line - 1];
                     const elColor = elNew("span", {
                         className: "swatch",
-                        title: color.raw
+                        title: color.raw,
                     });
                     elColor.style.setProperty("--swatch", color.css);
                     elLine.append(elColor);
@@ -521,14 +519,13 @@ export class Editor {
         }
     }
     updateHighlights() {
-
         const text = this.elTextarea.value; // must match code.textContent exactly
         const start = this.elTextarea.selectionStart;
         const end = this.elTextarea.selectionEnd;
         const selected = text.slice(start, end);
 
         if (!selected.trim()) {
-            CSS.highlights.delete('word-highlight');
+            CSS.highlights.delete("word-highlight");
             return;
         }
 
@@ -549,7 +546,6 @@ export class Editor {
             idx += selected.length;
         }
 
-        CSS.highlights.set('word-highlight', new Highlight(...ranges));
+        CSS.highlights.set("word-highlight", new Highlight(...ranges));
     }
-
 }

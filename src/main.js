@@ -12,7 +12,7 @@ import paneConsole from "./js/console.js";
 import { init as initChat } from "./js/chat.js";
 import Toast from "./js/toast.js";
 import "./js/consoleWarning.js";
-import gist, { setToken, getToken, hasToken, clearToken, GistApiError } from "./js/githubGist.js";
+import gist, { setToken, getToken, hasToken, clearToken, GistApiError, XODE_MANIFEST_FILENAME, createXodeManifestFile, hasXodeManifest } from "./js/githubGist.js";
 import { bus } from "./js/bus.js";
 
 import { reactive, effect, mount, persist } from "./js/reactive.js";
@@ -367,6 +367,7 @@ const elGithubTokenDelete = el("#githubTokenDelete");
 const elGithubPublish = el("#githubPublish");
 const elGithubLoad = el("#githubLoad");
 const elGithubLoadId = el("#githubLoadId");
+const elGithubFetch = el("#githubFetch");
 
 const updateElGithubToken = () => {
     elGithubToken.value = "";
@@ -399,34 +400,95 @@ elGithubLoad.addEventListener("click", async () => {
     elGithubLoadId.value = "";
 });
 
+const gistToProject = (data) => {
+    const files = { html: "", css: "", js: "" };
+    Object.entries(data.files).forEach(([name, file]) => {
+        if (name.endsWith(".html")) files.html = file.content;
+        else if (name.endsWith(".css")) files.css = file.content;
+        else if (name.endsWith(".js")) files.js = file.content;
+    });
+
+    const [projName = "Untitled", ...descriptionParts] = (data.description || "Untitled").split(" — ");
+    return {
+        id: data.id,
+        gistId: data.id,
+        name: projName,
+        description: descriptionParts.join(" — "),
+        html: files.html,
+        css: files.css,
+        js: files.js,
+    };
+};
+
+const importGist = async (data) => {
+    if (await loadProject(data.id)) return false;
+    await createProject(gistToProject(data));
+    return true;
+};
+
 const gistLoad = async (gistId) => {
     const existsLocally = await loadProject(gistId);
     if (!existsLocally) {
-        const data = await gist.read(gistId);
-        const files = { html: "", css: "", js: "" };
-        Object.entries(data.files).forEach(([name, file]) => {
-            if (name.endsWith(".html")) files.html = file.content;
-            else if (name.endsWith(".css")) files.css = file.content;
-            else if (name.endsWith(".js")) files.js = file.content;
-        });
-        const [projName, projDesc] = data.description.split(" — ");
-        const newProjectData = {
-            id: gistId,
-            gistId,
-            name: projName,
-            description: `${projDesc || ""}`,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at,
-            html: files.html,
-            css: files.css,
-            js: files.js,
-        };
-        await createProject(newProjectData);
+        await importGist(await gist.read(gistId));
         await drawProjects();
     }
 
     await projectInit(false, gistId);
 };
+
+elGithubFetch.addEventListener("click", async () => {
+    elGithubFetch.disabled = true;
+
+    try {
+        const remoteGists = (await gist.list()).filter(hasXodeManifest);
+        let imported = 0;
+        let skipped = 0;
+        let failed = 0;
+
+        // Keep concurrent detail requests modest while still making a multi-Gist import responsive.
+        for (let offset = 0; offset < remoteGists.length; offset += 4) {
+            const batch = remoteGists.slice(offset, offset + 4);
+            await Promise.all(
+                batch.map(async ({ id }) => {
+                    if (await loadProject(id)) {
+                        skipped += 1;
+                        return;
+                    }
+
+                    try {
+                        const wasImported = await importGist(await gist.read(id));
+                        if (wasImported) imported += 1;
+                        else skipped += 1;
+                    } catch (error) {
+                        failed += 1;
+                        console.error(`Could not import Gist ${id}`, error);
+                    }
+                }),
+            );
+        }
+
+        if (imported) await drawProjects();
+
+        const details = [`${imported} imported`];
+        if (skipped) details.push(`${skipped} already local`);
+        if (failed) details.push(`${failed} failed`);
+        new Toast({
+            head: remoteGists.length ? "XODE Gists fetched" : "No XODE Gists found",
+            body: remoteGists.length ? details.join(", ") : `No Gists containing ${XODE_MANIFEST_FILENAME} were found.`,
+            type: failed ? "error" : "success",
+            time: failed ? 0 : 4000,
+        });
+    } catch (error) {
+        new Toast({
+            head: "Could not fetch Gists",
+            body: error.message,
+            type: "error",
+            time: 0,
+        });
+    } finally {
+        elGithubFetch.disabled = false;
+    }
+});
 
 const gistPublish = async (project) => {
     const files = {};
@@ -437,6 +499,7 @@ const gistPublish = async (project) => {
         console.warn("Nothing to publish — all panes are empty");
         return;
     }
+    files[XODE_MANIFEST_FILENAME] = createXodeManifestFile();
     const projName = project.name?.trim() || "Untitled";
     const projDesc = project.description?.trim() || "";
     const description = `${projName} ${projDesc ? ` — ${projDesc}` : ""}`;

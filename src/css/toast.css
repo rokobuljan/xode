@@ -60,7 +60,7 @@
         --bg: hsl(110 90% 70%);
     }
 
-    &>button {
+    & > button {
         all: unset;
         position: absolute;
         right: 0.5rem;
@@ -68,7 +68,7 @@
         cursor: pointer;
 
         &::before {
-            content: '\2715';
+            content: "\2715";
         }
 
         .permanent & {

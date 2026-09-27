@@ -1,345 +1,318 @@
 <!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>XODE - Prototype code ideas</title>
+        <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.css" />
+    </head>
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>XODE - Prototype code ideas</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.css">
-</head>
-
-<body>
-
-    <svg style="display:none">
-        <symbol id="logo-xode" viewBox="0 0 282 72">
-            <path fill="currentColor"
-                d="M276.888,59.831v9.535H228.552V3.282h47.2v9.535H239.692v18.6h32.287v9.441H239.692V59.831h37.2Zm-69.955.142a32.36,32.36,0,0,1-10.951,6.939A37.77,37.77,0,0,1,182.2,69.366H155.387V3.282h27.094A37.049,37.049,0,0,1,196.17,5.736a32.454,32.454,0,0,1,10.81,6.892,31.475,31.475,0,0,1,7.128,10.479,33.67,33.67,0,0,1,2.548,13.217,33.317,33.317,0,0,1-2.548,13.17A31.741,31.741,0,0,1,206.933,59.973Zm-3.305-33.042a23.872,23.872,0,0,0-4.909-7.505,21.129,21.129,0,0,0-7.316-4.909,24.075,24.075,0,0,0-9.11-1.7H166.527V59.831h16.238a23.1,23.1,0,0,0,8.921-1.7,21.149,21.149,0,0,0,7.175-4.862,23.091,23.091,0,0,0,4.815-7.458,24.732,24.732,0,0,0,1.746-9.393A24.409,24.409,0,0,0,203.628,26.931ZM133.343,60.3a34.523,34.523,0,0,1-11.14,7.222,37.638,37.638,0,0,1-27.472,0A34.5,34.5,0,0,1,83.591,60.3a33.543,33.543,0,0,1-7.458-10.809A32.878,32.878,0,0,1,73.442,36.23a32.551,32.551,0,0,1,2.691-13.217A33.178,33.178,0,0,1,83.591,12.3,34.283,34.283,0,0,1,94.731,5.17a38.286,38.286,0,0,1,27.472,0,33.893,33.893,0,0,1,18.6,17.89,32.213,32.213,0,0,1,2.691,13.17A32.873,32.873,0,0,1,140.8,49.494,33.575,33.575,0,0,1,133.343,60.3Zm-3.115-33.561a24.6,24.6,0,0,0-5.051-7.694A23.472,23.472,0,0,0,99.357,13.9a24.041,24.041,0,0,0-7.6,5.145,23.762,23.762,0,0,0-5.145,7.694,24.283,24.283,0,0,0-1.841,9.488,24.077,24.077,0,0,0,1.888,9.535,24.78,24.78,0,0,0,5.192,7.788,24.293,24.293,0,0,0,7.6,5.24,22.921,22.921,0,0,0,18.22,0,23.225,23.225,0,0,0,7.506-5.24,24.994,24.994,0,0,0,5.051-7.788,24.635,24.635,0,0,0,1.84-9.535A24.288,24.288,0,0,0,130.228,26.742Z" />
-            <path fill="#7c6cff" d="M28,36l5.876,8.3L18,70H4L25,36,4,3H18L33.732,27.721Z" />
-            <path fill="#00bbff" d="M69,3H55L34,36,55,70H69L48,36Z" />
-        </symbol>
-    </svg>
-
-    <nav id="top">
-        <svg id="logo" class="logo" height="1rem" width="3.8rem" data-modal="#modal-projects">
-            <use href="#logo-xode"></use>
+    <body>
+        <svg style="display: none">
+            <symbol id="logo-xode" viewBox="0 0 282 72">
+                <path
+                    fill="currentColor"
+                    d="M276.888,59.831v9.535H228.552V3.282h47.2v9.535H239.692v18.6h32.287v9.441H239.692V59.831h37.2Zm-69.955.142a32.36,32.36,0,0,1-10.951,6.939A37.77,37.77,0,0,1,182.2,69.366H155.387V3.282h27.094A37.049,37.049,0,0,1,196.17,5.736a32.454,32.454,0,0,1,10.81,6.892,31.475,31.475,0,0,1,7.128,10.479,33.67,33.67,0,0,1,2.548,13.217,33.317,33.317,0,0,1-2.548,13.17A31.741,31.741,0,0,1,206.933,59.973Zm-3.305-33.042a23.872,23.872,0,0,0-4.909-7.505,21.129,21.129,0,0,0-7.316-4.909,24.075,24.075,0,0,0-9.11-1.7H166.527V59.831h16.238a23.1,23.1,0,0,0,8.921-1.7,21.149,21.149,0,0,0,7.175-4.862,23.091,23.091,0,0,0,4.815-7.458,24.732,24.732,0,0,0,1.746-9.393A24.409,24.409,0,0,0,203.628,26.931ZM133.343,60.3a34.523,34.523,0,0,1-11.14,7.222,37.638,37.638,0,0,1-27.472,0A34.5,34.5,0,0,1,83.591,60.3a33.543,33.543,0,0,1-7.458-10.809A32.878,32.878,0,0,1,73.442,36.23a32.551,32.551,0,0,1,2.691-13.217A33.178,33.178,0,0,1,83.591,12.3,34.283,34.283,0,0,1,94.731,5.17a38.286,38.286,0,0,1,27.472,0,33.893,33.893,0,0,1,18.6,17.89,32.213,32.213,0,0,1,2.691,13.17A32.873,32.873,0,0,1,140.8,49.494,33.575,33.575,0,0,1,133.343,60.3Zm-3.115-33.561a24.6,24.6,0,0,0-5.051-7.694A23.472,23.472,0,0,0,99.357,13.9a24.041,24.041,0,0,0-7.6,5.145,23.762,23.762,0,0,0-5.145,7.694,24.283,24.283,0,0,0-1.841,9.488,24.077,24.077,0,0,0,1.888,9.535,24.78,24.78,0,0,0,5.192,7.788,24.293,24.293,0,0,0,7.6,5.24,22.921,22.921,0,0,0,18.22,0,23.225,23.225,0,0,0,7.506-5.24,24.994,24.994,0,0,0,5.051-7.788,24.635,24.635,0,0,0,1.84-9.535A24.288,24.288,0,0,0,130.228,26.742Z"
+                />
+                <path fill="#7c6cff" d="M28,36l5.876,8.3L18,70H4L25,36,4,3H18L33.732,27.721Z" />
+                <path fill="#00bbff" d="M69,3H55L34,36,55,70H69L48,36Z" />
+            </symbol>
         </svg>
 
-        <button class="md-show" type="button" data-modal="#modal-projects" title="Project Settings">
-            <span class="icon" data-name="folder-simple">&#xfdf9;</span>
-            <span data-rea-text="project.name">Untitled</span>
-        </button>
-        <button class="downloadCurrentProject md-show" type="button" title="Download project">
-            <span class="icon" data-name="download">&#xf3b7;</span>
-        </button>
+        <nav id="top">
+            <svg id="logo" class="logo" height="1rem" width="3.8rem" data-modal="#modal-projects">
+                <use href="#logo-xode"></use>
+            </svg>
 
-        <div class="tabs">
-            <label class="tab ckbtn" title="Toggle HTML panel">
-                <input type="checkbox" data-rea-model="project.panes.html">
-                <span>HTML</span>
-            </label>
-            <label class="tab ckbtn" title="Toggle CSS panel">
-                <input type="checkbox" data-rea-model="project.panes.css">
-                <span>CSS</span>
-            </label>
-            <label class="tab ckbtn" title="Toggle JS panel">
-                <input type="checkbox" data-rea-model="project.panes.js">
-                <span>JS</span>
-            </label>
-            <label class="tab ckbtn" title="Toggle Console">
-                <input type="checkbox" data-rea-model="project.panes.console">
-                <span class="icon" data-name="terminal">&#xf478;</span>
-            </label>
-            <label class="tab ckbtn" title="Toggle Live preview">
-                <input type="checkbox" data-rea-model="project.panes.preview">
-                <span class="md-hide icon" data-name="eye--fill">&#xf31d;</span>
-                <span class="md-show">Preview</span>
-            </label>
-            <label class="tab ckbtn" title="Toggle Rich Editor">
-                <input type="checkbox" data-rea-model="project.panes.richEditor" data-action="designMode">
-                <span class="icon" data-name="pencil-line">&#xf113;</span>
-            </label>
-            <label class="tab ckbtn" title="Toggle AI Chat">
-                <input type="checkbox" data-rea-model="project.panes.chat">
-                <span>AI</span>
-            </label>
-        </div>
-        <label title="Autorun JS">
-            <input id="autorun" type="checkbox" data-rea-model="project.isAutorun">
-            <span class="md-show">Auto</span>
-        </label>
-        <button id="run" type="button" title="Run JS">
-            <span class="md-show">Run</span>
-            <span class="icon" data-name="play">&#xf42d;</span>
-        </button>
-    </nav>
+            <button class="md-show" type="button" data-modal="#modal-projects" title="Project Settings">
+                <span class="icon" data-name="folder-simple">&#xfdf9;</span>
+                <span data-rea-text="project.name">Untitled</span>
+            </button>
+            <button class="downloadCurrentProject md-show" type="button" title="Download project">
+                <span class="icon" data-name="download">&#xf3b7;</span>
+            </button>
 
-    <main id="app" class="splitview">
-        <div class="splitview col">
-            <div class="splitview">
-                <div class="splitview" data-view="html" data-rea-open="project.panes.html">
-                    <div class="editor" id="editor-html"></div>
-                </div>
-                <div class="splitter"></div>
-                <div class="splitview" data-view="css" data-rea-open="project.panes.css">
-                    <div class="editor" id="editor-css"></div>
-                </div>
-                <div class="splitter"></div>
-                <div class="splitview" data-view="js" data-rea-open="project.panes.js">
-                    <div class="editor" id="editor-js"></div>
-                </div>
-                <div class="splitter"></div>
-                <div class="splitview" data-view="console" data-rea-open="project.panes.console">
-                    <div class="console" tabindex="0"></div>
-                    <button class="console-clear" type="button" title="Clear Console">
-                        Clear
-                        <kbd>Ctrl</kbd>+<kbd>K</kbd>
-                    </button>
-                </div>
+            <div class="tabs">
+                <label class="tab ckbtn" title="Toggle HTML panel">
+                    <input type="checkbox" data-rea-model="project.panes.html" />
+                    <span>HTML</span>
+                </label>
+                <label class="tab ckbtn" title="Toggle CSS panel">
+                    <input type="checkbox" data-rea-model="project.panes.css" />
+                    <span>CSS</span>
+                </label>
+                <label class="tab ckbtn" title="Toggle JS panel">
+                    <input type="checkbox" data-rea-model="project.panes.js" />
+                    <span>JS</span>
+                </label>
+                <label class="tab ckbtn" title="Toggle Console">
+                    <input type="checkbox" data-rea-model="project.panes.console" />
+                    <span class="icon" data-name="terminal">&#xf478;</span>
+                </label>
+                <label class="tab ckbtn" title="Toggle Live preview">
+                    <input type="checkbox" data-rea-model="project.panes.preview" />
+                    <span class="md-hide icon" data-name="eye--fill">&#xf31d;</span>
+                    <span class="md-show">Preview</span>
+                </label>
+                <label class="tab ckbtn" title="Toggle Rich Editor">
+                    <input type="checkbox" data-rea-model="project.panes.richEditor" data-action="designMode" />
+                    <span class="icon" data-name="pencil-line">&#xf113;</span>
+                </label>
+                <label class="tab ckbtn" title="Toggle AI Chat">
+                    <input type="checkbox" data-rea-model="project.panes.chat" />
+                    <span>AI</span>
+                </label>
             </div>
-            <div class="splitter"></div>
-            <div class="splitview col" data-view="preview" data-rea-open="project.panes.preview">
-                <div data-view="richEditor" data-rea-open-inner data-rea-open="project.panes.richEditor">
-                    <div class="cmd-group">
-                        <span data-cmd="bold" title="Bold" class="icon" data-name="bold">&#xf320;</span>
-                        <span data-cmd="italic" alt="Italic" title="Italic" class="icon"
-                            data-name="italic">&#xf10a;</span>
-                        <span data-cmd="underline" alt="Underline" title="Underline" class="icon"
-                            data-name="text-underline">&#xf197;</span>
-                        <span data-cmd="strikeThrough" alt="Strike Through" title="Strike Through" class="icon"
-                            data-name="text-strikethrough">&#xfa5d;</span>
-                        <span data-cmd="superscript" alt="Superscript" title="Superscript" class="icon"
-                            data-name="text-superscript">&#xfa02;</span>
-                        <span data-cmd="subscript" alt="Subscript" title="Subscript" class="icon"
-                            data-name="text-subscript">&#xf0e6;</span>
+            <label title="Autorun JS">
+                <input id="autorun" type="checkbox" data-rea-model="project.isAutorun" />
+                <span class="md-show">Auto</span>
+            </label>
+            <button id="run" type="button" title="Run JS">
+                <span class="md-show">Run</span>
+                <span class="icon" data-name="play">&#xf42d;</span>
+            </button>
+        </nav>
+
+        <main id="app" class="splitview">
+            <div class="splitview col">
+                <div class="splitview">
+                    <div class="splitview" data-view="html" data-rea-open="project.panes.html">
+                        <div class="editor" id="editor-html"></div>
                     </div>
-                    <div class="cmd-group">
-                        <span data-cmd="formatBlock" title="Paragraph" data-par="P" class="icon"
-                            data-name="paragraph">&#xfeeb;</span>
-                        <span data-cmd="formatBlock" title="H1" data-par="H1" class="icon"
-                            data-name="text-h-one">&#xfb8e;</span>
-                        <span data-cmd="formatBlock" title="H2" data-par="H2" class="icon"
-                            data-name="text-h-two">&#x10083;</span>
-                        <span data-cmd="formatBlock" title="H3" data-par="H3" class="icon"
-                            data-name="text-h-three">&#xf797;</span>
+                    <div class="splitter"></div>
+                    <div class="splitview" data-view="css" data-rea-open="project.panes.css">
+                        <div class="editor" id="editor-css"></div>
                     </div>
-                    <!-- <div class="cmd-group">
+                    <div class="splitter"></div>
+                    <div class="splitview" data-view="js" data-rea-open="project.panes.js">
+                        <div class="editor" id="editor-js"></div>
+                    </div>
+                    <div class="splitter"></div>
+                    <div class="splitview" data-view="console" data-rea-open="project.panes.console">
+                        <div class="console" tabindex="0"></div>
+                        <button class="console-clear" type="button" title="Clear Console">
+                            Clear
+                            <kbd>Ctrl</kbd>+<kbd>K</kbd>
+                        </button>
+                    </div>
+                </div>
+                <div class="splitter"></div>
+                <div class="splitview col" data-view="preview" data-rea-open="project.panes.preview">
+                    <div data-view="richEditor" data-rea-open-inner data-rea-open="project.panes.richEditor">
+                        <div class="cmd-group">
+                            <span data-cmd="bold" title="Bold" class="icon" data-name="bold">&#xf320;</span>
+                            <span data-cmd="italic" alt="Italic" title="Italic" class="icon" data-name="italic">&#xf10a;</span>
+                            <span data-cmd="underline" alt="Underline" title="Underline" class="icon" data-name="text-underline">&#xf197;</span>
+                            <span data-cmd="strikeThrough" alt="Strike Through" title="Strike Through" class="icon" data-name="text-strikethrough">&#xfa5d;</span>
+                            <span data-cmd="superscript" alt="Superscript" title="Superscript" class="icon" data-name="text-superscript">&#xfa02;</span>
+                            <span data-cmd="subscript" alt="Subscript" title="Subscript" class="icon" data-name="text-subscript">&#xf0e6;</span>
+                        </div>
+                        <div class="cmd-group">
+                            <span data-cmd="formatBlock" title="Paragraph" data-par="P" class="icon" data-name="paragraph">&#xfeeb;</span>
+                            <span data-cmd="formatBlock" title="H1" data-par="H1" class="icon" data-name="text-h-one">&#xfb8e;</span>
+                            <span data-cmd="formatBlock" title="H2" data-par="H2" class="icon" data-name="text-h-two">&#x10083;</span>
+                            <span data-cmd="formatBlock" title="H3" data-par="H3" class="icon" data-name="text-h-three">&#xf797;</span>
+                        </div>
+                        <!-- <div class="cmd-group">
                     <span data-cmd="removeFormat" data-par="foreColor" alt="Text Color" title="Text Color" class="icon"
                         data-name="palette">&#xf919;</span>
                     <span data-cmd="removeFormat" data-par="backColor" alt="Text Background" title="Text Background"
                         class="icon" data-name="text-t--fill">&#xf0d4;</span>
                 </div> -->
-                    <div class="cmd-group">
-                        <span data-cmd="InsertUnorderedList" data-cmdref="UL" alt="Unordered List"
-                            title="Unordered List" class="icon" data-name="list">&#xf58e;</span>
-                        <span data-cmd="InsertOrderedList" data-cmdref="OL" alt="Ordered List" title="Ordered List"
-                            class="icon" data-name="list-ordered">&#xf322;</span>
-                        <span data-cmd="insertHorizontalRule" alt="Insert Horizontal Rule"
-                            title="Insert Horizontal Rule" class="icon" data-name="minus">&#xf02f;</span>
-                        <span data-cmd="InsertImage" alt="Insert Image" title="Insert Image" class="icon"
-                            data-name="image1">&#xf6eb;</span>
-                        <span data-cmd="CreateLink" alt="Link" title="Link" class="icon"
-                            data-name="link-2">&#xf235;</span>
-                    </div>
-                    <div class="cmd-group">
-                        <span data-cmd="justifyLeft" alt="Align left" title="Align Left" class="icon"
-                            data-name="align-left">&#xf008;</span>
-                        <span data-cmd="justifyCenter" alt="Align center" title="Align Center" class="icon"
-                            data-name="align-center">&#xf0f9;</span>
-                        <span data-cmd="justifyRight" alt="Align right" title="Align Right" class="icon"
-                            data-name="align-right">&#xf293;</span>
-                        <span data-cmd="justifyFull" alt="Align justify" title="Align Full" class="icon"
-                            data-name="align-justify">&#xf4a9;</span>
-                    </div>
-                    <div class="cmd-group">
-                        <span data-cmd="indent" alt="Indent" title="Indent" class="icon"
-                            data-name="indent-increase">&#xf15c;</span>
-                        <span data-cmd="outdent" alt="Outdent" title="Outdent" class="icon"
-                            data-name="indent-decrease">&#xf0b2;</span>
-                    </div>
-                    <div class="cmd-group">
-                        <span data-cmd="removeFormat" alt="Remove Formattimg/Styles" title="Remove Formatting/Styles"
-                            class="icon" data-name="remove-formatting">&#xf175;</span>
-                    </div>
-                </div>
-
-                <div id="preview-wrapper">
-                    <!-- SECURITY ALERT: do NOT add allow-same-origin in the sandbox rules, it breaks localStorage isolation for user code. -->
-                    <iframe id="preview"
-                        sandbox="allow-modals allow-forms allow-pointer-lock allow-popups allow-scripts"
-                        frameborder="0"></iframe>
-
-                </div>
-            </div>
-        </div>
-        <div class="splitter"></div>
-        <aside class="splitview chat" data-view="chat" data-rea-open="project.panes.chat" style="--grow: 25;">
-            <div class="chat-output"></div>
-            <div class="chat-question">
-                <div class="glow-input">
-                    <div class="glow-border"></div>
-                    <textarea class="chat-input" placeholder="✨&#xfe0e; ask Xody"></textarea>
-                </div>
-                <div class="chat-actions">
-                    <details class="chat-options">
-                        <summary>
-                            <span class="icon" data-name="settings">&#xf3dc;</span>
-                            <span class="chat-model-label">Options</span>
-                        </summary>
-                        <div class="details-body">
-                            <label title="Select Provider">
-                                <span><span class="icon" data-name="cloud">&#xf0d1;</span></span>
-                                <select class="chat-provider"></select>
-                            </label>
-                            <label title="Api Key">
-                                <span><span class="icon" data-name="key-round">&#xf12c;</span></span>
-                                <input type="password" class="chat-apiKey" placeholder="Api key" value="">
-                            </label>
-                            <label title="Select Model">
-                                <span><span class="icon" data-name="library">&#xf4ff;</span></span>
-                                <select class="chat-model"></select>
-                            </label>
+                        <div class="cmd-group">
+                            <span data-cmd="InsertUnorderedList" data-cmdref="UL" alt="Unordered List" title="Unordered List" class="icon" data-name="list">&#xf58e;</span>
+                            <span data-cmd="InsertOrderedList" data-cmdref="OL" alt="Ordered List" title="Ordered List" class="icon" data-name="list-ordered">&#xf322;</span>
+                            <span data-cmd="insertHorizontalRule" alt="Insert Horizontal Rule" title="Insert Horizontal Rule" class="icon" data-name="minus">&#xf02f;</span>
+                            <span data-cmd="InsertImage" alt="Insert Image" title="Insert Image" class="icon" data-name="image1">&#xf6eb;</span>
+                            <span data-cmd="CreateLink" alt="Link" title="Link" class="icon" data-name="link-2">&#xf235;</span>
                         </div>
-                    </details>
-                    <button type="button" class="chat-send gradient"><span class="icon"
-                            data-name="arrow-up">&#xf129;</span></button>
-                </div>
-            </div>
-        </aside>
-    </main>
-
-    <div class="modal-wrapper">
-        <div class="modal row" id="modal-projects">
-            <button class="modal-close" type="button" data-modal>
-                <span class="icon" data-name="x1">&#xf488;</span>
-            </button>
-            <div class="col">
-                <div class="modal-head row">
-                    <svg id="logo" class="logo" height="1rem" width="4rem" style="zoom:1.5;"
-                        data-modal="#modal-projects">
-                        <use href="#logo-xode"></use>
-                    </svg>
-                    <br>
-                    <button class="gradient lg" type="button" id="project-new">
-                        <span class="icon" data-name="plus">&#xf317;</span>
-                        New Project
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <h2>
-                        <span class="icon" data-name="folder">&#xf045;</span>
-                        <span>Project</span>
-                    </h2>
-                    <div class="col">
-                        <label>
-                            <span><span class="icon" data-name="folder">&#xf045;</span> Name</span>
-                            <input data-rea-model="project.name" class="currentProjectName" type="text"
-                                placeholder="Project Name" value="" maxlength="20" minlength="3">
-                        </label>
-                        <label>
-                            <span><span class="icon" data-name="info">&#xf2e0;</span> Description</span>
-                            <textarea data-rea-model="project.description" class="currentProjectDescription"
-                                placeholder="Project Description"></textarea>
-                        </label>
-                        <div class="row">
-                            <br>
-                            <button class="downloadCurrentProject" type="button" title="Download project">
-                                <span class="icon" data-name="download">&#xf3b7;</span>
-                                <span class="md-show">Download</span>
-                            </button>
-                            <button type="button" id="githubPublish" class="accent" title="Publish to GitHub Gist">
-                                <span class="icon" data-name="github-logo">&#xf772;</span>
-                                Publish
-                            </button>
+                        <div class="cmd-group">
+                            <span data-cmd="justifyLeft" alt="Align left" title="Align Left" class="icon" data-name="align-left">&#xf008;</span>
+                            <span data-cmd="justifyCenter" alt="Align center" title="Align Center" class="icon" data-name="align-center">&#xf0f9;</span>
+                            <span data-cmd="justifyRight" alt="Align right" title="Align Right" class="icon" data-name="align-right">&#xf293;</span>
+                            <span data-cmd="justifyFull" alt="Align justify" title="Align Full" class="icon" data-name="align-justify">&#xf4a9;</span>
+                        </div>
+                        <div class="cmd-group">
+                            <span data-cmd="indent" alt="Indent" title="Indent" class="icon" data-name="indent-increase">&#xf15c;</span>
+                            <span data-cmd="outdent" alt="Outdent" title="Outdent" class="icon" data-name="indent-decrease">&#xf0b2;</span>
+                        </div>
+                        <div class="cmd-group">
+                            <span data-cmd="removeFormat" alt="Remove Formattimg/Styles" title="Remove Formatting/Styles" class="icon" data-name="remove-formatting">&#xf175;</span>
                         </div>
                     </div>
-                    <h2>
-                        <span class="icon" data-name="cloud-download">&#xf094;</span>
-                        <span>Load Gist</span>
-                    </h2>
-                    <label>
-                        <span><span class="icon" data-name="github-logo">&#xf772;</span> Gist ID</span>
-                        <input id="githubLoadId" type="text" placeholder="GitHub Gist ID">
-                        <button type="button" id="githubLoad" class="accent" title="Load Gist">
-                            <span class="icon" data-name="download-simple">&#xfed9;</span> Load Project
-                        </button>
-                    </label>
 
-                    <h2>
-                        <span class="icon" data-name="github-logo">&#xf772;</span>
-                        <span>GitHub Connect</span>
-                    </h2>
-                    <div data-rea-open="settings.isGithubEnabled">
-                        <span class="icon" data-name="check-fat">&#xf056;</span>
-                        Connected &emsp;
-                        <button type="button" id="githubTokenDelete" title="Delete token and disconnect">
-                            <span class="icon" data-name="trash">&#xf202;</span>
+                    <div id="preview-wrapper">
+                        <!-- SECURITY ALERT: do NOT add allow-same-origin in the sandbox rules, it breaks localStorage isolation for user code. -->
+                        <iframe id="preview" sandbox="allow-modals allow-forms allow-pointer-lock allow-popups allow-scripts" frameborder="0"></iframe>
+                    </div>
+                </div>
+            </div>
+            <div class="splitter"></div>
+            <aside class="splitview chat" data-view="chat" data-rea-open="project.panes.chat" style="--grow: 25">
+                <div class="chat-output"></div>
+                <div class="chat-question">
+                    <div class="glow-input">
+                        <div class="glow-border"></div>
+                        <textarea class="chat-input" placeholder="✨&#xfe0e; ask Xody"></textarea>
+                    </div>
+                    <div class="chat-actions">
+                        <details class="chat-options">
+                            <summary>
+                                <span class="icon" data-name="settings">&#xf3dc;</span>
+                                <span class="chat-model-label">Options</span>
+                            </summary>
+                            <div class="details-body">
+                                <label title="Select Provider">
+                                    <span><span class="icon" data-name="cloud">&#xf0d1;</span></span>
+                                    <select class="chat-provider"></select>
+                                </label>
+                                <label title="Api Key">
+                                    <span><span class="icon" data-name="key-round">&#xf12c;</span></span>
+                                    <input type="password" class="chat-apiKey" placeholder="Api key" value="" />
+                                </label>
+                                <label title="Select Model">
+                                    <span><span class="icon" data-name="library">&#xf4ff;</span></span>
+                                    <select class="chat-model"></select>
+                                </label>
+                            </div>
+                        </details>
+                        <button type="button" class="chat-send gradient"><span class="icon" data-name="arrow-up">&#xf129;</span></button>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <div class="modal-wrapper">
+            <div class="modal row" id="modal-projects">
+                <button class="modal-close" type="button" data-modal>
+                    <span class="icon" data-name="x1">&#xf488;</span>
+                </button>
+                <div class="col">
+                    <div class="modal-head row">
+                        <svg id="logo" class="logo" height="1rem" width="4rem" style="zoom: 1.5" data-modal="#modal-projects">
+                            <use href="#logo-xode"></use>
+                        </svg>
+                        <br />
+                        <button class="gradient lg" type="button" id="project-new">
+                            <span class="icon" data-name="plus">&#xf317;</span>
+                            New Project
                         </button>
                     </div>
-                    <div data-rea-open="settings.isGithubDisabled">
-                        <p class="note">
-                            XODE saves projects locally. For a permanent solution, and to share your
-                            creations, <a href="https://github.com/settings/tokens" target="_blank"
-                                rel="noopener noreferrer">create a GitHub token</a> and paste it below to enable
-                            this feature.
-                        </p>
+                    <div class="modal-body">
+                        <h2>
+                            <span class="icon" data-name="folder">&#xf045;</span>
+                            <span>Project</span>
+                        </h2>
+                        <div class="col">
+                            <label>
+                                <span><span class="icon" data-name="folder">&#xf045;</span> Name</span>
+                                <input data-rea-model="project.name" class="currentProjectName" type="text" placeholder="Project Name" value="" maxlength="20" minlength="3" />
+                            </label>
+                            <label>
+                                <span><span class="icon" data-name="info">&#xf2e0;</span> Description</span>
+                                <textarea data-rea-model="project.description" class="currentProjectDescription" placeholder="Project Description"></textarea>
+                            </label>
+                            <div class="row">
+                                <br />
+                                <button class="downloadCurrentProject" type="button" title="Download project">
+                                    <span class="icon" data-name="download">&#xf3b7;</span>
+                                    <span class="md-show">Download</span>
+                                </button>
+                                <button type="button" id="githubPublish" class="accent" title="Publish to GitHub Gist">
+                                    <span class="icon" data-name="github-logo">&#xf772;</span>
+                                    Publish
+                                </button>
+                            </div>
+                        </div>
+                        <h2>
+                            <span class="icon" data-name="cloud-download">&#xf094;</span>
+                            <span>Load Gist</span>
+                        </h2>
+                        <label>
+                            <span><span class="icon" data-name="github-logo">&#xf772;</span> Gist ID</span>
+                            <input id="githubLoadId" type="text" placeholder="GitHub Gist ID" />
+                            <button type="button" id="githubLoad" class="accent" title="Load Gist"><span class="icon" data-name="download-simple">&#xfed9;</span> Load Project</button>
+                        </label>
+
+                        <h2>
+                            <span class="icon" data-name="github-logo">&#xf772;</span>
+                            <span>GitHub Connect</span>
+                        </h2>
+                        <div class="github-status" data-rea-open="settings.isGithubEnabled">
+                            <span class="github-status-label">
+                                <span class="icon" data-name="check-fat">&#xf056;</span>
+                                Connected
+                            </span>
+                            <div class="github-actions">
+                                <button type="button" id="githubFetch" class="accent" title="Fetch XODE projects from your GitHub Gists">
+                                    <span class="icon" data-name="cloud-download">&#xf094;</span>
+                                    Fetch XODE Gists
+                                </button>
+                                <button type="button" id="githubTokenDelete" title="Delete token and disconnect">
+                                    <span class="icon" data-name="trash">&#xf202;</span>
+                                    <span class="disconnect-label">Disconnect</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div data-rea-open="settings.isGithubDisabled">
+                            <p class="note">
+                                XODE saves projects locally. For a permanent solution, and to share your creations, <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">create a GitHub token</a> and paste
+                                it below to enable this feature.
+                            </p>
+                            <div class="form-group">
+                                <label>
+                                    <span><span class="icon" data-name="key-round">&#xf12c;</span> Token</span>
+                                    <input id="githubToken" type="password" placeholder="GitHub Token (classic)" />
+                                </label>
+                            </div>
+                        </div>
+
+                        <h2><span class="icon" data-name="settings">&#xf3dc;</span> Global Settings</h2>
                         <div class="form-group">
                             <label>
-                                <span><span class="icon" data-name="key-round">&#xf12c;</span> Token</span>
-                                <input id="githubToken" type="password" placeholder="GitHub Token (classic)">
+                                <span title="Indent spaces">
+                                    <span class="icon" data-name="indent-increase">&#xf15c;</span>
+                                    Tab width
+                                </span>
+                                <select id="tabWidth">
+                                    <option>2</option>
+                                    <option>4</option>
+                                </select>
                             </label>
+                            <p class="note">
+                                <span class="icon" data-name="info">&#xf2e0;</span><br />
+                                Format using <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd><br />
+                                <b>Emmet</b> syntax supported in HTML &amp; CSS.
+                            </p>
                         </div>
                     </div>
-
-                    <h2><span class="icon" data-name="settings">&#xf3dc;</span> Global Settings</h2>
-                    <div class="form-group">
-                        <label>
-                            <span title="Indent spaces">
-                                <span class="icon" data-name="indent-increase">&#xf15c;</span>
-                                Tab width
-                            </span>
-                            <select id="tabWidth">
-                                <option>2</option>
-                                <option>4</option>
-                            </select>
-                        </label>
-                        <p class="note">
-                            <span class="icon" data-name="info">&#xf2e0;</span><br>
-                            Format using <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd><br>
-                            <b>Emmet</b> syntax supported in HTML &amp; CSS.
-                        </p>
+                    <div class="modal-foot">
+                        <p>&copy; XODE — roxon.hr</p>
                     </div>
                 </div>
-                <div class="modal-foot">
-                    <p>
-                        &copy; XODE — roxon.hr
-                    </p>
-                </div>
 
-            </div>
-
-            <div class="col" style="flex: 2;">
-                <div class="modal-head">
-                    <h2>
-                        <span class="icon" data-name="folder-search">&#xf0a4;</span>
-                        All projects
-                    </h2>
-                    <label>
-                        <i class="icon" data-name="search">&#xf5ae;</i>
-                        <input id="projects-search" type="text" placeholder="Search...">
-                    </label>
-                </div>
-                <div class="modal-body">
-                    <div id="projects-list"></div>
+                <div class="col" style="flex: 2">
+                    <div class="modal-head">
+                        <h2>
+                            <span class="icon" data-name="folder-search">&#xf0a4;</span>
+                            All projects
+                        </h2>
+                        <label>
+                            <i class="icon" data-name="search">&#xf5ae;</i>
+                            <input id="projects-search" type="text" placeholder="Search..." />
+                        </label>
+                    </div>
+                    <div class="modal-body">
+                        <div id="projects-list"></div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script type="module" src="/src/main.js"></script>
-</body>
-
+        <script type="module" src="/src/main.js"></script>
+    </body>
 </html>

@@ -6,7 +6,10 @@
     inset: 0;
     background: color-mix(in srgb, var(--bg), #000 20%);
     color: #d4d4d4;
-    font: 0.75rem/1.2 'Consolas', 'Courier New', monospace;
+    font:
+        0.75rem/1.2 "Consolas",
+        "Courier New",
+        monospace;
     justify-content: flex-start;
     align-content: flex-start;
     overflow: auto;
@@ -144,8 +147,6 @@
             color: #569cd6;
         }
     }
-
-
 }
 
 .console-clear {

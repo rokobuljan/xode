@@ -1,7 +1,7 @@
 #logo {
     cursor: pointer;
 
-    @media (width <=768px) {
+    @media (width <= 768px) {
         width: 2.5rem;
     }
 }
@@ -14,12 +14,12 @@
     align-items: center;
     gap: 0.5rem;
 
-    @media (width <=768px) {
+    @media (width <= 768px) {
         padding: 0.3rem 0.4rem;
         font-size: 0.78rem;
     }
 
-    & label>* {
+    & label > * {
         vertical-align: middle;
         display: inline-flex;
         align-items: center;
@@ -86,10 +86,9 @@
         max-width: 100%;
         max-height: 100%;
         aspect-ratio: 9 / 16;
-        zoom: 0.8
+        zoom: 0.8;
     }
 }
-
 
 .tabs {
     display: flex;
@@ -157,7 +156,7 @@
             align-items: center;
             gap: 0.5rem;
 
-            br+* {
+            br + * {
                 margin-left: auto;
             }
         }
@@ -167,7 +166,7 @@
             align-items: center;
             gap: 0.5rem;
 
-            >* {
+            > * {
                 padding: 0.2em 0.4em;
             }
         }
@@ -181,11 +180,48 @@
 #modal-projects {
     max-width: 1200px;
 
-    >* {
+    > * {
         flex: 1;
     }
 }
 
 #githubPublish {
     align-self: flex-end;
+}
+
+.github-status,
+.github-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.github-status {
+    justify-content: space-between;
+}
+
+.github-status-label {
+    color: color-mix(in srgb, var(--fg), var(--bg) 20%);
+}
+
+@media (width <= 768px) {
+    .github-status {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .github-actions {
+        display: grid;
+        grid-template-columns: 1fr auto;
+
+        button {
+            min-height: 2.5rem;
+        }
+    }
+
+    #githubPublish,
+    #githubLoad {
+        align-self: stretch;
+        min-height: 2.5rem;
+    }
 }

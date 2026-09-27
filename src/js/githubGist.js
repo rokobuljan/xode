@@ -6,7 +6,21 @@ const ls = LS("xode.settings");
  * Auth: a classic PAT with the `gist` scope, stored in localStorage.
  */
 
-const API_BASE = 'https://api.github.com/gists';
+const API_BASE = "https://api.github.com/gists";
+const LIST_PAGE_SIZE = 100;
+
+export const XODE_MANIFEST_FILENAME = "xode.json";
+export const XODE_MANIFEST = Object.freeze({ format: "xode", version: 1 });
+
+export function hasXodeManifest(gist) {
+    return Object.hasOwn(gist?.files ?? {}, XODE_MANIFEST_FILENAME);
+}
+
+export function createXodeManifestFile() {
+    return {
+        content: JSON.stringify(XODE_MANIFEST, null, 4),
+    };
+}
 
 /* Token helpers */
 
@@ -19,7 +33,7 @@ export function setToken(gt) {
 }
 
 export function clearToken() {
-    ls.remove('gt');
+    ls.remove("gt");
 }
 
 export function hasToken() {
@@ -27,16 +41,16 @@ export function hasToken() {
 }
 
 export class GistAuthError extends Error {
-    constructor(message = 'No GitHub token found. Please connect your GitHub account.') {
+    constructor(message = "No GitHub token found. Please connect your GitHub account.") {
         super(message);
-        this.name = 'GistAuthError';
+        this.name = "GistAuthError";
     }
 }
 
 export class GistApiError extends Error {
     constructor(status, details) {
         super(details?.message || `GitHub API error: ${status}`);
-        this.name = 'GistApiError';
+        this.name = "GistApiError";
         this.status = status;
         this.details = details;
     }
@@ -65,10 +79,10 @@ function optionalAuth(fn) {
 
 async function request(url, options = {}, token = null) {
     const headers = {
-        'Accept': 'application/vnd.github+json',
-        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-        ...(token ? { 'Authorization': `token ${String(token)}` } : {}),
-        ...options.headers
+        Accept: "application/vnd.github+json",
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${String(token)}` } : {}),
+        ...options.headers,
     };
 
     const res = await fetch(url, { ...options, headers });
@@ -90,10 +104,14 @@ const gistCrud = {
      * @param {{ description?: string, files: object, isPublic?: boolean }} data
      */
     create: requireAuth(async (token, { description = "", files, isPublic = false }) => {
-        return request(API_BASE, {
-            method: 'POST',
-            body: JSON.stringify({ description, files, public: isPublic })
-        }, token);
+        return request(
+            API_BASE,
+            {
+                method: "POST",
+                body: JSON.stringify({ description, files, public: isPublic }),
+            },
+            token,
+        );
     }),
 
     /**
@@ -101,9 +119,13 @@ const gistCrud = {
      * pass a token (already handled automatically if one exists) for private ones.
      */
     read: optionalAuth(async (token, gistId) => {
-        return request(`${API_BASE}/${gistId}`, {
-            method: 'GET'
-        }, token);
+        return request(
+            `${API_BASE}/${gistId}`,
+            {
+                method: "GET",
+            },
+            token,
+        );
     }),
 
     /**
@@ -112,26 +134,34 @@ const gistCrud = {
      * @param {{ description?: string, files: object }} data
      */
     update: requireAuth(async (token, gistId, { description, files }) => {
-        return request(`${API_BASE}/${gistId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ description, files })
-        }, token);
+        return request(
+            `${API_BASE}/${gistId}`,
+            {
+                method: "PATCH",
+                body: JSON.stringify({ description, files }),
+            },
+            token,
+        );
     }),
 
     /**
      * Fork a gist into the authenticated user's account.
      */
     fork: requireAuth(async (token, gistId) => {
-        return request(`${API_BASE}/${gistId}/forks`, {
-            method: 'POST'
-        }, token);
+        return request(
+            `${API_BASE}/${gistId}/forks`,
+            {
+                method: "POST",
+            },
+            token,
+        );
     }),
 
     /**
      * Delete a gist. Returns true on success.
      */
     delete: requireAuth(async (token, gistId) => {
-        await request(`${API_BASE}/${gistId}`, { method: 'DELETE' }, token);
+        await request(`${API_BASE}/${gistId}`, { method: "DELETE" }, token);
         return true;
     }),
 
@@ -139,8 +169,18 @@ const gistCrud = {
      * List gists owned by the authenticated user.
      */
     list: requireAuth(async (token) => {
-        return request(API_BASE, { method: 'GET' }, token);
-    })
+        const gists = [];
+
+        for (let page = 1; ; page += 1) {
+            const url = `${API_BASE}?per_page=${LIST_PAGE_SIZE}&page=${page}`;
+            const pageGists = await request(url, { method: "GET" }, token);
+            gists.push(...pageGists);
+
+            if (pageGists.length < LIST_PAGE_SIZE) break;
+        }
+
+        return gists;
+    }),
 };
 
 export default gistCrud;

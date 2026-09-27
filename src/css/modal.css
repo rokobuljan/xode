@@ -8,7 +8,7 @@
     visibility: hidden;
     opacity: 0;
     transition: all 0.2s;
-    backdrop-filter: blur(.5px);
+    backdrop-filter: blur(0.5px);
     z-index: 1000;
 
     &:has(.is-open) {
@@ -16,7 +16,6 @@
         opacity: 1;
     }
 }
-
 
 /* Modal */
 
@@ -42,7 +41,7 @@
         gap: 1rem;
     }
 
-    >* {
+    > * {
         padding: 0.5rem 1rem;
     }
 
@@ -53,7 +52,7 @@
         align-items: center;
         justify-content: space-between;
 
-        >:not(button) {
+        > :not(button) {
             margin: 0;
             padding: 0;
         }
@@ -77,7 +76,7 @@
             padding: 0.4em 0;
         }
 
-        span+* {
+        span + * {
             flex: 1;
         }
     }
@@ -101,4 +100,68 @@
     z-index: 1;
     right: 0.5rem;
     top: 0.5rem;
+}
+
+@media (width <= 768px) {
+    .modal-wrapper {
+        align-items: stretch;
+    }
+
+    .modal.row {
+        width: 100%;
+        max-width: none;
+        height: 100dvh;
+        padding: 0.75rem;
+        overflow-y: auto;
+        flex-direction: column;
+        box-shadow: none;
+    }
+
+    .modal {
+        > * {
+            padding-inline: 0.25rem;
+        }
+
+        .modal-head {
+            padding-block: 0.75rem;
+        }
+
+        .modal-body {
+            overflow: visible;
+        }
+
+        label {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 0.35rem;
+
+            span {
+                flex-basis: auto;
+            }
+
+            input,
+            select,
+            textarea {
+                width: 100%;
+            }
+        }
+    }
+
+    #modal-projects {
+        > .col {
+            display: block;
+            flex: none;
+        }
+
+        > .col + .col {
+            border-top: 1px solid color-mix(in srgb, var(--fg), transparent 85%);
+            margin-top: 1rem;
+            padding-top: 1rem;
+        }
+
+        .modal-head label {
+            width: min(12rem, 55%);
+            margin: 0;
+        }
+    }
 }

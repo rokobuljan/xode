@@ -20,7 +20,7 @@
     border-right: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
     flex-wrap: nowrap;
 
-    >* {
+    > * {
         position: relative;
         cursor: pointer;
         padding: 6px 5px;
