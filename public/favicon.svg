@@ -1,19 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <defs>
-    <style>
-      .cls-1 {
-        fill: #7c6cff;
-      }
-
-      .cls-1, .cls-2 {
-        fill-rule: evenodd;
-      }
-
-      .cls-2 {
-        fill: #0bf;
-      }
-    </style>
-  </defs>
-  <path id="Shape_1_copy_2" data-name="Shape 1 copy 2" class="cls-1" d="M24.93,31.584l4.887,6.9-13.2,21.379H4.969L22.435,31.584,4.969,4.137H16.613L29.7,24.7Z"/>
-  <path id="Shape_1_copy_2-2" data-name="Shape 1 copy 2" class="cls-2" d="M59.031,4.137H47.387L29.921,31.584,47.387,59.863H59.031L41.565,31.584Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <path fill="#7c6cff" d="M21.918,27.078L2.806,1.85H17.425L29.079,17.232Zm7.16,19.69L17.425,62.15H2.806L21.918,36.923Z"/>
+  <path fill="#00bbff" d="M47.575,1.85L25.648,32,47.575,62.15H62.194L40.266,32,62.194,1.85H47.575Z"/>
 </svg>

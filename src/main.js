@@ -544,6 +544,7 @@ const gistPublish = async (project) => {
             if (err instanceof GistApiError && err.status === 404) {
                 try {
                     const forked = await gist.fork(project.gistId);
+                    await gist.update(forked.id, { description, files });
                     const oldId = project.id;
                     project.id = forked.id;
                     project.gistId = forked.id;

@@ -8,10 +8,10 @@ import prettierPluginPostcss from "prettier/plugins/postcss";
 
 import { el, elNew, LS } from "./utils.js";
 import { extractColors } from "./colorExtract.js";
+import { getAutoIndentEdit } from "./editorIndent.js";
 import Toast from "./toast.js";
 
 const lsSettings = LS("xode.settings");
-const supportsHighlightAPI = "highlights" in CSS && typeof Highlight !== "undefined";
 
 const customEmmetSnippets = {
     html: {
@@ -269,13 +269,13 @@ export class Editor {
     // Inserts text at the caret without execCommand (which is deprecated and
     // inconsistent across browsers for plain <textarea> elements). Groups
     // with adjacent typing via the same debounce as normal input.
-    insertAtCaret(text) {
+    insertAtCaret(text, caretOffset = text.length) {
         const ta = this.elTextarea;
         const start = ta.selectionStart;
         const end = ta.selectionEnd;
         const newValue = ta.value.slice(0, start) + text + ta.value.slice(end);
         ta.value = newValue;
-        const newPos = start + text.length;
+        const newPos = start + caretOffset;
         ta.setSelectionRange(newPos, newPos);
         this.value = newValue;
         this.highlight();
@@ -380,21 +380,6 @@ export class Editor {
         }
     }
 
-    // Determine extra indentation based on syntax and context
-    getExtraIndent(value, position) {
-        const prevChar = position > 0 ? value[position - 1] : "";
-
-        // Don't add extra indent for closing brackets
-        if (["}", "]", ")"].includes(prevChar)) return "";
-
-        // Add indent after opening brackets/braces (works for all syntaxes)
-        if (["{", "[", "("].includes(prevChar)) {
-            return " ".repeat(Number(lsSettings.read("tabWidth")));
-        }
-
-        return "";
-    }
-
     // Setup auto-indent on Enter key
     setupAutoIndent() {
         this.elTextarea.addEventListener("keydown", (e) => {
@@ -405,16 +390,10 @@ export class Editor {
                 const start = ta.selectionStart;
                 const value = ta.value;
 
-                // Get current line's indentation
-                const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-                const currentLine = value.substring(lineStart, start);
-                const indent = currentLine.match(/^\s*/)[0] || "";
-
-                // Determine extra indentation
-                const extraIndent = this.getExtraIndent(value, start);
+                const edit = getAutoIndentEdit(value, start, ta.selectionEnd, Number(lsSettings.read("tabWidth")));
 
                 // Use insertAtCaret to ensure highlight, history, and events all work
-                this.insertAtCaret("\n" + indent + extraIndent);
+                this.insertAtCaret(edit.text, edit.caretOffset);
             }
             // Smart backspace: remove full indent level if on whitespace-only line
             else if (e.key === "Backspace") {
