@@ -59,6 +59,7 @@
 
     .message {
         position: relative;
+        min-width: 0;
         max-width: calc(100% - 2rem);
         padding: 1rem;
         word-break: break-word;
@@ -401,7 +402,7 @@
             left: 0;
             z-index: 20;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
             gap: 0.65rem;
             max-height: min(38rem, calc(100dvh - 7rem));
             padding: 1rem;
@@ -675,6 +676,8 @@
 
     .suggestion {
         display: grid;
+        min-width: 0;
+        max-width: 100%;
         gap: 0.55rem;
         margin-top: 0.75rem;
         padding: 0.75rem;
@@ -682,6 +685,9 @@
         background: var(--surface-inset);
 
         .pane {
+            min-width: 0;
+            max-width: 100%;
+
             summary {
                 border-radius: var(--radius-sm);
                 color: var(--text-muted);
@@ -693,7 +699,7 @@
             }
 
             .diff {
-                height: min(18rem, 35cqh);
+                max-height: max(12rem, 20vh);
             }
         }
     }
@@ -702,6 +708,9 @@
         --diff-added: var(--success);
         --diff-removed: var(--ce);
 
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
         overflow: auto;
         border-radius: var(--radius-sm);
         background: var(--surface-inset);

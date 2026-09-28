@@ -36,12 +36,17 @@
     color: var(--fg);
     box-shadow: 0 0.5rem 3rem -1rem #000d;
 
-    .close {
+    .dialog-header {
         position: absolute;
         top: 0.5rem;
         right: 0.5rem;
         z-index: 3;
-        padding: 0.5rem 0.8rem;
+        display: flex;
+        justify-content: flex-end;
+
+        .close {
+            padding: 0.5rem 0.8rem;
+        }
     }
 
     .pane {
@@ -215,6 +220,15 @@
             display: block;
         }
 
+        .dialog-header {
+            position: sticky;
+            top: 0;
+            right: auto;
+            z-index: 5;
+            margin: -1rem -1rem 0;
+            padding: 0.5rem 1rem;
+        }
+
         .pane,
         .pane.project-library {
             min-height: auto;
@@ -281,7 +295,7 @@
         top: 0.75rem;
         right: 0.75rem;
         width: 2.25rem;
-        padding: 0;
+        padding: 0.5rem;
     }
 
     header {

@@ -2,7 +2,7 @@ import DOMPurify from "dompurify";
 import { diffLines } from "diff";
 import { marked } from "marked";
 import { bus } from "./bus.js";
-import { mapLanguageToPane, parseAIResponse, sniffPane, splitMarkdownSegments, summarizeChanges } from "./chatCore.js";
+import { mapLanguageToPane, parseAIResponse, shouldShowJumpLatest, sniffPane, splitMarkdownSegments, summarizeChanges } from "./chatCore.js";
 import { renderIcons } from "./icons.js";
 import {
     clearApiKey,
@@ -129,6 +129,7 @@ let favoriteModelIds = new Set();
 let projectLoadSequence = 0;
 let initialized = false;
 let lastActiveEditorPane = null;
+let feedResizeObserver = null;
 
 class ProviderError extends Error {
     constructor(message, status) {
@@ -172,7 +173,13 @@ function isNearBottom() {
 }
 
 function updateJumpLatestVisibility() {
-    elements.jumpLatest.hidden = isNearBottom();
+    elements.jumpLatest.hidden = !shouldShowJumpLatest({
+        hasHistory: chatHistory.length > 0,
+        scrollHeight: elements.output.scrollHeight,
+        scrollTop: elements.output.scrollTop,
+        clientHeight: elements.output.clientHeight,
+        threshold: LATEST_SCROLL_THRESHOLD,
+    });
 }
 
 function scrollToLatest(force = false) {
@@ -914,6 +921,9 @@ function wireEvents() {
     });
     elements.jumpLatest.addEventListener("click", () => scrollToLatest(true));
     elements.output.addEventListener("scroll", updateJumpLatestVisibility, { passive: true });
+    feedResizeObserver?.disconnect();
+    feedResizeObserver = new ResizeObserver(updateJumpLatestVisibility);
+    feedResizeObserver.observe(elements.output);
     elements.newChat.addEventListener("click", async () => {
         if (chatHistory.length && !confirm("Clear this project's AI conversation? Your project code will not be changed.")) return;
         chatHistory = [];
@@ -1003,4 +1013,5 @@ export async function init(options) {
     await loadProvider(elements.provider.value);
     await setProject(getProjectId());
     updateContextStatus();
+    updateJumpLatestVisibility();
 }

@@ -97,3 +97,8 @@ export function summarizeChanges(response) {
     const panes = PANES.filter((pane) => response[pane] !== null);
     return panes.length ? `${response.explanation} (applied: ${panes.join(", ")})` : response.explanation;
 }
+
+export function shouldShowJumpLatest({ hasHistory, scrollHeight, scrollTop, clientHeight, threshold = 0 }) {
+    if (!hasHistory || clientHeight <= 0 || scrollHeight <= clientHeight) return false;
+    return scrollHeight - scrollTop - clientHeight > threshold;
+}

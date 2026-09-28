@@ -21,6 +21,7 @@ import { LS, el, els, elNew, download, formatDateTime, params, countLines } from
 import { initProjectStorage, openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from "./js/project.js";
 import { Editor } from "./js/editor.js";
 import { renderIcons } from "./js/icons.js";
+import { isolatePane, isPaneIsolationGesture, isViewPane, paneNameFromModel } from "./js/paneTabs.js";
 
 renderIcons();
 
@@ -36,11 +37,12 @@ const elPreview = el("#preview"); // the iframe
 const handlePanes = () => {
     const allTabsCheckboxes = els("#top .view-tabs [data-rea-model]");
     const openedTabs = [...allTabsCheckboxes].reduce((acc, elTabCkb) => {
-        if (elTabCkb.checked) acc.push(elTabCkb.dataset.reaModel);
+        const pane = paneNameFromModel(elTabCkb.dataset.reaModel);
+        if (elTabCkb.checked && isViewPane(pane)) acc.push(pane);
         return acc;
     }, []);
     // Toggle top tab if only preview is active
-    el("#top").classList.toggle("is-detached", openedTabs.length === 1 && openedTabs[0] === "project.panes.preview");
+    el("#top").classList.toggle("is-detached", openedTabs.length === 1 && openedTabs[0] === "preview");
 };
 
 function loadProjectInto(target, source) {
@@ -669,20 +671,14 @@ elTabWidth.value = tabWidth;
 
 // Tabs UI - Single pane toggle
 const elTabs = el("#top .view-tabs");
-const elsTabsCheckboxes = els("[data-rea-model]", elTabs);
 elTabs.addEventListener("click", (evt) => {
-    const elTab = evt.target.closest(`.tab`);
+    const elTab = evt.target.closest(".view-toggle");
     if (!elTab) return;
     const elTabCheckbox = el("[data-rea-model]", elTab);
-    if (!evt.ctrlKey || !elTabCheckbox) return;
-    const paneTab = elTabCheckbox.dataset.reaModel;
+    const pane = paneNameFromModel(elTabCheckbox?.dataset.reaModel);
+    if (!isPaneIsolationGesture(evt, pane)) return;
     evt.preventDefault();
-    elsTabsCheckboxes.forEach((elTabCkb) => {
-        const pane = elTabCkb.dataset.reaModel;
-        const isTarget = pane === paneTab;
-        const syntax = pane.split("panes.")[1];
-        currentProjectState.panes[syntax] = isTarget;
-    });
+    isolatePane(currentProjectState.panes, pane);
 });
 
 // One-time call to watch changes in editors

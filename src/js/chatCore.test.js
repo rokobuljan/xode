@@ -1,6 +1,6 @@
 /* global describe, expect, it */
 
-import { extractFirstJsonObject, mapLanguageToPane, parseAIResponse, splitMarkdownSegments, summarizeChanges, validateAIResponse } from "./chatCore.js";
+import { extractFirstJsonObject, mapLanguageToPane, parseAIResponse, shouldShowJumpLatest, splitMarkdownSegments, summarizeChanges, validateAIResponse } from "./chatCore.js";
 
 describe("chat response parsing", () => {
     it("extracts a JSON object without being confused by braces in strings", () => {
@@ -25,5 +25,13 @@ describe("chat response parsing", () => {
 
     it("records changed panes as applied in conversation history", () => {
         expect(summarizeChanges({ html: "<main>Hi</main>", css: null, js: "alert('Hi')", explanation: "Updated it." })).toBe("Updated it. (applied: html, js)");
+    });
+
+    it("only offers jumping when conversation history overflows away from the bottom", () => {
+        expect(shouldShowJumpLatest({ hasHistory: false, scrollHeight: 500, scrollTop: 0, clientHeight: 0, threshold: 80 })).toBe(false);
+        expect(shouldShowJumpLatest({ hasHistory: false, scrollHeight: 500, scrollTop: 0, clientHeight: 200, threshold: 80 })).toBe(false);
+        expect(shouldShowJumpLatest({ hasHistory: true, scrollHeight: 200, scrollTop: 0, clientHeight: 200, threshold: 80 })).toBe(false);
+        expect(shouldShowJumpLatest({ hasHistory: true, scrollHeight: 500, scrollTop: 230, clientHeight: 200, threshold: 80 })).toBe(false);
+        expect(shouldShowJumpLatest({ hasHistory: true, scrollHeight: 500, scrollTop: 100, clientHeight: 200, threshold: 80 })).toBe(true);
     });
 });
