@@ -13,6 +13,10 @@
         "Courier New",
         monospace;
 
+    &:focus-visible {
+        outline: none;
+    }
+
     &:empty::before {
         content: ">_ Console";
         padding: 0.7rem 0.8rem;
@@ -101,7 +105,9 @@
         color: var(--text-strong);
         font: inherit;
 
-        &:focus {
+        &:focus,
+        &:focus-visible {
+            outline: none;
             box-shadow: none;
         }
     }
