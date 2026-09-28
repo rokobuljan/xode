@@ -3,6 +3,7 @@ import { diffLines } from "diff";
 import { marked } from "marked";
 import { bus } from "./bus.js";
 import { mapLanguageToPane, parseAIResponse, shouldShowJumpLatest, sniffPane, splitMarkdownSegments, summarizeChanges } from "./chatCore.js";
+import { isChatModel, normalizeModelList } from "./chatModels.js";
 import { renderIcons } from "./icons.js";
 import {
     clearApiKey,
@@ -51,6 +52,43 @@ const PROVIDERS = {
         keyPlaceholder: "Enter a Mistral API key",
         keyHelp: "Create a key at console.mistral.ai/api-keys.",
     },
+    openrouter: {
+        label: "OpenRouter",
+        kind: "openai-compatible",
+        baseUrl: "https://openrouter.ai/api/v1/chat/completions",
+        modelsUrl: "https://openrouter.ai/api/v1/models?output_modalities=text&sort=newest",
+        keyPlaceholder: "Enter an OpenRouter API key",
+        keyHelp: "Create a key at openrouter.ai/settings/keys.",
+    },
+    groq: {
+        label: "Groq",
+        kind: "openai-compatible",
+        baseUrl: "https://api.groq.com/openai/v1/chat/completions",
+        keyPlaceholder: "Enter a Groq API key",
+        keyHelp: "Create a key at console.groq.com/keys.",
+    },
+    cerebras: {
+        label: "Cerebras",
+        kind: "openai-compatible",
+        baseUrl: "https://api.cerebras.ai/v1/chat/completions",
+        keyPlaceholder: "Enter a Cerebras API key",
+        keyHelp: "Create a key at cloud.cerebras.ai.",
+    },
+    together: {
+        label: "Together AI",
+        kind: "openai-compatible",
+        baseUrl: "https://api.together.xyz/v1/chat/completions",
+        keyPlaceholder: "Enter a Together AI API key",
+        keyHelp: "Create a key at api.together.xyz/settings/api-keys.",
+    },
+    cohere: {
+        label: "Cohere",
+        kind: "openai-compatible",
+        baseUrl: "https://api.cohere.ai/compatibility/v1/chat/completions",
+        modelsUrl: "https://api.cohere.com/v1/models?endpoint=chat&page_size=1000",
+        keyPlaceholder: "Enter a Cohere API key",
+        keyHelp: "Create a key at dashboard.cohere.com/api-keys.",
+    },
     ollama: {
         label: "Ollama (local)",
         kind: "openai-compatible",
@@ -69,17 +107,8 @@ const PROVIDERS = {
     },
 };
 
-const CHAT_EXCLUDE_PATTERNS = [
-    /tts/i,
-    /image/i,
-    /native-audio/i,
-    /embedding|embed/i,
-    /robotics|computer-use|deep-research/i,
-    /aqa|antigravity|lyria|veo|imagen|nano-banana/i,
-    /customtools|whisper|dall-e|moderation/i,
-    /davinci|babbage|curie|ada-/i,
-];
-const MODEL_CACHE_TTL = 24 * 60 * 60 * 1000;
+const MODEL_CATALOG_VERSION = 2;
+const MODEL_CACHE_TTL = 60 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 90 * 1000;
 const MAX_HISTORY_ENTRIES = 60;
 const HISTORY_ENTRY_MAX_CHARS = 4000;
@@ -101,6 +130,7 @@ const elements = {
     clearKey: el('[data-chat-element="clear-key"]'),
     keyStatus: el('[data-chat-element="key-status"]'),
     model: el('[data-chat-element="model"]'),
+    modelRefresh: el('[data-chat-element="model-refresh"]'),
     modelFavorite: el('[data-chat-element="model-favorite"]'),
     input: el('[data-chat-element="input"]'),
     output: el('[data-chat-element="feed"]'),
@@ -389,8 +419,6 @@ async function callOpenAICompatible(config, systemText, history, userPrompt, sig
             headers,
             body: JSON.stringify({
                 model: config.model,
-                temperature: 0.1,
-                response_format: { type: "json_object" },
                 messages: [{ role: "system", content: systemText }, ...history.map(({ role, content }) => ({ role, content })), { role: "user", content: userPrompt }],
             }),
         },
@@ -460,6 +488,7 @@ function setBusy(isBusy) {
     elements.stop.hidden = !isBusy;
     elements.provider.disabled = isBusy;
     elements.model.disabled = isBusy || !elements.model.options.length;
+    elements.modelRefresh.disabled = isBusy || Boolean(modelRequest);
     elements.modelFavorite.disabled = isBusy || !elements.model.value;
     elements.newChat.disabled = isBusy;
 }
@@ -725,12 +754,8 @@ async function sendMessage(message) {
     }
 }
 
-function isChatModel(id) {
-    return !CHAT_EXCLUDE_PATTERNS.some((pattern) => pattern.test(id));
-}
-
 async function fetchModelsGemini(apiKey, signal) {
-    const data = await fetchJson("https://generativelanguage.googleapis.com/v1beta/models", { signal, headers: { "x-goog-api-key": apiKey } }, PROVIDERS.gemini.label);
+    const data = await fetchJson("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000", { signal, headers: { "x-goog-api-key": apiKey } }, PROVIDERS.gemini.label);
     return (data.models || [])
         .filter((model) => model.supportedGenerationMethods?.includes("generateContent"))
         .map((model) => ({ id: model.name.replace("models/", ""), label: model.displayName || model.name }))
@@ -740,13 +765,18 @@ async function fetchModelsGemini(apiKey, signal) {
 async function fetchModelsOpenAICompatible(providerKey, apiKey, signal) {
     const provider = PROVIDERS[providerKey];
     const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
-    const data = await fetchJson(provider.baseUrl.replace(/\/chat\/completions$/, "/models"), { signal, headers }, provider.label);
-    return (data.data || []).map((model) => ({ id: model.id, label: model.id.replace(/-/g, " ") })).filter((model) => isChatModel(model.id));
+    const modelsUrl = provider.modelsUrl || provider.baseUrl.replace(/\/chat\/completions$/, "/models");
+    const data = await fetchJson(modelsUrl, { signal, headers }, provider.label);
+    return normalizeModelList(data);
 }
 
 async function fetchModelsAnthropic(apiKey, signal) {
-    const data = await fetchJson("https://api.anthropic.com/v1/models", { signal, headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" } }, PROVIDERS.anthropic.label);
-    return (data.data || []).map((model) => ({ id: model.id, label: model.display_name || model.id }));
+    const data = await fetchJson(
+        "https://api.anthropic.com/v1/models?limit=1000",
+        { signal, headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" } },
+        PROVIDERS.anthropic.label,
+    );
+    return normalizeModelList(data);
 }
 
 function appendModelGroup(label, models) {
@@ -824,22 +854,33 @@ async function refreshKeyStatus(providerKey) {
     elements.keyStatus.textContent = available ? (remembered ? "This key is encrypted in IndexedDB on this device." : "This key will be forgotten when the page closes.") : provider.keyHelp;
 }
 
-async function refreshModelOptions(providerKey) {
+async function refreshModelOptions(providerKey, { force = false } = {}) {
     modelRequest?.abort();
     const controller = new AbortController();
     modelRequest = controller;
+    elements.modelRefresh.disabled = true;
+    const finish = () => {
+        if (modelRequest !== controller) return;
+        modelRequest = null;
+        if (elements.provider.value === providerKey) elements.modelRefresh.disabled = Boolean(activeRequest);
+    };
     const provider = PROVIDERS[providerKey];
     const apiKey = await getApiKey(providerKey);
-    if (elements.provider.value !== providerKey) return;
+    if (elements.provider.value !== providerKey) {
+        finish();
+        return;
+    }
     if (provider.requiresKey !== false && !apiKey) {
         renderModelState("no-key");
+        finish();
         return;
     }
 
     const fingerprint = await credentialFingerprint(apiKey);
     const [cached, favorites] = await Promise.all([getModelCache(providerKey), getFavoriteModels(providerKey)]);
-    if (cached?.credentialFingerprint === fingerprint && Date.now() - cached.fetchedAt < MODEL_CACHE_TTL) {
+    if (!force && cached?.catalogVersion === MODEL_CATALOG_VERSION && cached.credentialFingerprint === fingerprint && Date.now() - cached.fetchedAt < MODEL_CACHE_TTL) {
         renderModelState("ready", cached.models, favorites);
+        finish();
         return;
     }
 
@@ -859,12 +900,12 @@ async function refreshModelOptions(providerKey) {
             renderModelState("empty");
             return;
         }
-        await setModelCache(providerKey, { models, fetchedAt: Date.now(), credentialFingerprint: fingerprint });
+        await setModelCache(providerKey, { catalogVersion: MODEL_CATALOG_VERSION, models, fetchedAt: Date.now(), credentialFingerprint: fingerprint });
         renderModelState("ready", models, currentFavorites);
     } catch (error) {
         if (error.name !== "AbortError" && elements.provider.value === providerKey) renderModelState("error");
     } finally {
-        if (modelRequest === controller) modelRequest = null;
+        finish();
     }
 }
 
@@ -943,6 +984,9 @@ function wireEvents() {
         updateModelFavoriteButton();
         settings = await updateChatSettings({ models: { [provider]: model } });
         updateModelLabel();
+    });
+    elements.modelRefresh.addEventListener("click", () => {
+        void refreshModelOptions(elements.provider.value, { force: true });
     });
     elements.modelFavorite.addEventListener("click", async () => {
         const provider = elements.provider.value;
