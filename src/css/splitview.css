@@ -1,56 +1,50 @@
 .splitview {
     --grow: 100;
 
-    display: flex;
     position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
     flex: var(--grow) 0 0;
     overflow: hidden;
-    background-color: color-mix(in srgb, var(--bg), #000 10%);
+    background: color-mix(in srgb, var(--bg), #000 10%);
 
-    &.col {
+    &.is-vertical {
         flex-direction: column;
 
-        & > .splitter {
-            /* Horizontal splitters */
+        > .splitter {
             cursor: ns-resize;
         }
     }
 
     > .splitter {
-        /* Vertical splitters */
         position: relative;
+        z-index: 4;
         flex: 0 0 1px;
         touch-action: none;
         cursor: ew-resize;
-        background-color: color-mix(in srgb, var(--bg), var(--fg) 10%);
-        transition: background-color 0.24s;
+        background: transparent;
+        background: color-mix(in srgb, var(--bg), var(--fg) 10%);
+        transition: background 0.24s;
 
-        /* Hide splitter if not followed by a .splitview */
-        &:not(:has(+ .splitview)) {
-            display: none;
-        }
-
-        /* Since the splitter is only 1px wide, we need to add some pointer accessible area */
         &::before {
             content: "";
             position: absolute;
-            inset: 0px;
+            inset: 0;
             width: calc(100% + 6px);
             height: calc(100% + 6px);
-            z-index: 2;
         }
 
         &:hover {
-            background-image: linear-gradient(45deg, var(--c2), var(--c1));
+            background: linear-gradient(45deg, var(--c2), var(--c1));
         }
 
-        &:first-child {
+        &:first-child,
+        &:not(:has(+ .splitview)) {
             display: none;
         }
     }
 }
-
-/* === [data-open] logic === */
 
 .splitview .splitview {
     display: none;
@@ -61,22 +55,13 @@
     }
 }
 
-[data-open="false"] + .splitter {
-    display: none;
-}
-
-.splitter:has(+ [data-open="false"]) {
+[data-open="false"],
+[data-open="false"] + .splitter,
+.splitter:has(+ [data-open="false"]),
+.splitview:has([data-open]):not(:has([data-open="true"])) + .splitter {
     display: none;
 }
 
 [data-open="true"]:has(~ [data-open="true"]) + .splitter {
     display: initial;
-}
-
-.splitview:has([data-open]):not(:has([data-open="true"])) + .splitter {
-    display: none;
-}
-
-[data-open="false"] {
-    display: none;
 }

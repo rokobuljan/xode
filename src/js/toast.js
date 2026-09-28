@@ -6,7 +6,7 @@ class Toast {
 
     constructor(data) {
         if (!Toast.elParent) {
-            Toast.elParent = elNew("div", { id: "toasts" });
+            Toast.elParent = elNew("div", { id: "toasts", className: "toast-region" });
             el("body").append(Toast.elParent);
             el("body").addEventListener("keydown", (evt) => {
                 if (evt.key === "Escape") {
@@ -30,15 +30,15 @@ class Toast {
             },
         );
 
-        this.el = elNew("div", { className: `toast ${this.type}` });
+        this.el = elNew("div", { className: `toast is-${this.type}` });
         this.el.innerHTML = `
-            <button class="toast-close" type="button"></button>
-            <div class="toast-head">${this.head}</div>
-            <div class="toast-body"></div>
+            <button class="close" type="button" aria-label="Dismiss notification"></button>
+            <div class="head">${this.head}</div>
+            <div class="body"></div>
         `;
-        el(".toast-body", this.el).setHTML(this.body);
+        el(".body", this.el).setHTML(this.body);
 
-        el(".toast-close", this.el).addEventListener("click", () => {
+        el(".close", this.el).addEventListener("click", () => {
             this.hide();
         });
 

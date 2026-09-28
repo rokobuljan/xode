@@ -10,14 +10,17 @@ import {
     credentialFingerprint,
     getApiKey,
     getChatSettings,
+    getFavoriteModels,
     getModelCache,
     hasApiKey,
     initChatStorage,
     isApiKeyRemembered,
     loadConversation,
     moveConversation,
+    reconcileFavoriteModels,
     saveApiKey,
     saveConversation,
+    setModelFavorite,
     setModelCache,
     updateChatSettings,
 } from "./chatStorage.js";
@@ -90,25 +93,26 @@ const MARKDOWN_CONFIG = {
 };
 
 const elements = {
-    provider: el(".chat-provider"),
-    apiKey: el(".chat-apiKey"),
-    rememberKey: el(".chat-remember-key"),
-    toggleKey: el(".chat-toggle-key"),
-    toggleKeyLabel: el(".chat-toggle-key-label"),
-    clearKey: el(".chat-clear-key"),
-    keyStatus: el(".chat-key-status"),
-    model: el(".chat-model"),
-    input: el(".chat-input"),
-    output: el(".chat-output"),
-    send: el(".chat-send"),
-    stop: el(".chat-stop"),
-    newChat: el(".chat-new"),
-    jumpLatest: el(".chat-jump-latest"),
-    options: el(".chat-options"),
-    modelLabel: el(".chat-model-label"),
-    contextStatus: el(".chat-context-status"),
-    explainSelection: el(".chat-explain-selection"),
-    fixConsole: el(".chat-fix-console"),
+    provider: el('[data-chat-element="provider"]'),
+    apiKey: el('[data-chat-element="api-key"]'),
+    rememberKey: el('[data-chat-element="remember-key"]'),
+    toggleKey: el('[data-chat-element="toggle-key"]'),
+    toggleKeyLabel: el('[data-chat-element="toggle-key-label"]'),
+    clearKey: el('[data-chat-element="clear-key"]'),
+    keyStatus: el('[data-chat-element="key-status"]'),
+    model: el('[data-chat-element="model"]'),
+    modelFavorite: el('[data-chat-element="model-favorite"]'),
+    input: el('[data-chat-element="input"]'),
+    output: el('[data-chat-element="feed"]'),
+    send: el('[data-chat-element="send"]'),
+    stop: el('[data-chat-element="stop"]'),
+    newChat: el('[data-chat-element="new-chat"]'),
+    jumpLatest: el('[data-chat-element="jump-latest"]'),
+    options: el('[data-chat-element="settings"]'),
+    modelLabel: el('[data-chat-element="model-label"]'),
+    contextStatus: el('[data-chat-element="context-status"]'),
+    explainSelection: el('[data-chat-element="explain-selection"]'),
+    fixConsole: el('[data-chat-element="fix-console"]'),
 };
 
 let editors = {};
@@ -120,6 +124,8 @@ let chatHistory = [];
 let currentProjectId = null;
 let activeRequest = null;
 let modelRequest = null;
+let renderedModels = [];
+let favoriteModelIds = new Set();
 let projectLoadSequence = 0;
 let initialized = false;
 let lastActiveEditorPane = null;
@@ -148,7 +154,6 @@ function iconElement(name) {
 
 function iconButton(label, iconName, properties = {}) {
     const button = elNew("button", properties);
-    button.classList.add("icon-label");
     button.append(iconElement(iconName), elNew("span", { textContent: label }));
     return button;
 }
@@ -178,13 +183,13 @@ function scrollToLatest(force = false) {
 
 function addMessage(role, content, { historyIndex = null, forceScroll = false } = {}) {
     const shouldScroll = forceScroll || isNearBottom();
-    const message = elNew("div", { className: `chat-message role-${role}` });
+    const message = elNew("div", { className: `message is-${role}` });
     renderMarkdown(message, content);
 
     if (role === "user" && historyIndex !== null) {
-        const controls = elNew("div", { className: "chat-message-btns" });
-        const retry = iconButton("Retry", "refresh-cw", { type: "button", className: "chat-retry", title: "Regenerate from this message" });
-        const edit = iconButton("Edit", "pencil-line", { type: "button", className: "chat-edit", title: "Edit from this message" });
+        const controls = elNew("div", { className: "message-actions" });
+        const retry = iconButton("Retry", "refresh-cw", { type: "button", title: "Regenerate from this message" });
+        const edit = iconButton("Edit", "pencil-line", { type: "button", title: "Edit from this message" });
         retry.addEventListener("click", async () => {
             await branchConversation(historyIndex, message);
             await sendMessage(content);
@@ -206,8 +211,8 @@ function addMessage(role, content, { historyIndex = null, forceScroll = false } 
 }
 
 function addStatusMessage(text) {
-    const message = elNew("div", { className: "chat-message role-system chat-thinking" });
-    const loader = elNew("span", { className: "loader", ariaHidden: "true" });
+    const message = elNew("div", { className: "message is-system is-thinking" });
+    const loader = elNew("span", { className: "activity-dot", ariaHidden: "true" });
     const label = elNew("em", { className: "thinking", textContent: text });
     message.append(loader, " ", label);
     elements.output.append(message);
@@ -216,7 +221,7 @@ function addStatusMessage(text) {
 }
 
 function addWelcome() {
-    const message = elNew("div", { className: "chat-message role-system chat-welcome" });
+    const message = elNew("div", { className: "message is-system is-welcome" });
     message.append(elNew("h3", { textContent: "✨ Hi, I'm Xody" }), elNew("p", { textContent: "I can explain your project, investigate console errors, and update your HTML, CSS, or JavaScript." }));
     elements.output.append(message);
     updateJumpLatestVisibility();
@@ -448,6 +453,7 @@ function setBusy(isBusy) {
     elements.stop.hidden = !isBusy;
     elements.provider.disabled = isBusy;
     elements.model.disabled = isBusy || !elements.model.options.length;
+    elements.modelFavorite.disabled = isBusy || !elements.model.value;
     elements.newChat.disabled = isBusy;
 }
 
@@ -477,8 +483,8 @@ function diffPartLines(value) {
 }
 
 function renderPaneDiff(pane, parts) {
-    const diff = elNew("div", { className: "suggestion-diff", ariaLabel: `${pane.toUpperCase()} code diff` });
-    const content = elNew("div", { className: "suggestion-diff-content" });
+    const diff = elNew("div", { className: "diff", ariaLabel: `${pane.toUpperCase()} code diff` });
+    const content = elNew("div", { className: "content" });
     let oldLine = 1;
     let newLine = 1;
     let renderedLines = 0;
@@ -490,15 +496,15 @@ function renderPaneDiff(pane, parts) {
             return false;
         }
         const marker = kind === "added" ? "+" : kind === "removed" ? "−" : " ";
-        const row = elNew("div", { className: `diff-line diff-${kind}` });
+        const row = elNew("div", { className: `line is-${kind}` });
         if (kind === "skip") {
-            row.append(elNew("code", { className: "diff-code", textContent: text }));
+            row.append(elNew("code", { className: "code", textContent: text }));
         } else {
             row.append(
-                elNew("span", { className: "diff-line-number", textContent: oldNumber }),
-                elNew("span", { className: "diff-line-number", textContent: newNumber }),
-                elNew("span", { className: "diff-marker", textContent: marker }),
-                elNew("code", { className: "diff-code", textContent: text || " " }),
+                elNew("span", { className: "line-number", textContent: oldNumber }),
+                elNew("span", { className: "line-number", textContent: newNumber }),
+                elNew("span", { className: "marker", textContent: marker }),
+                elNew("code", { className: "code", textContent: text || " " }),
             );
         }
         content.append(row);
@@ -546,7 +552,7 @@ function renderPaneDiff(pane, parts) {
     }
 
     if (truncated) {
-        const notice = elNew("p", { className: "diff-truncated", textContent: `Diff preview limited to ${MAX_RENDERED_DIFF_LINES.toLocaleString()} lines.` });
+        const notice = elNew("p", { className: "truncated", textContent: `Diff preview limited to ${MAX_RENDERED_DIFF_LINES.toLocaleString()} lines.` });
         content.append(notice);
     }
     diff.append(content);
@@ -560,19 +566,19 @@ function renderSuggestion(response) {
     const changedPanes = Object.keys(snapshots).filter((pane) => snapshots[pane].before !== snapshots[pane].after);
     if (!changedPanes.length) return;
 
-    const review = elNew("section", { className: "suggestion-review", ariaLabel: "Applied AI code changes" });
+    const review = elNew("section", { className: "suggestion", ariaLabel: "Applied AI code changes" });
     changedPanes.forEach((pane) => {
-        const details = elNew("details", { className: "suggestion-pane" });
+        const details = elNew("details", { className: "pane" });
         const summary = elNew("summary", { textContent: `${pane.toUpperCase()} · ${paneStats(snapshots[pane].before, snapshots[pane].after)}` });
         const parts = diffLines(snapshots[pane].before, snapshots[pane].after);
         details.append(summary, renderPaneDiff(pane, parts));
         review.append(details);
     });
 
-    const status = elNew("p", { className: "suggestion-status", ariaLive: "polite" });
+    const status = elNew("p", { className: "status", ariaLive: "polite" });
     const actions = elNew("div", { className: "suggestion-actions" });
     const undo = iconButton("Undo AI change", "undo-2", { type: "button" });
-    const reapply = iconButton("Re-apply AI change", "redo-2", { type: "button", className: "accent", hidden: true });
+    const reapply = iconButton("Re-apply AI change", "redo-2", { type: "button", className: "button-primary", hidden: true });
     actions.append(undo, reapply);
     renderIcons(actions);
     review.append(status, actions);
@@ -611,24 +617,24 @@ function renderSuggestion(response) {
 function renderTextResponse(rawText) {
     const shouldScroll = isNearBottom();
     const segments = splitMarkdownSegments(rawText);
-    const wrapper = elNew("div", { className: "chat-message role-ai markdown-fallback" });
+    const wrapper = elNew("div", { className: "message is-ai fallback" });
     segments.forEach((segment) => {
         if (segment.type === "text") {
             if (!segment.content.trim()) return;
-            const prose = elNew("div", { className: "markdown-fallback-text" });
+            const prose = elNew("div", { className: "fallback-copy" });
             renderMarkdown(prose, segment.content);
             wrapper.append(prose);
             return;
         }
 
         const pane = mapLanguageToPane(segment.lang) || sniffPane(segment.code);
-        const card = elNew("div", { className: "code-fence-card" });
-        const header = elNew("div", { className: "code-fence-header" });
-        const insert = iconButton(`Insert in ${pane.toUpperCase()}`, "plus", { type: "button", className: "accent" });
+        const card = elNew("div", { className: "code-card" });
+        const header = elNew("div", { className: "code-header" });
+        const insert = iconButton(`Insert in ${pane.toUpperCase()}`, "plus", { type: "button", className: "button-primary" });
         const replace = iconButton(`Replace ${pane.toUpperCase()}`, "replace", { type: "button" });
         const copy = iconButton("Copy", "copy", { type: "button" });
-        const status = elNew("span", { className: "suggestion-status", ariaLive: "polite" });
-        header.append(elNew("span", { className: "code-fence-lang", textContent: (segment.lang || pane).toUpperCase() }), insert, replace, copy);
+        const status = elNew("span", { className: "status", ariaLive: "polite" });
+        header.append(elNew("span", { className: "code-language", textContent: (segment.lang || pane).toUpperCase() }), insert, replace, copy);
         const pre = elNew("pre");
         pre.append(elNew("code", { textContent: segment.code }));
         card.append(header, pre, status);
@@ -736,24 +742,47 @@ async function fetchModelsAnthropic(apiKey, signal) {
     return (data.data || []).map((model) => ({ id: model.id, label: model.display_name || model.id }));
 }
 
-function renderModelState(state, models = []) {
+function appendModelGroup(label, models) {
+    const group = elNew("optgroup", { label });
+    models.forEach(({ id, label: modelLabel }) => group.append(elNew("option", { value: id, textContent: modelLabel })));
+    elements.model.append(group);
+}
+
+function updateModelFavoriteButton() {
+    const model = elements.model.value;
+    const isFavorite = Boolean(model) && favoriteModelIds.has(model);
+    elements.modelFavorite.disabled = !model || Boolean(activeRequest);
+    elements.modelFavorite.setAttribute("aria-pressed", String(isFavorite));
+    elements.modelFavorite.setAttribute("aria-label", isFavorite ? `Remove ${model} from favorites` : `Add ${model} to favorites`);
+    elements.modelFavorite.title = isFavorite ? "Remove selected model from favorites" : "Favorite selected model";
+}
+
+function renderModelState(state, models = [], favorites = [], preferredModel = "") {
     elements.model.replaceChildren();
     elements.model.disabled = true;
+    renderedModels = state === "ready" ? models : [];
+    const availableIds = new Set(renderedModels.map(({ id }) => id));
+    favoriteModelIds = new Set(favorites.filter((model) => availableIds.has(model)));
     const labels = { "no-key": "Add an API key to load models…", loading: "Loading models…", error: "Couldn't load models — check the key or CORS", empty: "No compatible chat models found" };
     if (state !== "ready") {
         elements.model.append(elNew("option", { value: "", textContent: labels[state] || "Models unavailable" }));
+        updateModelFavoriteButton();
         updateModelLabel();
         return;
     }
-    models.forEach(({ id, label }) => elements.model.append(elNew("option", { value: id, textContent: label })));
+    const favoriteModels = models.filter(({ id }) => favoriteModelIds.has(id));
+    if (favoriteModels.length) appendModelGroup("Favorites", favoriteModels);
+    appendModelGroup("All models", models);
     const savedModel = settings.models?.[elements.provider.value];
-    if (savedModel && models.some((model) => model.id === savedModel)) elements.model.value = savedModel;
+    if (preferredModel && availableIds.has(preferredModel)) elements.model.value = preferredModel;
+    else if (savedModel && availableIds.has(savedModel)) elements.model.value = savedModel;
     else if (models[0]) {
         elements.model.value = models[0].id;
         settings = { ...settings, models: { ...settings.models, [elements.provider.value]: models[0].id } };
         void updateChatSettings({ models: { [elements.provider.value]: models[0].id } });
     }
     elements.model.disabled = Boolean(activeRequest);
+    updateModelFavoriteButton();
     updateModelLabel();
 }
 
@@ -801,9 +830,9 @@ async function refreshModelOptions(providerKey) {
     }
 
     const fingerprint = await credentialFingerprint(apiKey);
-    const cached = await getModelCache(providerKey);
+    const [cached, favorites] = await Promise.all([getModelCache(providerKey), getFavoriteModels(providerKey)]);
     if (cached?.credentialFingerprint === fingerprint && Date.now() - cached.fetchedAt < MODEL_CACHE_TTL) {
-        renderModelState("ready", cached.models);
+        renderModelState("ready", cached.models, favorites);
         return;
     }
 
@@ -814,12 +843,17 @@ async function refreshModelOptions(providerKey) {
         else if (provider.kind === "anthropic") models = await fetchModelsAnthropic(apiKey, controller.signal);
         else models = await fetchModelsOpenAICompatible(providerKey, apiKey, controller.signal);
         if (controller.signal.aborted || elements.provider.value !== providerKey) return;
+        const currentFavorites = await reconcileFavoriteModels(
+            providerKey,
+            models.map(({ id }) => id),
+        );
+        if (controller.signal.aborted || elements.provider.value !== providerKey) return;
         if (!models.length) {
             renderModelState("empty");
             return;
         }
         await setModelCache(providerKey, { models, fetchedAt: Date.now(), credentialFingerprint: fingerprint });
-        renderModelState("ready", models);
+        renderModelState("ready", models, currentFavorites);
     } catch (error) {
         if (error.name !== "AbortError" && elements.provider.value === providerKey) renderModelState("error");
     } finally {
@@ -896,8 +930,23 @@ function wireEvents() {
     elements.model.addEventListener("change", async () => {
         const provider = elements.provider.value;
         const model = elements.model.value;
+        updateModelFavoriteButton();
         settings = await updateChatSettings({ models: { [provider]: model } });
         updateModelLabel();
+    });
+    elements.modelFavorite.addEventListener("click", async () => {
+        const provider = elements.provider.value;
+        const model = elements.model.value;
+        if (!model) return;
+        elements.modelFavorite.disabled = true;
+        try {
+            const favorites = await setModelFavorite(provider, model, !favoriteModelIds.has(model));
+            if (elements.provider.value !== provider || elements.model.value !== model) return;
+            renderModelState("ready", renderedModels, favorites, model);
+        } catch (error) {
+            console.warn("Could not update favorite AI model", error);
+            if (elements.provider.value === provider && elements.model.value === model) updateModelFavoriteButton();
+        }
     });
     elements.apiKey.addEventListener("change", async () => {
         const provider = elements.provider.value;

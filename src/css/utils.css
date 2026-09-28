@@ -2,56 +2,25 @@
     display: none !important;
 }
 
-.ml-auto {
-    margin-left: auto;
-}
-
-.mr-auto {
-    margin-right: auto;
-}
-
-.col {
-    display: flex;
-    flex-direction: column;
-}
-
-.row {
-    display: flex;
-    flex-direction: row;
-
-    > br + * {
-        margin-left: auto;
-    }
-}
-
-.flex-1 {
-    flex: 1;
-}
-
-.md-show {
+.desktop-only {
     @media (width <= 768px) {
         display: none !important;
     }
 }
 
-.md-hide {
+.mobile-only {
     @media (width > 768px) {
         display: none !important;
     }
 }
 
-.visually-hidden {
+.sr-only {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
     padding: 0 !important;
     margin: -1px !important;
     overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
+    clip-path: inset(50%) !important;
     white-space: nowrap !important;
-    border: 0 !important;
-}
-
-.gap-05 {
-    gap: 0.5rem;
 }

@@ -1,12 +1,13 @@
 import { openDB } from "idb";
 
 const DB_NAME = "xode-ai";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const SETTINGS_STORE = "settings";
 const SECRETS_STORE = "secrets";
 const META_STORE = "meta";
 const CONVERSATIONS_STORE = "conversations";
 const MODELS_STORE = "models";
+const FAVORITE_MODELS_STORE = "favorite-models";
 const VAULT_KEY_ID = "api-key-vault";
 const SETTINGS_ID = "preferences";
 const LEGACY_SETTINGS_KEY = "ls-xode.settings";
@@ -18,6 +19,7 @@ const DEFAULT_SETTINGS = {
 
 const sessionKeys = new Map();
 const conversationWrites = new Map();
+const favoriteModelWrites = new Map();
 let databasePromise;
 let initializationPromise;
 let settingsWriteQueue = Promise.resolve();
@@ -34,7 +36,7 @@ function openChatDatabase() {
     if (!databasePromise) {
         databasePromise = openDB(DB_NAME, DB_VERSION, {
             upgrade(database) {
-                [SETTINGS_STORE, SECRETS_STORE, META_STORE, CONVERSATIONS_STORE, MODELS_STORE].forEach((storeName) => {
+                [SETTINGS_STORE, SECRETS_STORE, META_STORE, CONVERSATIONS_STORE, MODELS_STORE, FAVORITE_MODELS_STORE].forEach((storeName) => {
                     if (!database.objectStoreNames.contains(storeName)) database.createObjectStore(storeName);
                 });
             },
@@ -239,6 +241,53 @@ export async function getModelCache(provider) {
 export async function setModelCache(provider, value) {
     const database = await initChatStorage();
     await database.put(MODELS_STORE, value, provider);
+}
+
+function normalizeFavoriteModels(models) {
+    if (!Array.isArray(models)) return [];
+    return [...new Set(models.filter((model) => typeof model === "string" && model.trim()))];
+}
+
+async function updateFavoriteModels(provider, update) {
+    const key = String(provider);
+    const previous = favoriteModelWrites.get(key) || Promise.resolve();
+    const operation = previous
+        .catch(() => undefined)
+        .then(async () => {
+            const database = await initChatStorage();
+            const current = normalizeFavoriteModels(await database.get(FAVORITE_MODELS_STORE, key));
+            const next = normalizeFavoriteModels(update(current));
+            if (next.length) await database.put(FAVORITE_MODELS_STORE, next, key);
+            else await database.delete(FAVORITE_MODELS_STORE, key);
+            return next;
+        });
+    favoriteModelWrites.set(key, operation);
+    try {
+        return await operation;
+    } finally {
+        if (favoriteModelWrites.get(key) === operation) favoriteModelWrites.delete(key);
+    }
+}
+
+export async function getFavoriteModels(provider) {
+    const key = String(provider);
+    await favoriteModelWrites.get(key);
+    const database = await initChatStorage();
+    return normalizeFavoriteModels(await database.get(FAVORITE_MODELS_STORE, key));
+}
+
+export function setModelFavorite(provider, model, favorite) {
+    return updateFavoriteModels(provider, (models) => {
+        const next = new Set(models);
+        if (favorite) next.add(model);
+        else next.delete(model);
+        return [...next];
+    });
+}
+
+export function reconcileFavoriteModels(provider, availableModels) {
+    const available = new Set(availableModels);
+    return updateFavoriteModels(provider, (models) => models.filter((model) => available.has(model)));
 }
 
 export async function loadConversation(projectId) {

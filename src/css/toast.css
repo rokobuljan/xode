@@ -1,74 +1,72 @@
-#toasts {
+.toast-region {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1000;
-    pointer-events: none;
+    inset: 0;
+    z-index: 1200;
     display: flex;
     flex-direction: column;
-
     gap: 0.5rem;
     padding: 1rem;
+    pointer-events: none;
 }
 
 .toast {
-    --bg: var(--foreground);
-    --fg: var(--background);
+    --toast-bg: var(--foreground);
+    --toast-fg: var(--background);
+
     position: relative;
-    bottom: 0;
     max-width: 20rem;
-    padding: 0.6rem 1rem;
-    pointer-events: auto;
-    border-radius: 0.2rem;
-    box-shadow: var(--shadow, 0 0.5rem 1rem -0.5rem #0006);
-    background: var(--bg);
-    color: var(--fg);
-    font-size: 0.9rem;
     align-self: end;
-    transition: 0.3s;
+    padding: 0.6rem 1rem;
+    border-radius: 0.2rem;
+    background: var(--toast-bg);
+    color: var(--toast-fg);
+    box-shadow: 0 0.5rem 1rem -0.5rem #0006;
+    pointer-events: auto;
+    transition:
+        translate var(--motion-base),
+        opacity var(--motion-base);
 
     @starting-style {
-        translate: 0 3rem;
-        opacity: 0;
-    }
-
-    &.is-hiding {
-        translate: 0 3rem;
+        translate: 0 2rem;
         opacity: 0;
     }
 
     &:first-child {
         margin-top: auto;
-        margin-bottom: 0;
     }
 
-    &.info {
-        --bg: hsl(195 90% 70%);
+    &.is-hiding {
+        translate: 0 2rem;
+        opacity: 0;
     }
 
-    &.warning {
-        --bg: hsl(55 90% 70%);
+    &.is-info {
+        --toast-bg: hsl(195 90% 70%);
     }
 
-    &.error {
-        --bg: hsl(5 90% 70%);
+    &.is-warning {
+        --toast-bg: hsl(55 90% 70%);
     }
 
-    &.success {
-        --bg: hsl(110 90% 70%);
+    &.is-error {
+        --toast-bg: hsl(5 90% 70%);
     }
 
-    & > button {
-        all: unset;
+    &.is-success {
+        --toast-bg: hsl(110 90% 70%);
+    }
+
+    .close {
         position: absolute;
-        right: 0.5rem;
-        top: 0.3rem;
-        cursor: pointer;
+        top: 0.45rem;
+        right: 0.45rem;
+        width: 2rem;
+        min-height: 2rem;
+        padding: 0;
+        background: transparent;
 
         &::before {
-            content: "\2715";
+            content: "×";
         }
 
         .permanent & {
@@ -76,16 +74,16 @@
         }
     }
 
+    .head {
+        font-weight: 600;
+    }
+
+    .body {
+        overflow-wrap: anywhere;
+    }
+
     a {
-        font-weight: 600;
         color: currentColor;
-    }
-
-    .toast-head {
         font-weight: 600;
-    }
-
-    .toast-body {
-        word-wrap: break-word;
     }
 }

@@ -36,15 +36,15 @@ const paneConsole = {
         }
 
         // Create new input line
-        this.inputLine = elNew("div", { className: "input-line" });
+        this.inputLine = elNew("div", { className: "input-row" });
 
         // Prompt
-        const prompt = elNew("span", { className: "console-prompt", textContent: ">" });
+        const prompt = elNew("span", { className: "prompt", textContent: ">" });
         this.inputLine.append(prompt);
 
         // Input
         this.inputElement = elNew("textarea", {
-            className: "console-input",
+            className: "input",
             placeholder: "",
             spellcheck: false,
             // autofocus: true
@@ -78,11 +78,11 @@ const paneConsole = {
         this.entries.push({ type: logType, text, line: line ?? null, createdAt: Date.now() });
         if (this.entries.length > 100) this.entries = this.entries.slice(-100);
         const elBlock = elNew("code", {
-            className: `log ${logType}`,
+            className: `entry is-${logType}`,
             textContent: text,
         });
         const elLine = elNew("span", {
-            className: "log-line",
+            className: "line-number",
             textContent: line,
         });
         elBlock.append(elLine);

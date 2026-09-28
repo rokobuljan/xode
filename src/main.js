@@ -34,7 +34,7 @@ const elPreview = el("#preview"); // the iframe
 
 // Toggle single `pane` or handle all panes depending on project panes state
 const handlePanes = () => {
-    const allTabsCheckboxes = els("#top .tabs [data-rea-model]");
+    const allTabsCheckboxes = els("#top .view-tabs [data-rea-model]");
     const openedTabs = [...allTabsCheckboxes].reduce((acc, elTabCkb) => {
         if (elTabCkb.checked) acc.push(elTabCkb.dataset.reaModel);
         return acc;
@@ -173,10 +173,10 @@ const elProjectsList = el("#projects-list");
 const elProjectDeleteDialog = el("#project-delete-dialog");
 const elProjectDeleteTitle = el("#project-delete-title");
 const elProjectDeleteDescription = el("#project-delete-description");
-const elProjectDeleteGistNote = el(".project-delete-gist-note", elProjectDeleteDialog);
-const elProjectDeleteStatus = el(".project-delete-status", elProjectDeleteDialog);
-const elProjectDeleteLocal = el(".project-delete-local", elProjectDeleteDialog);
-const elProjectDeleteGist = el(".project-delete-gist", elProjectDeleteDialog);
+const elProjectDeleteGistNote = el('[data-delete-element="gist-note"]', elProjectDeleteDialog);
+const elProjectDeleteStatus = el('[data-delete-element="status"]', elProjectDeleteDialog);
+const elProjectDeleteLocal = el('[data-delete-action="local"]', elProjectDeleteDialog);
+const elProjectDeleteGist = el('[data-delete-action="gist"]', elProjectDeleteDialog);
 let pendingProjectDeletion = null;
 let isProjectDeleteBusy = false;
 
@@ -271,7 +271,7 @@ const drawProjects = async () => {
     elProjectsList.innerHTML = "";
     projects.forEach((projectData) => {
         const title = `${projectData.name} ${projectData.description ? " — " + projectData.description : ""} | ${formatDateTime(projectData.updatedAt)}`;
-        const elThumbnail = elNew("div", { className: "thumbnail", title });
+        const elThumbnail = elNew("div", { className: "preview", title });
         // elThumbnail.dataset.modal = "";
         projectData.html =
             `
@@ -292,7 +292,6 @@ const drawProjects = async () => {
             </script>
             ` + projectData.html;
         const elThumbnailIframe = elNew("iframe", {
-            className: "thumbnail-iframe",
             srcdoc: generatePreviewHTML(projectData, "preview"),
             sandbox: "allow-scripts", // ⚠️ DO NOT add allow-same-origin — breaks localStorage isolation
             loading: "lazy",
@@ -303,11 +302,10 @@ const drawProjects = async () => {
         const gistLinkHTML = projectData.gistId ? `<a href="https://gist.github.com/${projectData.gistId}" target="_blank" rel="noopener noreferrer" title="External GitHub Gist"><i data-lucide="github"></i></a>` : "";
         const elProject = elNew("div", {
             id: `project-${projectData.id}`,
-            className: "project",
-            innerHTML: `<div class="bar">
-                <span class="project-name"></span>
-                <br>
-                <span class="project-actions">
+            className: "project-card",
+            innerHTML: `<div class="meta">
+                <span class="name"></span>
+                <span class="actions">
                     ${gistLinkHTML}
                     <button data-download-id="${projectData.id}" type="button" title="Download"><i data-lucide="download"></i></button>
                     <button data-delete-id="${projectData.id}" type="button" title="Delete"><i data-lucide="trash-2"></i></button>
@@ -315,7 +313,7 @@ const drawProjects = async () => {
             </div>`,
         });
         renderIcons(elProject);
-        const elName = el(".project-name", elProject);
+        const elName = el(".name", elProject);
         elName.textContent = projectData.name; // safe — no HTML parsing
         elName.title = title; // safe — DOM property, not string-parsed
         elProject.prepend(elThumbnail);
@@ -341,7 +339,7 @@ let projectSearchSequence = 0;
 elProjectsSearch.addEventListener("input", async () => {
     const sequence = ++projectSearchSequence;
     const search = elProjectsSearch.value.trim().toLowerCase();
-    const elsProjects = els(".project", elProjectsList);
+    const elsProjects = els(".project-card", elProjectsList);
     const projectsListId = (await listProjects()).reduce((acc, proj) => ((acc[proj.id] = proj), acc), {});
     if (sequence !== projectSearchSequence) return;
     elsProjects.forEach((elProject) => {
@@ -369,7 +367,7 @@ const downloadProject = async (id) => {
 };
 
 // Download current project
-els(".downloadCurrentProject").forEach((elBtnDownload) => {
+els('[data-project-action="download-current"]').forEach((elBtnDownload) => {
     elBtnDownload.addEventListener("click", () => void downloadProject(currentProjectState.id));
 });
 
@@ -670,7 +668,7 @@ elTabWidth.addEventListener("input", () => {
 elTabWidth.value = tabWidth;
 
 // Tabs UI - Single pane toggle
-const elTabs = el("#top .tabs");
+const elTabs = el("#top .view-tabs");
 const elsTabsCheckboxes = els("[data-rea-model]", elTabs);
 elTabs.addEventListener("click", (evt) => {
     const elTab = evt.target.closest(`.tab`);

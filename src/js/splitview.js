@@ -32,7 +32,7 @@ const splitViewStart = (ev) => {
     ev.preventDefault();
 
     elSplitter.setPointerCapture(ev.pointerId);
-    const isCol = elSplitter.closest(".splitview").matches(".col");
+    const isCol = elSplitter.closest(".splitview").matches(".is-vertical");
     const offset = isCol ? "offsetHeight" : "offsetWidth";
     const clientXY = isCol ? "clientY" : "clientX";
     const growSum = getPropVal(elPrev, "--grow") + getPropVal(elNext, "--grow");

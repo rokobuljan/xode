@@ -30,7 +30,10 @@ release. Add a tool name to select part of the graph. For example, run
 
 ## Responses
 
-Be concise. Lead with the answer. No preamble, no recap, no offers of further help. Fragments are fine.
+- Max 3-5 short bullets or sentences unless I ask for detail.
+- Lead with the answer. No preamble, no recap, no offers of further help.
+- Fragments OK. Drop articles and filler.
+- Don't explain what you did unless asked; just state the result.
 
 <!--USER PREFERENCES END-->
 
@@ -40,10 +43,8 @@ Be concise. Lead with the answer. No preamble, no recap, no offers of further he
 
 Use a borderless visual language. Decorative lines are not part of the design.
 
-- Do not add borders, divider lines, horizontal rules, or outlined cards to group interface elements
+- Do not add borders, horizontal rules, or outlined cards to group interface elements unless already in the design
 - Create hierarchy with spacing, typography, subtle background-color changes, and the existing Xode brand colors
-- Use semantic background tints, rather than outlines, to distinguish states such as added and removed diff lines
-- Preserve visible keyboard-focus indicators and other accessibility affordances; the borderless rule must not make controls harder to identify or use
 - Use CSS props vars defined in base.css
 - Use CSS modules where possible and reuse those classes, utils, atoms, and modules styles instead of redesigning common styles from scratch
 - Use CSS Nesting in a module manner i.e: .chat {} in a chat.css file, and nest the descendants inside of it

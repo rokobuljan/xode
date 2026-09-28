@@ -139,19 +139,19 @@ export class Editor {
         this.init();
     }
     init() {
-        this.elLines = elNew("div", { className: "editor-lines" });
+        this.elLines = elNew("div", { className: "gutter" });
         this.elLines.dataset.label = this.syntax;
-        this.elArea = elNew("div", { className: "editor-area" });
-        this.elArea.innerHTML = `<pre class="editor-highlight" inert><code class="language-${this.syntax}"></code></pre>
-            <textarea class="editor-textarea" data-rea-model="project.${this.syntax}" placeholder="${this.syntax}" data-syntax="${this.syntax}"
+        this.elArea = elNew("div", { className: "canvas" });
+        this.elArea.innerHTML = `<pre class="highlight" inert><code class="language-${this.syntax}"></code></pre>
+            <textarea class="input" data-rea-model="project.${this.syntax}" placeholder="${this.syntax}" data-syntax="${this.syntax}"
                     spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>`;
-        this.elSelectionStat = elNew("div", { className: "editor-selection-stat" });
+        this.elSelectionStat = elNew("div", { className: "selection-status" });
 
         // Insert into DOM
         this.elParent.append(this.elLines, this.elArea, this.elSelectionStat);
 
-        this.elTextarea = el(".editor-textarea", this.elParent);
-        this.elCode = el(".editor-highlight code", this.elParent);
+        this.elTextarea = el(".input", this.elParent);
+        this.elCode = el(".highlight code", this.elParent);
 
         // Init value (already seeded into the history stack above, so skip re-pushing it)
         this.setValue(this.value, { history: false });

@@ -101,4 +101,28 @@ describe("serverless AI storage", () => {
         expect(await storage.loadConversation("local-id")).toEqual([]);
         expect(await storage.loadConversation("gist-id")).toEqual([{ role: "user", content: "Keep this" }]);
     });
+
+    it("stores favorite models by provider", async () => {
+        const storage = await loadStorageModule();
+        await storage.setModelFavorite("openai", "gpt-a", true);
+        await storage.setModelFavorite("openai", "gpt-b", true);
+        await storage.setModelFavorite("anthropic", "claude-a", true);
+        await storage.setModelFavorite("openai", "gpt-a", false);
+
+        expect(await storage.getFavoriteModels("openai")).toEqual(["gpt-b"]);
+        expect(await storage.getFavoriteModels("anthropic")).toEqual(["claude-a"]);
+    });
+
+    it("removes favorites that are absent from a fresh model response", async () => {
+        const storage = await loadStorageModule();
+        await storage.setModelFavorite("openai", "available", true);
+        await storage.setModelFavorite("openai", "retired", true);
+
+        expect(await storage.reconcileFavoriteModels("openai", ["available", "new-model"])).toEqual(["available"]);
+        expect(await storage.getFavoriteModels("openai")).toEqual(["available"]);
+
+        await storage.reconcileFavoriteModels("openai", []);
+        expect(await storage.getFavoriteModels("openai")).toEqual([]);
+        expect(storageTestState.database.stores.get("favorite-models")?.has("openai")).toBe(false);
+    });
 });

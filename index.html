@@ -23,62 +23,62 @@
             </symbol>
         </svg>
 
-        <nav id="top">
-            <svg id="logo" class="logo" height="1rem" width="3.8rem" data-modal="#modal-projects">
+        <nav id="top" class="topbar">
+            <svg class="brand" height="1rem" width="3.8rem" data-modal="#modal-projects">
                 <use href="#logo-xode"></use>
             </svg>
 
-            <button class="md-show" type="button" data-modal="#modal-projects" title="Project Settings">
+            <button class="desktop-only" type="button" data-modal="#modal-projects" title="Project Settings">
                 <i data-lucide="folder"></i>
                 <span data-rea-text="project.name">Untitled</span>
             </button>
-            <button class="downloadCurrentProject md-show" type="button" title="Download project">
+            <button class="desktop-only" type="button" data-project-action="download-current" title="Download project">
                 <i data-lucide="download"></i>
             </button>
 
-            <div class="tabs">
-                <label class="tab ckbtn" title="Toggle HTML panel">
+            <div class="view-tabs">
+                <label class="view-toggle" title="Toggle HTML panel">
                     <input type="checkbox" data-rea-model="project.panes.html" />
                     <span>HTML</span>
                 </label>
-                <label class="tab ckbtn" title="Toggle CSS panel">
+                <label class="view-toggle" title="Toggle CSS panel">
                     <input type="checkbox" data-rea-model="project.panes.css" />
                     <span>CSS</span>
                 </label>
-                <label class="tab ckbtn" title="Toggle JS panel">
+                <label class="view-toggle" title="Toggle JS panel">
                     <input type="checkbox" data-rea-model="project.panes.js" />
                     <span>JS</span>
                 </label>
-                <label class="tab ckbtn" title="Toggle Console">
+                <label class="view-toggle" title="Toggle Console">
                     <input type="checkbox" data-rea-model="project.panes.console" />
                     <i data-lucide="terminal"></i>
                 </label>
-                <label class="tab ckbtn" title="Toggle Live preview">
+                <label class="view-toggle" title="Toggle Live preview">
                     <input type="checkbox" data-rea-model="project.panes.preview" />
-                    <i class="md-hide" data-lucide="eye"></i>
-                    <span class="md-show">Preview</span>
+                    <i class="mobile-only" data-lucide="eye"></i>
+                    <span class="desktop-only">Preview</span>
                 </label>
-                <label class="tab ckbtn" title="Toggle Rich Editor">
+                <label class="view-toggle" title="Toggle Rich Editor">
                     <input type="checkbox" data-rea-model="project.panes.richEditor" data-action="designMode" />
                     <i data-lucide="pencil-line"></i>
                 </label>
-                <label class="tab ckbtn" title="Toggle AI Chat">
+                <label class="view-toggle" title="Toggle AI Chat">
                     <input type="checkbox" data-rea-model="project.panes.chat" />
                     <span>AI</span>
                 </label>
             </div>
             <label title="Autorun JS">
                 <input id="autorun" type="checkbox" data-rea-model="project.isAutorun" />
-                <span class="md-show">Auto</span>
+                <span class="desktop-only">Auto</span>
             </label>
             <button id="run" type="button" title="Run JS">
-                <span class="md-show">Run</span>
+                <span class="desktop-only">Run</span>
                 <i data-lucide="play"></i>
             </button>
         </nav>
 
-        <main id="app" class="splitview">
-            <div class="splitview col">
+        <main id="app" class="workspace splitview">
+            <div class="splitview is-vertical">
                 <div class="splitview">
                     <div class="splitview" data-view="html" data-rea-open="project.panes.html">
                         <div class="editor" id="editor-html"></div>
@@ -101,9 +101,9 @@
                     </div>
                 </div>
                 <div class="splitter"></div>
-                <div class="splitview col" data-view="preview" data-rea-open="project.panes.preview">
-                    <div data-view="richEditor" data-rea-open-inner data-rea-open="project.panes.richEditor">
-                        <div class="cmd-group">
+                <div class="splitview is-vertical" data-view="preview" data-rea-open="project.panes.preview">
+                    <div class="rich-toolbar" data-view="richEditor" data-rea-open-inner data-rea-open="project.panes.richEditor">
+                        <div class="tool-group">
                             <i data-lucide="bold" data-cmd="bold" title="Bold"></i>
                             <i data-lucide="italic" data-cmd="italic" title="Italic"></i>
                             <i data-lucide="underline" data-cmd="underline" title="Underline"></i>
@@ -111,160 +111,162 @@
                             <i data-lucide="superscript" data-cmd="superscript" title="Superscript"></i>
                             <i data-lucide="subscript" data-cmd="subscript" title="Subscript"></i>
                         </div>
-                        <div class="cmd-group">
+                        <div class="tool-group">
                             <i data-lucide="pilcrow" data-cmd="formatBlock" title="Paragraph" data-par="P"></i>
                             <i data-lucide="heading-1" data-cmd="formatBlock" title="H1" data-par="H1"></i>
                             <i data-lucide="heading-2" data-cmd="formatBlock" title="H2" data-par="H2"></i>
                             <i data-lucide="heading-3" data-cmd="formatBlock" title="H3" data-par="H3"></i>
                         </div>
-                        <div class="cmd-group">
+                        <div class="tool-group">
                             <i data-lucide="list" data-cmd="InsertUnorderedList" data-cmdref="UL" title="Unordered List"></i>
                             <i data-lucide="list-ordered" data-cmd="InsertOrderedList" data-cmdref="OL" title="Ordered List"></i>
                             <i data-lucide="minus" data-cmd="insertHorizontalRule" title="Insert Horizontal Rule"></i>
                             <i data-lucide="image" data-cmd="InsertImage" title="Insert Image"></i>
                             <i data-lucide="link" data-cmd="CreateLink" title="Link"></i>
                         </div>
-                        <div class="cmd-group">
+                        <div class="tool-group">
                             <i data-lucide="align-left" data-cmd="justifyLeft" title="Align Left"></i>
                             <i data-lucide="align-center" data-cmd="justifyCenter" title="Align Center"></i>
                             <i data-lucide="align-right" data-cmd="justifyRight" title="Align Right"></i>
                             <i data-lucide="align-justify" data-cmd="justifyFull" title="Align Full"></i>
                         </div>
-                        <div class="cmd-group">
+                        <div class="tool-group">
                             <i data-lucide="list-indent-increase" data-cmd="indent" title="Indent"></i>
                             <i data-lucide="list-indent-decrease" data-cmd="outdent" title="Outdent"></i>
                         </div>
-                        <div class="cmd-group">
+                        <div class="tool-group">
                             <i data-lucide="remove-formatting" data-cmd="removeFormat" title="Remove Formatting/Styles"></i>
                         </div>
                     </div>
 
-                    <div id="preview-wrapper">
+                    <div class="preview-stage">
                         <!-- SECURITY ALERT: do NOT add allow-same-origin in the sandbox rules, it breaks localStorage isolation for user code. -->
-                        <iframe id="preview" sandbox="allow-modals allow-forms allow-pointer-lock allow-popups allow-scripts" frameborder="0"></iframe>
+                        <iframe id="preview" class="preview-frame" sandbox="allow-modals allow-forms allow-pointer-lock allow-popups allow-scripts"></iframe>
                     </div>
                 </div>
             </div>
             <div class="splitter"></div>
             <aside class="splitview chat" data-view="chat" data-rea-open="project.panes.chat" style="--grow: 25" aria-label="AI coding assistant">
-                <div class="chat-output" role="log" aria-live="polite" aria-relevant="additions" aria-busy="false"></div>
-                <div class="chat-question">
-                    <button type="button" class="chat-jump-latest icon-label" hidden><i data-lucide="arrow-down"></i><span>Jump to latest</span></button>
-                    <div class="chat-quick-actions" aria-label="Suggested prompts">
-                        <button type="button" class="chat-explain-selection icon-label" data-chat-prompt="Explain the selected code." hidden><i data-lucide="wand-sparkles"></i><span>Explain selection</span></button>
-                        <button type="button" class="chat-fix-console icon-label" data-chat-prompt="Find and fix the most recent console error. Explain the cause briefly before proposing changes." hidden>
+                <div class="feed" data-chat-element="feed" role="log" aria-live="polite" aria-relevant="additions" aria-busy="false"></div>
+                <div class="composer">
+                    <button type="button" class="jump-latest" data-chat-element="jump-latest" hidden><i data-lucide="arrow-down"></i><span>Jump to latest</span></button>
+                    <div class="quick-actions" aria-label="Suggested prompts">
+                        <button type="button" data-chat-element="explain-selection" data-chat-prompt="Explain the selected code." hidden><i data-lucide="wand-sparkles"></i><span>Explain selection</span></button>
+                        <button type="button" data-chat-element="fix-console" data-chat-prompt="Find and fix the most recent console error. Explain the cause briefly before proposing changes." hidden>
                             <i data-lucide="message-circle-warning"></i><span>Fix console error</span>
                         </button>
                     </div>
-                    <div class="glow-input">
-                        <div class="glow-border"></div>
-                        <label class="visually-hidden" for="chat-input">Message Xody</label>
-                        <textarea id="chat-input" class="chat-input" placeholder="✨&#xfe0e; ask Xody" aria-describedby="chat-context-status"></textarea>
+                    <div class="prompt-shell">
+                        <label class="sr-only" for="chat-input">Message Xody</label>
+                        <textarea id="chat-input" class="prompt-input" data-chat-element="input" placeholder="✨&#xfe0e; ask Xody" aria-describedby="chat-context-status"></textarea>
                     </div>
-                    <div id="chat-context-status" class="chat-context-status" aria-live="polite"></div>
-                    <div class="chat-actions">
-                        <details class="chat-options">
-                            <summary class="chat-options-trigger">
-                                <i class="chat-options-trigger-icon" data-lucide="settings"></i>
-                                <span class="chat-options-trigger-copy">
-                                    <span class="chat-options-kicker">AI model</span>
-                                    <span class="chat-model-label">Options</span>
+                    <div id="chat-context-status" class="context-status" data-chat-element="context-status" aria-live="polite"></div>
+                    <div class="composer-actions">
+                        <details class="settings" data-chat-element="settings">
+                            <summary class="settings-trigger">
+                                <i data-lucide="settings"></i>
+                                <span class="trigger-copy">
+                                    <span class="kicker">Model</span>
+                                    <span class="model-label" data-chat-element="model-label">Options</span>
                                 </span>
-                                <i class="chat-options-chevron" data-lucide="chevron-down"></i>
+                                <i class="chevron" data-lucide="chevron-down"></i>
                             </summary>
-                            <div class="details-body">
-                                <header class="chat-options-header">
+                            <div class="settings-panel">
+                                <header class="settings-header">
                                     <h3><i data-lucide="settings"></i><span>Xody settings</span></h3>
-                                    <span class="chat-local-badge"><span aria-hidden="true">●</span> Stored locally</span>
+                                    <span class="status-badge"><span aria-hidden="true">●</span> Stored locally</span>
                                 </header>
 
-                                <section class="chat-option-section" aria-labelledby="chat-model-heading">
-                                    <h4 id="chat-model-heading" class="chat-option-section-title"><i data-lucide="plug"></i><span>Connection</span></h4>
-                                    <div class="chat-option-grid">
-                                        <label class="chat-field" title="Select provider">
-                                            <span class="chat-field-label"><i data-lucide="cloud"></i> Provider</span>
-                                            <select class="chat-provider" aria-label="AI provider"></select>
+                                <section class="settings-section" aria-labelledby="chat-model-heading">
+                                    <h4 id="chat-model-heading" class="section-title"><i data-lucide="plug"></i><span>Connection</span></h4>
+                                    <div class="field-list">
+                                        <label class="field" title="Select provider">
+                                            <span class="field-label"><i data-lucide="cloud"></i> Provider</span>
+                                            <select data-chat-element="provider" aria-label="AI provider"></select>
                                         </label>
-                                        <label class="chat-field" title="Select model">
-                                            <span class="chat-field-label"><i data-lucide="library"></i> Model</span>
-                                            <select class="chat-model" aria-label="AI model"></select>
-                                        </label>
+                                        <div class="field">
+                                            <span class="field-label"><i data-lucide="library"></i> Model</span>
+                                            <span class="model-control">
+                                                <select data-chat-element="model" aria-label="AI model" title="Select model"></select>
+                                                <button type="button" class="favorite-toggle" data-chat-element="model-favorite" aria-label="Favorite selected model" aria-pressed="false" title="Favorite selected model" disabled>
+                                                    <i data-lucide="star"></i>
+                                                </button>
+                                            </span>
+                                        </div>
                                     </div>
                                 </section>
 
-                                <section class="chat-option-section" aria-labelledby="chat-key-heading">
-                                    <h4 id="chat-key-heading" class="chat-option-section-title"><i data-lucide="key-round"></i><span>API key</span></h4>
-                                    <label class="chat-field chat-key-field" title="API key">
-                                        <span class="visually-hidden">API key</span>
-                                        <input type="password" class="chat-apiKey" placeholder="Enter a new key" value="" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="API key" />
+                                <section class="settings-section" aria-labelledby="chat-key-heading">
+                                    <h4 id="chat-key-heading" class="section-title"><i data-lucide="key-round"></i><span>API key</span></h4>
+                                    <label class="field" title="API key">
+                                        <span class="sr-only">API key</span>
+                                        <input type="password" data-chat-element="api-key" placeholder="Enter a new key" value="" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="API key" />
                                     </label>
-                                    <p class="chat-key-status" aria-live="polite"></p>
-                                    <div class="chat-key-controls">
-                                        <button type="button" class="chat-toggle-key icon-label" title="Show or hide the key being entered"><i data-lucide="eye"></i><span class="chat-toggle-key-label">Show typed key</span></button>
-                                        <button type="button" class="chat-clear-key danger-ghost icon-label" title="Forget the API key"><i data-lucide="trash-2"></i><span>Forget key</span></button>
+                                    <p class="key-status" data-chat-element="key-status" aria-live="polite"></p>
+                                    <div class="key-actions">
+                                        <button type="button" data-chat-element="toggle-key" title="Show or hide the key being entered"><i data-lucide="eye"></i><span data-chat-element="toggle-key-label">Show typed key</span></button>
+                                        <button type="button" class="danger-quiet" data-chat-element="clear-key" title="Forget the API key"><i data-lucide="trash-2"></i><span>Forget key</span></button>
                                     </div>
-                                    <label class="chat-switch">
-                                        <input type="checkbox" class="chat-remember-key" />
-                                        <span class="chat-switch-control" aria-hidden="true"></span>
-                                        <span class="chat-switch-copy"><strong>Remember on this device</strong><small>Encrypt the key before saving it in IndexedDB.</small></span>
+                                    <label class="switch">
+                                        <input type="checkbox" data-chat-element="remember-key" />
+                                        <span class="switch-control" aria-hidden="true"></span>
+                                        <span class="switch-copy"><strong>Remember on this device</strong><small>Encrypt the key before saving it in IndexedDB.</small></span>
                                     </label>
                                 </section>
 
-                                <div class="chat-privacy" role="note">
+                                <div class="privacy-note" role="note">
                                     <i data-lucide="shield-check"></i>
                                     <p><strong>Serverless by design.</strong> Keys never leave this browser except when sent directly to the selected AI provider. Same-origin malicious code can still access browser-held secrets.</p>
                                 </div>
                             </div>
                         </details>
-                        <button type="button" class="chat-new icon-label" title="Start a new chat"><i data-lucide="message-circle-plus"></i><span>New chat</span></button>
-                        <button type="button" class="chat-stop icon-label" title="Stop generating" hidden><i data-lucide="square"></i><span>Stop</span></button>
-                        <button type="button" class="chat-send gradient" title="Send message" aria-label="Send message"><i data-lucide="arrow-up"></i></button>
+                        <button type="button" data-chat-element="new-chat" title="Start a new chat"><i data-lucide="message-circle-plus"></i><span>New chat</span></button>
+                        <button type="button" class="stop" data-chat-element="stop" title="Stop generating" hidden><i data-lucide="square"></i><span>Stop</span></button>
+                        <button type="button" class="send button-primary" data-chat-element="send" title="Send message" aria-label="Send message"><i data-lucide="arrow-up"></i></button>
                     </div>
                 </div>
             </aside>
         </main>
 
-        <div class="modal-wrapper">
-            <div class="modal row" id="modal-projects">
-                <button class="modal-close" type="button" data-modal>
+        <div class="dialog-layer">
+            <div class="modal project-manager" id="modal-projects">
+                <button class="close" type="button" data-modal>
                     <i data-lucide="x"></i>
                 </button>
-                <div class="col">
-                    <div class="modal-head row">
-                        <svg id="logo" class="logo" height="1rem" width="4rem" style="zoom: 1.5" data-modal="#modal-projects">
+                <section class="pane">
+                    <header class="header">
+                        <svg class="brand" height="1.5rem" width="6rem" data-modal="#modal-projects">
                             <use href="#logo-xode"></use>
                         </svg>
-                        <br />
-                        <button class="gradient lg" type="button" id="project-new">
+                        <button class="button-primary button-large" type="button" id="project-new">
                             <i data-lucide="plus"></i>
                             New Project
                         </button>
-                    </div>
-                    <div class="modal-body">
+                    </header>
+                    <div class="content">
                         <h2>
                             <i data-lucide="folder"></i>
                             <span>Project</span>
                         </h2>
-                        <div class="col">
+                        <div class="form-stack">
                             <label>
                                 <span><i data-lucide="folder"></i> Name</span>
-                                <input data-rea-model="project.name" class="currentProjectName" type="text" placeholder="Project Name" value="" maxlength="20" minlength="3" />
+                                <input data-rea-model="project.name" type="text" placeholder="Project Name" value="" maxlength="20" minlength="3" />
                             </label>
                             <label>
                                 <span><i data-lucide="info"></i> Description</span>
-                                <textarea data-rea-model="project.description" class="currentProjectDescription" placeholder="Project Description"></textarea>
+                                <textarea data-rea-model="project.description" placeholder="Project Description"></textarea>
                             </label>
-                            <div class="row gap-05">
-                                <br />
-                                <button class="downloadCurrentProject" type="button" title="Download project">
+                            <div class="form-actions">
+                                <button type="button" data-project-action="download-current" title="Download project">
                                     <i data-lucide="download"></i>
-                                    <span class="md-show">Download</span>
+                                    <span class="desktop-only">Download</span>
                                 </button>
-                                <button type="button" id="githubPublish" class="accent" title="Publish to GitHub Gist">
+                                <button type="button" id="githubPublish" class="button-primary" title="Publish to GitHub Gist">
                                     <i data-lucide="github"></i>
                                     Publish
                                 </button>
-                                <button type="button" id="project-delete" class="danger" title="Delete project" aria-label="Delete project">
+                                <button type="button" id="project-delete" class="button-danger" title="Delete project" aria-label="Delete project">
                                     <i data-lucide="trash-2"></i>
                                 </button>
                             </div>
@@ -276,7 +278,7 @@
                         <label>
                             <span><i data-lucide="github"></i> Gist ID</span>
                             <input id="githubLoadId" type="text" placeholder="GitHub Gist ID" />
-                            <button type="button" id="githubLoad" class="accent" title="Load Gist"><i data-lucide="download"></i> Load Project</button>
+                            <button type="button" id="githubLoad" class="button-primary" title="Load Gist"><i data-lucide="download"></i> Load Project</button>
                         </label>
 
                         <h2>
@@ -284,27 +286,27 @@
                             <span>GitHub Connect</span>
                         </h2>
                         <div class="github-status" data-rea-open="settings.isGithubEnabled">
-                            <span class="github-status-label">
+                            <span class="status-label">
                                 <i data-lucide="check"></i>
                                 Connected
                             </span>
-                            <div class="github-actions">
-                                <button type="button" id="githubFetch" class="accent" title="Fetch XODE projects from your GitHub Gists">
+                            <div class="actions">
+                                <button type="button" id="githubFetch" class="button-primary" title="Fetch XODE projects from your GitHub Gists">
                                     <i data-lucide="cloud-download"></i>
                                     Fetch XODE Gists
                                 </button>
                                 <button type="button" id="githubTokenDelete" title="Delete token and disconnect">
                                     <i data-lucide="trash-2"></i>
-                                    <span class="disconnect-label">Disconnect</span>
+                                    <span>Disconnect</span>
                                 </button>
                             </div>
                         </div>
                         <div data-rea-open="settings.isGithubDisabled">
-                            <p class="note">
+                            <p class="supporting-text">
                                 XODE saves projects locally. For a permanent solution, and to share your creations, <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">create a GitHub token</a> and paste
                                 it below to enable this feature.
                             </p>
-                            <div class="form-group">
+                            <div class="form-stack">
                                 <label>
                                     <span><i data-lucide="key-round"></i> Token</span>
                                     <input id="githubToken" type="password" placeholder="GitHub Token (classic)" />
@@ -313,7 +315,7 @@
                         </div>
 
                         <h2><i data-lucide="settings"></i> Global Settings</h2>
-                        <div class="form-group">
+                        <div class="form-stack">
                             <label>
                                 <span title="Indent spaces">
                                     <i data-lucide="list-indent-increase"></i>
@@ -324,20 +326,20 @@
                                     <option>4</option>
                                 </select>
                             </label>
-                            <p class="note">
+                            <p class="supporting-text">
                                 <i data-lucide="info"></i><br />
                                 Format using <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd><br />
                                 <b>Emmet</b> syntax supported in HTML &amp; CSS.
                             </p>
                         </div>
                     </div>
-                    <div class="modal-foot">
+                    <footer class="footer">
                         <p>&copy; XODE — roxon.hr</p>
-                    </div>
-                </div>
+                    </footer>
+                </section>
 
-                <div class="col" style="flex: 2">
-                    <div class="modal-head">
+                <section class="pane project-library">
+                    <header class="header">
                         <h2>
                             <i data-lucide="folder-search"></i>
                             All projects
@@ -346,32 +348,32 @@
                             <i data-lucide="search"></i>
                             <input id="projects-search" type="text" placeholder="Search..." />
                         </label>
+                    </header>
+                    <div class="content">
+                        <div id="projects-list" class="project-grid"></div>
                     </div>
-                    <div class="modal-body">
-                        <div id="projects-list"></div>
-                    </div>
-                </div>
+                </section>
             </div>
         </div>
 
-        <dialog class="project-delete-dialog" id="project-delete-dialog" aria-labelledby="project-delete-title" aria-describedby="project-delete-description">
+        <dialog class="confirm-dialog" id="project-delete-dialog" aria-labelledby="project-delete-title" aria-describedby="project-delete-description">
             <form method="dialog">
-                <button class="project-delete-close" type="submit" value="cancel" aria-label="Close delete project dialog">
+                <button class="close" type="submit" value="cancel" aria-label="Close delete project dialog">
                     <i data-lucide="x"></i>
                 </button>
                 <header>
                     <i data-lucide="trash-2"></i>
                     <h2 id="project-delete-title">Delete project?</h2>
                 </header>
-                <div class="project-delete-body">
+                <div class="copy">
                     <p id="project-delete-description"></p>
-                    <p class="project-delete-gist-note" hidden></p>
-                    <p class="project-delete-status" role="status" aria-live="polite"></p>
+                    <p class="gist-note" data-delete-element="gist-note" hidden></p>
+                    <p class="status" data-delete-element="status" role="status" aria-live="polite"></p>
                 </div>
-                <footer class="project-delete-actions">
-                    <button type="submit" value="cancel" class="icon-label"><i data-lucide="x"></i><span>Cancel</span></button>
-                    <button type="button" class="project-delete-local icon-label"><i data-lucide="trash-2"></i><span>Delete locally</span></button>
-                    <button type="button" class="project-delete-gist danger icon-label"><i data-lucide="github"></i><span>Delete locally and Gist</span></button>
+                <footer class="actions">
+                    <button type="submit" value="cancel"><i data-lucide="x"></i><span>Cancel</span></button>
+                    <button type="button" data-delete-action="local"><i data-lucide="trash-2"></i><span>Delete locally</span></button>
+                    <button type="button" class="button-danger" data-delete-action="gist"><i data-lucide="github"></i><span>Delete locally and Gist</span></button>
                 </footer>
             </form>
         </dialog>

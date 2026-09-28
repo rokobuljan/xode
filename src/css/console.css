@@ -1,131 +1,115 @@
 .console {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: nowrap;
     position: absolute;
     inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-content: flex-start;
+    justify-content: flex-start;
+    overflow: auto;
     background: color-mix(in srgb, var(--bg), #000 20%);
     color: #d4d4d4;
     font:
-        0.75rem/1.2 "Consolas",
+        0.75rem/1.2 Consolas,
         "Courier New",
         monospace;
-    justify-content: flex-start;
-    align-content: flex-start;
-    overflow: auto;
 
-    &:empty {
-        &::before {
-            user-select: none;
-            content: "›_  Console";
-            font-style: italic;
-            padding: 0.5em 0.8em;
-            font-size: 1.2em;
-            opacity: 0.2;
-        }
+    &:empty::before {
+        content: ">_ Console";
+        padding: 0.7rem 0.8rem;
+        opacity: 0.2;
+        font-style: italic;
+        user-select: none;
     }
 
-    .log {
-        flex: 0 0 auto;
-        overflow-anchor: none;
+    .entry {
         position: relative;
-        color: color-mix(in srgb, var(--bg), #fff 80%);
-        border-bottom: 1px solid color-mix(in srgb, var(--bg), var(--fg) 3%);
-        border-left: 2px solid transparent;
-        padding: 0.5em;
         width: 100%;
         min-height: 2lh;
-        white-space: pre-wrap;
+        flex: 0 0 auto;
+        padding: 0.5em;
+        overflow-anchor: none;
+        background: transparent;
+        color: color-mix(in srgb, var(--bg), #fff 80%);
         font: inherit;
+        white-space: pre-wrap;
 
-        .log-line {
-            content: attr(data-line);
+        &.is-info {
+            background: color-mix(in srgb, var(--c1), transparent 94%);
+        }
+
+        &.is-error {
+            background: color-mix(in srgb, var(--ce), transparent 94%);
+            color: color-mix(in srgb, var(--ce), var(--fg) 35%);
+        }
+
+        &.is-warn {
+            background: color-mix(in srgb, var(--warning), transparent 94%);
+            color: color-mix(in srgb, var(--warning), var(--fg) 30%);
+        }
+
+        &.is-clear {
+            color: var(--text-faint);
+            font-style: italic;
+        }
+
+        &.is-input::before,
+        &.is-result::before {
+            margin-right: 0.5em;
+            color: var(--text-faint);
+            user-select: none;
+        }
+
+        &.is-input::before {
+            content: ">";
+        }
+
+        &.is-result::before {
+            content: "←";
+        }
+
+        .line-number {
             position: absolute;
             top: 0;
             right: 0.5rem;
             opacity: 0.5;
-            font-size: 0.8em;
-        }
-
-        &.info {
-            border-left: 1px solid var(--c1);
-        }
-
-        &.error {
-            border-left: 1px solid var(--ce);
-            color: color-mix(in srgb, var(--fg), var(--ce) 40%);
-        }
-
-        &.warn {
-            border-left: 1px solid #dcdcaa;
-        }
-
-        &.clear {
-            font-style: italic;
-            color: color-mix(in srgb, var(--fg), var(--bg) 70%);
-        }
-
-        &.input {
-            &::before {
-                content: ">";
-                opacity: 0.5;
-                user-select: none;
-                margin-right: 0.5em;
-            }
-        }
-
-        &.result {
-            &::before {
-                content: "←";
-                opacity: 0.5;
-                user-select: none;
-                margin-right: 0.5em;
-            }
+            font-size: 0.78em;
         }
     }
 
-    /* The input line that's part of the output */
-    .input-line {
+    .input-row {
         display: flex;
+        flex: 1;
         gap: 0.3ch;
-        flex: 1;
         padding: 0.5em;
-    }
-
-    .console-prompt {
-        color: #aaf;
-        user-select: none;
-        font: inherit;
-        margin-right: 0.5em;
-    }
-
-    .console-input {
         background: transparent;
-        color: #d4d4d4;
+    }
+
+    .prompt {
+        margin-right: 0.5em;
+        color: #aaf;
         font: inherit;
-        border: none;
-        outline: none;
-        flex: 1;
-        min-height: 100%;
-        field-sizing: content;
+        user-select: none;
+    }
+
+    .input {
         min-height: 3lh;
+        flex: 1;
         resize: none;
+        field-sizing: content;
         padding: 0;
+        background: transparent;
+        color: var(--text-strong);
+        font: inherit;
 
         &:focus {
             box-shadow: none;
         }
-
-        &::placeholder {
-            color: #6a6a6a;
-        }
     }
 
-    /* Object/Array pretty printing */
-    .log-object {
-        color: #d4d4d4;
-        padding-left: 1rem;
+    .object {
         display: block;
+        padding-left: 1rem;
+        color: var(--text);
 
         .key {
             color: #9cdcfe;
@@ -139,10 +123,7 @@
             color: #b5cea8;
         }
 
-        .boolean {
-            color: #569cd6;
-        }
-
+        .boolean,
         .null {
             color: #569cd6;
         }
@@ -153,14 +134,14 @@
     position: absolute;
     top: 0.3em;
     right: 0.3em;
-    z-index: 2;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.2s;
-    background-color: color-mix(in srgb, var(--bg), #0000 50%);
+    z-index: 3;
+    background: color-mix(in srgb, var(--bg), transparent 50%);
     font-size: 0.8rem;
-}
+    opacity: 0;
+    transition: opacity var(--motion-fast);
 
-[data-view="console"]:hover .console-clear {
-    opacity: 1;
+    [data-view="console"]:hover &,
+    &:focus-visible {
+        opacity: 1;
+    }
 }

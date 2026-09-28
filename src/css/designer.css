@@ -1,36 +1,34 @@
-[data-view="richEditor"] {
+.rich-toolbar {
     display: flex;
     max-width: 100%;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: safe center;
+    overflow-x: auto;
+    border-bottom: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
     background: var(--bg);
     color: var(--fg);
-    border-bottom: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
-    overflow: hidden;
-    overflow-x: auto;
-    flex: 0 0 auto;
-}
 
-.cmd-group {
-    flex-shrink: 0;
-    position: relative;
-    padding: 4px;
-    display: inline-flex;
-    align-items: center;
-    border-right: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
-    flex-wrap: nowrap;
+    .tool-group {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        padding: 4px;
+        border-right: 1px solid color-mix(in srgb, var(--bg), var(--fg) 10%);
+        border-radius: 0;
+        background: transparent;
 
-    > * {
-        position: relative;
-        cursor: pointer;
-        width: 1.8rem;
-        height: 1.8rem;
-        padding: 6px 5px;
-        border-radius: 3px;
-        transition: background 0.2s;
+        > * {
+            width: 1.8rem;
+            height: 1.8rem;
+            padding: 6px 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.2s;
 
-        &:hover {
-            background: var(--c1);
+            &:hover {
+                background: var(--c1);
+            }
         }
     }
 }
