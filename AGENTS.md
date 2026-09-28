@@ -28,6 +28,10 @@ release. Add a tool name to select part of the graph. For example, run
 
 <!--USER PREFERENCES START-->
 
+## Shell execution
+
+Instead of Powershell you can also mitigate to use Git-Bash if is installed on the system
+
 ## Responses
 
 - Max 3-5 short bullets or sentences unless I ask for detail.
