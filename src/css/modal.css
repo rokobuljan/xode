@@ -46,6 +46,7 @@
 
         .close {
             padding: 0.5rem 0.8rem;
+            background: transparent;
         }
     }
 
@@ -209,6 +210,16 @@
         font-size: inherit;
     }
 
+    .script-type-help {
+        margin: -0.35rem 0 1rem calc(15ch + 0.5rem);
+        font-size: 0.8rem;
+    }
+
+    .projects-more {
+        margin: 0 auto 1rem;
+        color: var(--text-muted);
+    }
+
     @media (width <= 768px) {
         width: 100%;
         height: 100dvh;
@@ -247,6 +258,10 @@
             > span {
                 padding-top: 0;
             }
+        }
+
+        .script-type-help {
+            margin-left: 0;
         }
 
         .github-status {
@@ -296,6 +311,7 @@
         right: 0.75rem;
         width: 2.25rem;
         padding: 0.5rem;
+        background: transparent;
     }
 
     header {

@@ -166,6 +166,7 @@
 
     .project-card {
         overflow: hidden;
+        cursor: pointer;
         transition: 0.3s;
 
         @starting-style {

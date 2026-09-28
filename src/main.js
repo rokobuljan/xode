@@ -7,21 +7,22 @@
 import DOMPurify from "dompurify";
 import "./css/index.css";
 import "./js/splitview.js";
-import "./js/modal.js";
+import { closeModals } from "./js/modal.js";
 import paneConsole from "./js/console.js";
 import { init as initChat } from "./js/chat.js";
 import Toast from "./js/toast.js";
 import "./js/consoleWarning.js";
-import gist, { setToken, getToken, hasToken, clearToken, GistApiError, XODE_MANIFEST_FILENAME, createXodeManifestFile, hasXodeManifest } from "./js/githubGist.js";
+import gist, { setToken, getToken, hasToken, clearToken, GistApiError, GIST_PAGE_SIZE, XODE_MANIFEST_FILENAME, createXodeManifestFile, hasXodeManifest, readXodeManifest } from "./js/githubGist.js";
 import { bus } from "./js/bus.js";
 
 import { reactive, effect, mount, persist } from "./js/reactive.js";
 
-import { LS, el, els, elNew, download, formatDateTime, params, countLines } from "./js/utils.js";
+import { LS, el, els, elNew, download, formatDateTime, params } from "./js/utils.js";
 import { initProjectStorage, openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from "./js/project.js";
 import { Editor } from "./js/editor.js";
 import { renderIcons } from "./js/icons.js";
 import { isolatePane, isPaneIsolationGesture, isViewPane, paneNameFromModel } from "./js/paneTabs.js";
+import { generatePreviewHTML, PREVIEW_SANDBOX } from "./js/preview.js";
 
 renderIcons();
 
@@ -32,6 +33,10 @@ const lsSettings = LS("xode.settings");
 const tabWidth = Number(lsSettings.read("tabWidth") ?? 4);
 const editors = {};
 const elPreview = el("#preview"); // the iframe
+elPreview.setAttribute("sandbox", PREVIEW_SANDBOX);
+elPreview.setAttribute("credentialless", "");
+elPreview.setAttribute("referrerpolicy", "no-referrer");
+elPreview.setAttribute("allow", "");
 
 // Toggle single `pane` or handle all panes depending on project panes state
 const handlePanes = () => {
@@ -69,58 +74,8 @@ const projectInit = async (isNew = true, id) => {
     else params.delete("g");
 
     previewCurrentProject("all");
+    updateProjectShareButtons();
     bus.emit("project:changed", { id: currentProjectState.id });
-};
-
-/**
- * Construct HTML page output for preview, download, or iframe "thumbnails"
- * @param {object} project Project data
- * @param {boolean} consumer ("app", "preview", "download") Differentiate whilst in-app vs downloaded document or thumbnail
- * @returns {string} HTML
- */
-const generatePreviewHTML = (project, consumer = "app") => {
-    const isApp = consumer === "app";
-    const isPreview = consumer === "preview";
-    const injectScript = /*html*/ `<script id="◆xode-inject" {{◆xode-previewOffsets}} src="inject.js?t=${Date.now()}"></script>`;
-    let previewHTML = /*html*/ `<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${project.name}</title>
-        <style${isApp ? ' id="◆xode-css"' : ""}>${project.css}</style>
-        ${
-            isApp || isPreview
-                ? `<script>
-(function() {
-    // Neutralize every API that can cause cross-frame scroll propagation
-    const noop = function() {};
-    Element.prototype.scrollIntoView = noop;
-    Element.prototype.scrollIntoViewIfNeeded = noop; // non-standard, Safari/Chrome
-    window.scrollTo = noop;
-    window.scroll = noop;
-    window.scrollBy = noop;
-    // .focus() can also trigger native scroll-into-view; strip that behavior
-    const originalFocus = HTMLElement.prototype.focus;
-    HTMLElement.prototype.focus = function(options) {
-        return originalFocus.call(this, { ...options, preventScroll: true });
-    };
-})();
-</script>`
-                : ""
-        }
-        ${isApp ? injectScript : ""}
-    </head>
-    <body${isApp ? ' id="◆xode-html" spellcheck="false"' : ""}>
-        ${project.html}
-        <script${isApp ? ' id="◆xode-js"' : ""} type="module">${project.js}${isApp ? "//# sourceURL=js" : ""}</script>
-    </body>
-    </html>`;
-    const previewOffsets = {
-        htmlStartLine: countLines(previewHTML.split(/<body(?:.*?>)?/)[0]) + 1,
-        jsStartLine: countLines(previewHTML) + countLines(project.html),
-    };
-    return previewHTML.replace(`{{◆xode-previewOffsets}}`, `data-previewoffsets='${JSON.stringify(previewOffsets)}'`);
 };
 
 let previewTimeoutId;
@@ -152,7 +107,10 @@ const previewCurrentProject = (pane = "all", isForce = false) => {
 
 // Rich Editor --to--> HTML
 addEventListener("message", async (evt) => {
+    if (evt.source !== elPreview.contentWindow || !evt.data || typeof evt.data.type !== "string") return;
+
     if (evt.data.type === "content-changed") {
+        if (!currentProjectState.panes.richEditor || typeof evt.data.html !== "string") return;
         const body = new DOMParser().parseFromString(evt.data.html, "text/html").body;
         body.querySelector("#◆xode-js")?.remove();
         const html = (body.innerHTML.trim() ?? "").replace(/^<br ?\/?>$/, "");
@@ -172,6 +130,7 @@ addEventListener("message", async (evt) => {
 });
 
 const elProjectsList = el("#projects-list");
+const elProjectsMore = el("#projects-more");
 const elProjectDeleteDialog = el("#project-delete-dialog");
 const elProjectDeleteTitle = el("#project-delete-title");
 const elProjectDeleteDescription = el("#project-delete-description");
@@ -181,6 +140,9 @@ const elProjectDeleteLocal = el('[data-delete-action="local"]', elProjectDeleteD
 const elProjectDeleteGist = el('[data-delete-action="gist"]', elProjectDeleteDialog);
 let pendingProjectDeletion = null;
 let isProjectDeleteBusy = false;
+const PROJECTS_PAGE_SIZE = 30;
+let visibleProjectCount = PROJECTS_PAGE_SIZE;
+let projectSearch = "";
 
 const setProjectDeleteBusy = (isBusy) => {
     isProjectDeleteBusy = isBusy;
@@ -264,13 +226,22 @@ elProjectDeleteDialog.addEventListener("click", (event) => {
 });
 
 let drawProjectsSequence = 0;
-const drawProjects = async () => {
+const drawProjects = async ({ reset = false } = {}) => {
+    if (reset) visibleProjectCount = PROJECTS_PAGE_SIZE;
     const sequence = ++drawProjectsSequence;
     const projectSummaries = await listProjects();
-    const projects = (await Promise.all(projectSummaries.map(({ id }) => loadProject(id)))).filter(Boolean);
+    const filteredSummaries = projectSummaries.filter((project) => {
+        const full = `${project.name ?? ""} ${project.description ?? ""} ${project.id} ${new Date(project.updatedAt).toLocaleString()}`;
+        return full.toLowerCase().includes(projectSearch);
+    });
+    const visibleSummaries = filteredSummaries.slice(0, visibleProjectCount);
+    const projects = (await Promise.all(visibleSummaries.map(({ id }) => loadProject(id)))).filter(Boolean);
     if (sequence !== drawProjectsSequence) return;
 
     elProjectsList.innerHTML = "";
+    elProjectsMore.hidden = visibleSummaries.length >= filteredSummaries.length;
+    const remainingProjects = Math.max(0, filteredSummaries.length - visibleSummaries.length);
+    el("span", elProjectsMore).textContent = `Load ${Math.min(PROJECTS_PAGE_SIZE, remainingProjects)} more project${remainingProjects === 1 ? "" : "s"}`;
     projects.forEach((projectData) => {
         const title = `${projectData.name} ${projectData.description ? " — " + projectData.description : ""} | ${formatDateTime(projectData.updatedAt)}`;
         const elThumbnail = elNew("div", { className: "preview", title });
@@ -295,7 +266,10 @@ const drawProjects = async () => {
             ` + projectData.html;
         const elThumbnailIframe = elNew("iframe", {
             srcdoc: generatePreviewHTML(projectData, "preview"),
-            sandbox: "allow-scripts", // ⚠️ DO NOT add allow-same-origin — breaks localStorage isolation
+            sandbox: PREVIEW_SANDBOX,
+            credentialless: true,
+            referrerPolicy: "no-referrer",
+            allow: "",
             loading: "lazy",
             scrolling: "no",
         });
@@ -309,6 +283,7 @@ const drawProjects = async () => {
                 <span class="name"></span>
                 <span class="actions">
                     ${gistLinkHTML}
+                    ${projectData.gistId ? `<button data-share-id="${projectData.id}" type="button" title="Share published project"><i data-lucide="share-2"></i></button>` : ""}
                     <button data-download-id="${projectData.id}" type="button" title="Download"><i data-lucide="download"></i></button>
                     <button data-delete-id="${projectData.id}" type="button" title="Delete"><i data-lucide="trash-2"></i></button>
                 </span>
@@ -319,6 +294,9 @@ const drawProjects = async () => {
         elName.textContent = projectData.name; // safe — no HTML parsing
         elName.title = title; // safe — DOM property, not string-parsed
         elProject.prepend(elThumbnail);
+        elThumbnail.tabIndex = 0;
+        elThumbnail.setAttribute("role", "button");
+        elThumbnail.setAttribute("aria-label", `Open ${projectData.name || "Untitled"}`);
 
         el(`[data-delete-id]`, elProject).addEventListener("click", () => openProjectDeleteDialog(projectData));
 
@@ -326,9 +304,22 @@ const drawProjects = async () => {
             void downloadProject(projectData.id);
         });
 
-        // Close modal on iframe click:
-        elThumbnail.addEventListener("click", () => {
+        el(`[data-share-id]`, elProject)?.addEventListener("click", () => {
+            void shareProject(projectData);
+        });
+
+        const activateProject = () => {
+            closeModals();
             void projectInit(false, projectData.id);
+        };
+        elProject.addEventListener("click", (event) => {
+            if (!event.target.closest(".actions")) activateProject();
+        });
+        elThumbnail.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                activateProject();
+            }
         });
 
         elProjectsList.append(elProject);
@@ -337,21 +328,13 @@ const drawProjects = async () => {
 
 // Search projects
 const elProjectsSearch = el("#projects-search");
-let projectSearchSequence = 0;
-elProjectsSearch.addEventListener("input", async () => {
-    const sequence = ++projectSearchSequence;
-    const search = elProjectsSearch.value.trim().toLowerCase();
-    const elsProjects = els(".project-card", elProjectsList);
-    const projectsListId = (await listProjects()).reduce((acc, proj) => ((acc[proj.id] = proj), acc), {});
-    if (sequence !== projectSearchSequence) return;
-    elsProjects.forEach((elProject) => {
-        const elId = elProject.id.replace("project-", "");
-        const project = projectsListId[elId];
-        if (!project) return;
-        const full = `${project.name.trim()} ${project.description.trim()} ${project.id} ${new Date(project.updatedAt).toLocaleString()}`;
-        const matchName = full.toLowerCase().includes(search);
-        elProject.classList.toggle("is-hidden", !matchName);
-    });
+elProjectsSearch.addEventListener("input", () => {
+    projectSearch = elProjectsSearch.value.trim().toLowerCase();
+    void drawProjects({ reset: true });
+});
+elProjectsMore.addEventListener("click", () => {
+    visibleProjectCount += PROJECTS_PAGE_SIZE;
+    void drawProjects();
 });
 
 // EVENTS
@@ -371,6 +354,69 @@ const downloadProject = async (id) => {
 // Download current project
 els('[data-project-action="download-current"]').forEach((elBtnDownload) => {
     elBtnDownload.addEventListener("click", () => void downloadProject(currentProjectState.id));
+});
+
+const projectShareUrl = (gistId) => {
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.hash = "";
+    url.searchParams.set("g", gistId);
+    return url.toString();
+};
+
+const updateProjectShareButtons = () => {
+    const isPublished = Boolean(currentProjectState.gistId);
+    els('[data-project-action="share-current"]').forEach((button) => {
+        button.disabled = !isPublished;
+        button.title = isPublished ? "Share published project" : "Publish this project before sharing";
+    });
+};
+
+const copyText = async (value) => {
+    if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        return;
+    }
+
+    const textarea = elNew("textarea", { value });
+    textarea.setAttribute("readonly", "");
+    textarea.className = "sr-only";
+    document.body.append(textarea);
+    textarea.select();
+    const copied = document.execCommand("copy");
+    textarea.remove();
+    if (!copied) throw new Error("Copy is not available in this browser");
+};
+
+async function shareProject(project) {
+    if (!project.gistId) return;
+
+    const url = projectShareUrl(project.gistId);
+    const shareData = {
+        title: project.name?.trim() || "Untitled XODE project",
+        text: project.description?.trim() || "Open this XODE project",
+        url,
+    };
+
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+            return;
+        } catch (error) {
+            if (error.name === "AbortError") return;
+        }
+    }
+
+    try {
+        await copyText(url);
+        new Toast({ head: "Share link copied", body: "Anyone with this link can open the published project.", type: "success", time: 3000 });
+    } catch (error) {
+        new Toast({ head: "Could not copy link", body: error.message, type: "error", time: 0 });
+    }
+}
+
+els('[data-project-action="share-current"]').forEach((button) => {
+    button.addEventListener("click", () => void shareProject(currentProjectState));
 });
 
 // Editor exec commander for richEditor mode (text editing buttons)
@@ -444,6 +490,15 @@ const elGithubPublish = el("#githubPublish");
 const elGithubLoad = el("#githubLoad");
 const elGithubLoadId = el("#githubLoadId");
 const elGithubFetch = el("#githubFetch");
+const elGithubFetchLabel = el("#githubFetchLabel");
+let nextGistPage = 1;
+let hasMoreGists = true;
+
+const resetGistPagination = () => {
+    nextGistPage = 1;
+    hasMoreGists = true;
+    elGithubFetchLabel.textContent = "Fetch XODE Gists";
+};
 
 const updateElGithubToken = () => {
     elGithubToken.value = "";
@@ -451,6 +506,7 @@ const updateElGithubToken = () => {
     else elGithubToken.placeholder = "GitHub Token (classic)";
     elGithubTokenDelete.disabled = !token;
     elGithubPublish.disabled = !token;
+    elGithubFetch.disabled = !token || !hasMoreGists;
     settingsState.isGithubEnabled = !!token;
     settingsState.isGithubDisabled = !token;
 };
@@ -459,6 +515,7 @@ elGithubToken.addEventListener("input", (evt) => {
     token = evt.target.value;
     if (token) setToken(token);
     else clearToken();
+    resetGistPagination();
     updateElGithubToken();
 });
 elGithubToken.addEventListener("blur", () => {
@@ -485,6 +542,7 @@ const gistToProject = (data) => {
     });
 
     const [projName = "Untitled", ...descriptionParts] = (data.description || "Untitled").split(" — ");
+    const manifest = readXodeManifest(data);
     return {
         id: data.id,
         gistId: data.id,
@@ -493,6 +551,7 @@ const gistToProject = (data) => {
         html: files.html,
         css: files.css,
         js: files.js,
+        scriptType: manifest?.scriptType === "classic" ? "classic" : "module",
     };
 };
 
@@ -516,7 +575,9 @@ elGithubFetch.addEventListener("click", async () => {
     elGithubFetch.disabled = true;
 
     try {
-        const remoteGists = (await gist.list()).filter(hasXodeManifest);
+        const page = nextGistPage;
+        const gistPage = await gist.list({ page, perPage: GIST_PAGE_SIZE });
+        const remoteGists = gistPage.filter(hasXodeManifest);
         let imported = 0;
         let skipped = 0;
         let failed = 0;
@@ -543,9 +604,17 @@ elGithubFetch.addEventListener("click", async () => {
             );
         }
 
-        if (imported) await drawProjects();
+        if (imported) await drawProjects({ reset: true });
 
-        const details = [`${imported} imported`];
+        if (gistPage.length < GIST_PAGE_SIZE) {
+            hasMoreGists = false;
+            elGithubFetchLabel.textContent = "All Gists fetched";
+        } else {
+            nextGistPage += 1;
+            elGithubFetchLabel.textContent = `Fetch next ${GIST_PAGE_SIZE} Gists`;
+        }
+
+        const details = [`${gistPage.length} scanned`, `${imported} imported`];
         if (skipped) details.push(`${skipped} already local`);
         if (failed) details.push(`${failed} failed`);
         new Toast({
@@ -562,7 +631,7 @@ elGithubFetch.addEventListener("click", async () => {
             time: 0,
         });
     } finally {
-        elGithubFetch.disabled = false;
+        updateElGithubToken();
     }
 });
 
@@ -575,7 +644,7 @@ const gistPublish = async (project) => {
         console.warn("Nothing to publish — all panes are empty");
         return;
     }
-    files[XODE_MANIFEST_FILENAME] = createXodeManifestFile();
+    files[XODE_MANIFEST_FILENAME] = createXodeManifestFile(project);
     const projName = project.name?.trim() || "Untitled";
     const projDesc = project.description?.trim() || "";
     const description = `${projName} ${projDesc ? ` — ${projDesc}` : ""}`;
@@ -592,9 +661,11 @@ const gistPublish = async (project) => {
                 await deleteProject(oldId);
                 bus.emit("project:rekeyed", { oldId, newId: project.id });
             }
+            params.set("g", project.gistId);
+            updateProjectShareButtons();
             new Toast({
                 head: "Published",
-                body: `Successfully publised to <a href="https://gist.github.com/${project.gistId}" target="_blank">${project.name}</a>`,
+                body: `Successfully published to <a href="https://gist.github.com/${project.gistId}" target="_blank" rel="noopener noreferrer">GitHub Gist</a>`,
                 type: "success",
                 time: 3000,
             });
@@ -631,6 +702,7 @@ const gistPublish = async (project) => {
                         bus.emit("project:rekeyed", { oldId, newId: project.id });
                     }
                     params.set("g", project.gistId);
+                    updateProjectShareButtons();
                     new Toast({
                         head: "Forked",
                         type: "success",
@@ -691,6 +763,12 @@ function watchEditors(project, editors, previewCurrentProject) {
         });
     });
 }
+function watchScriptType(project, previewCurrentProject) {
+    effect(() => {
+        void project.scriptType;
+        previewCurrentProject("all");
+    });
+}
 // One-time call to watch panes (toggle panes)
 function watchPanes(project, handlePanes) {
     Object.keys(project.panes).forEach((pane) => {
@@ -711,6 +789,7 @@ paneConsole.init();
 const currentProjectState = reactive(initialProject); // Open latest Project
 mount(currentProjectState, "project"); // Mount project to DOM and bind events
 watchEditors(currentProjectState, editors, previewCurrentProject);
+watchScriptType(currentProjectState, previewCurrentProject);
 watchPanes(currentProjectState, handlePanes);
 
 // App settings

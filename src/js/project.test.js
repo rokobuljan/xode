@@ -100,7 +100,7 @@ describe("IndexedDB project storage", () => {
         const projects = await loadProjectModule();
         await projects.initProjectStorage();
 
-        expect(await projects.loadProject(legacyProject.id)).toEqual(legacyProject);
+        expect(await projects.loadProject(legacyProject.id)).toEqual({ ...legacyProject, scriptType: "module" });
         expect(localStorage.getItem("xode-index")).toBeNull();
         expect(localStorage.getItem(`xode-project-${legacyProject.id}`)).toBeNull();
         expect(localStorage.getItem("xode-last-project")).toBe(legacyProject.id);
@@ -117,6 +117,7 @@ describe("IndexedDB project storage", () => {
         const loaded = await projects.loadProject(project.id);
         expect(loaded.html).toHaveLength(6 * 1024 * 1024);
         expect(loaded.panes.chat).toBe(false);
+        expect(loaded.scriptType).toBe("module");
         expect(localStorage.getItem(`xode-project-${project.id}`)).toBeNull();
         expect(localStorage.getItem("xode-last-project")).toBe(project.id);
     });

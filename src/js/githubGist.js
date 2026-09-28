@@ -7,18 +7,34 @@ const ls = LS("xode.settings");
  */
 
 const API_BASE = "https://api.github.com/gists";
-const LIST_PAGE_SIZE = 100;
+export const GIST_PAGE_SIZE = 30;
 
 export const XODE_MANIFEST_FILENAME = "xode.json";
-export const XODE_MANIFEST = Object.freeze({ format: "xode", version: 1 });
+export const XODE_MANIFEST = Object.freeze({ format: "xode", version: 2 });
 
 export function hasXodeManifest(gist) {
     return Object.hasOwn(gist?.files ?? {}, XODE_MANIFEST_FILENAME);
 }
 
-export function createXodeManifestFile() {
+export function readXodeManifest(gist) {
+    try {
+        const manifest = JSON.parse(gist?.files?.[XODE_MANIFEST_FILENAME]?.content ?? "");
+        return manifest?.format === XODE_MANIFEST.format ? manifest : null;
+    } catch {
+        return null;
+    }
+}
+
+export function createXodeManifestFile(project = {}) {
     return {
-        content: JSON.stringify(XODE_MANIFEST, null, 4),
+        content: JSON.stringify(
+            {
+                ...XODE_MANIFEST,
+                scriptType: project.scriptType === "classic" ? "classic" : "module",
+            },
+            null,
+            4,
+        ),
     };
 }
 
@@ -168,18 +184,10 @@ const gistCrud = {
     /**
      * List gists owned by the authenticated user.
      */
-    list: requireAuth(async (token) => {
-        const gists = [];
-
-        for (let page = 1; ; page += 1) {
-            const url = `${API_BASE}?per_page=${LIST_PAGE_SIZE}&page=${page}`;
-            const pageGists = await request(url, { method: "GET" }, token);
-            gists.push(...pageGists);
-
-            if (pageGists.length < LIST_PAGE_SIZE) break;
-        }
-
-        return gists;
+    list: requireAuth(async (token, { page = 1, perPage = GIST_PAGE_SIZE } = {}) => {
+        const safePage = Math.max(1, Math.trunc(Number(page)) || 1);
+        const safePageSize = Math.min(100, Math.max(1, Math.trunc(Number(perPage)) || GIST_PAGE_SIZE));
+        return request(`${API_BASE}?per_page=${safePageSize}&page=${safePage}`, { method: "GET" }, token);
     }),
 };
 

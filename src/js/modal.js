@@ -1,5 +1,9 @@
 import { el, els } from "./utils.js";
 
+export function closeModals() {
+    els(".modal.is-open").forEach((modal) => modal.classList.remove("is-open"));
+}
+
 // Modal
 addEventListener("click", (evt) => {
     const elBtn = evt.target.closest("[data-modal]");
@@ -12,7 +16,7 @@ addEventListener("click", (evt) => {
     const id = elBtn?.dataset.modal;
 
     // Close all open modals
-    els(".modal.is-open").forEach((elMod) => elMod.classList.remove("is-open"));
+    closeModals();
 
     if (!elBtn) return;
     if (!id) {

@@ -23,30 +23,30 @@ beforeEach(() => {
 
 describe("XODE Gist metadata", () => {
     it("creates and detects the versioned manifest", async () => {
-        const { XODE_MANIFEST_FILENAME, XODE_MANIFEST, createXodeManifestFile, hasXodeManifest } = await loadGistModule();
-        const manifestFile = createXodeManifestFile();
+        const { XODE_MANIFEST_FILENAME, XODE_MANIFEST, createXodeManifestFile, hasXodeManifest, readXodeManifest } = await loadGistModule();
+        const manifestFile = createXodeManifestFile({ scriptType: "classic" });
 
         expect(XODE_MANIFEST_FILENAME).toBe("xode.json");
-        expect(JSON.parse(manifestFile.content)).toEqual(XODE_MANIFEST);
+        expect(JSON.parse(manifestFile.content)).toEqual({ ...XODE_MANIFEST, scriptType: "classic" });
         expect(hasXodeManifest({ files: { "xode.json": manifestFile } })).toBe(true);
+        expect(readXodeManifest({ files: { "xode.json": manifestFile } })).toEqual({ ...XODE_MANIFEST, scriptType: "classic" });
         expect(hasXodeManifest({ files: { "index.html": {} } })).toBe(false);
         expect(hasXodeManifest(null)).toBe(false);
+        expect(readXodeManifest({ files: { "xode.json": { content: "not json" } } })).toBeNull();
     });
 });
 
 describe("authenticated Gist listing", () => {
-    it("loads every page using the maximum page size", async () => {
-        const firstPage = Array.from({ length: 100 }, (_, index) => ({ id: `gist-${index}` }));
-        const secondPage = [{ id: "gist-100" }];
-        fetch.mockResolvedValueOnce(successfulJson(firstPage)).mockResolvedValueOnce(successfulJson(secondPage));
+    it("loads one bounded page at a time", async () => {
+        const secondPage = Array.from({ length: 30 }, (_, index) => ({ id: `gist-${index + 30}` }));
+        fetch.mockResolvedValueOnce(successfulJson(secondPage));
 
         const { default: gist, setToken } = await loadGistModule();
         setToken("github-token");
 
-        await expect(gist.list()).resolves.toEqual([...firstPage, ...secondPage]);
-        expect(fetch).toHaveBeenCalledTimes(2);
-        expect(fetch.mock.calls[0][0]).toBe("https://api.github.com/gists?per_page=100&page=1");
-        expect(fetch.mock.calls[1][0]).toBe("https://api.github.com/gists?per_page=100&page=2");
+        await expect(gist.list({ page: 2 })).resolves.toEqual(secondPage);
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetch.mock.calls[0][0]).toBe("https://api.github.com/gists?per_page=30&page=2");
         expect(fetch.mock.calls[0][1].headers.Authorization).toBe("Bearer github-token");
     });
 });

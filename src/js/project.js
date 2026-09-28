@@ -28,6 +28,11 @@ const DEFAULT_PANES = {
     richEditor: false,
     chat: true,
 };
+const DEFAULT_SCRIPT_TYPE = "module";
+
+function normalizeScriptType(value) {
+    return value === "classic" ? "classic" : DEFAULT_SCRIPT_TYPE;
+}
 
 let databasePromise;
 let initializationPromise;
@@ -224,7 +229,9 @@ export async function loadProject(id) {
     if (id === undefined || id === null) return null;
 
     const database = await databaseAfterEarlierWrites();
-    return (await database.get(PROJECTS_STORE, id)) ?? null;
+    const project = (await database.get(PROJECTS_STORE, id)) ?? null;
+    if (project) project.scriptType = normalizeScriptType(project.scriptType);
+    return project;
 }
 
 export async function createProject(data = {}) {
@@ -239,6 +246,7 @@ export async function createProject(data = {}) {
         css: "",
         js: "",
         ...rest,
+        scriptType: normalizeScriptType(rest.scriptType),
         panes: { ...DEFAULT_PANES, ...panes },
         createdAt: now,
         updatedAt: now,
