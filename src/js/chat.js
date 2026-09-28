@@ -1,875 +1,952 @@
-import { el, elNew, LS } from "./utils.js";
-import { bus } from "./bus.js";
 import DOMPurify from "dompurify";
+import { diffLines } from "diff";
 import { marked } from "marked";
+import { bus } from "./bus.js";
+import { mapLanguageToPane, parseAIResponse, sniffPane, splitMarkdownSegments, summarizeChanges } from "./chatCore.js";
+import { renderIcons } from "./icons.js";
+import {
+    clearApiKey,
+    clearConversation,
+    credentialFingerprint,
+    getApiKey,
+    getChatSettings,
+    getModelCache,
+    hasApiKey,
+    initChatStorage,
+    isApiKeyRemembered,
+    loadConversation,
+    moveConversation,
+    saveApiKey,
+    saveConversation,
+    setModelCache,
+    updateChatSettings,
+} from "./chatStorage.js";
+import { el, elNew } from "./utils.js";
 
-// Provider registry — static config only (labels, endpoints, key help).
-// Model lists are NOT hardcoded here; they're fetched live per-provider
-// once an API key is present (see "Live model discovery" below), since
-// hardcoded model IDs go stale the moment a provider deprecates one.
 const PROVIDERS = {
-    gemini: {
-        label: "Google Gemini",
-        kind: "gemini",
-        keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://aistudio.google.com/app/api-keys" target="_blank">aistudio.google.com/app/api-keys</a>`,
-    },
-    anthropic: {
-        label: "Anthropic Claude",
-        kind: "anthropic",
-        keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>`,
-    },
+    gemini: { label: "Google Gemini", kind: "gemini", keyPlaceholder: "Enter a Gemini API key", keyHelp: "Create a key at aistudio.google.com/app/api-keys." },
+    anthropic: { label: "Anthropic Claude", kind: "anthropic", keyPlaceholder: "Enter an Anthropic API key", keyHelp: "Create a key at console.anthropic.com/settings/keys." },
     openai: {
         label: "OpenAI",
         kind: "openai-compatible",
         baseUrl: "https://api.openai.com/v1/chat/completions",
-        keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>`,
+        keyPlaceholder: "Enter an OpenAI API key",
+        keyHelp: "Create a key at platform.openai.com/api-keys.",
     },
     deepseek: {
         label: "DeepSeek",
         kind: "openai-compatible",
         baseUrl: "https://api.deepseek.com/v1/chat/completions",
-        keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://platform.deepseek.com/api_keys" target="_blank">platform.deepseek.com/api_keys</a>`,
+        keyPlaceholder: "Enter a DeepSeek API key",
+        keyHelp: "Create a key at platform.deepseek.com/api_keys.",
     },
-    xai: {
-        label: "xAI Grok",
-        kind: "openai-compatible",
-        baseUrl: "https://api.x.ai/v1/chat/completions",
-        keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://console.x.ai" target="_blank">console.x.ai</a>`,
-    },
+    xai: { label: "xAI Grok", kind: "openai-compatible", baseUrl: "https://api.x.ai/v1/chat/completions", keyPlaceholder: "Enter an xAI API key", keyHelp: "Create a key at console.x.ai." },
     mistral: {
         label: "Mistral",
         kind: "openai-compatible",
         baseUrl: "https://api.mistral.ai/v1/chat/completions",
-        keyPlaceholder: "Key",
-        keyHelp: `Create one at <a href="https://console.mistral.ai/api-keys" target="_blank">console.mistral.ai</a>`,
+        keyPlaceholder: "Enter a Mistral API key",
+        keyHelp: "Create a key at console.mistral.ai/api-keys.",
     },
     ollama: {
         label: "Ollama (local)",
         kind: "openai-compatible",
         baseUrl: "http://localhost:11434/v1/chat/completions",
         requiresKey: false,
-        keyPlaceholder: "Not required",
-        keyHelp: `Runs entirely on your machine — no key needed. Make sure Ollama is running locally (<code>ollama serve</code>) on port :11434, and that it allows this site's origin (<code>OLLAMA_ORIGINS</code>) if requests fail.`,
+        keyPlaceholder: "No key required",
+        keyHelp: "Start Ollama on port 11434 and allow this site's origin with OLLAMA_ORIGINS if necessary.",
     },
-    LMStudio: {
-        label: "LM Studio (Local)",
+    lmstudio: {
+        label: "LM Studio (local)",
         kind: "openai-compatible",
         baseUrl: "http://localhost:1234/v1/chat/completions",
         requiresKey: false,
-        keyPlaceholder: "Not required",
-        keyHelp: `Runs entirely on your machine — no key needed. Make sure LM Studio is running locally on port :1234 (and that you loaded a model and started the LM Studio local server. Enable CORS if Models list is not loading).`,
+        keyPlaceholder: "No key required",
+        keyHelp: "Load a model, start LM Studio's local server on port 1234, and enable CORS if necessary.",
     },
 };
 
-function extractFirstJsonObject(text) {
-    const start = text.indexOf("{");
-    if (start === -1) throw new Error("No JSON found in response");
-
-    let depth = 0;
-    let inString = false;
-    let escapeNext = false;
-
-    for (let i = start; i < text.length; i++) {
-        const char = text[i];
-
-        if (escapeNext) {
-            escapeNext = false;
-            continue;
-        }
-        if (char === "\\") {
-            escapeNext = true;
-            continue;
-        }
-        if (char === '"') {
-            inString = !inString;
-            continue;
-        }
-        if (inString) continue;
-
-        if (char === "{") depth++;
-        if (char === "}") {
-            depth--;
-            if (depth === 0) {
-                return text.slice(start, i + 1); // exact matching object, garbage after ignored
-            }
-        }
-    }
-
-    throw new Error("Unbalanced JSON braces in response");
-}
-
-function tryParseAIJson(rawText) {
-    let text = rawText.trim();
-    text = text
-        .replace(/```json\s*/i, "")
-        .replace(/```\s*$/, "")
-        .trim();
-
-    const jsonStr = extractFirstJsonObject(text); // was: text.match(/\{[\s\S]*\}/)[0]
-
-    try {
-        return JSON.parse(jsonStr);
-    } catch (err) {
-        const repaired = jsonStr.replace(/"((?:[^"\\]|\\.)*)"/gs, (match, inner) => {
-            const fixed = inner.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t");
-            return `"${fixed}"`;
-        });
-        try {
-            return JSON.parse(repaired);
-        } catch (err2) {
-            console.error("Raw AI response that failed to parse:", rawText);
-            throw new Error("AI returned malformed JSON — couldn't repair automatically");
-        }
-    }
-}
-
-// Markdown fallback — used when a model refuses/fails to return
-// valid JSON but the response is readable markdown instead.
-
-// Cheap heuristics — no extra dependency needed for detection.
-// We only need to *parse* markdown (via `marked`, already imported),
-// detection is fine as pattern-matching.
-function looksLikeMarkdown(text) {
-    const trimmed = text.trim();
-    const hasFence = /```/.test(trimmed);
-    const hasMdSyntax = /^#{1,6}\s|^\*\s|^-\s|\*\*.+\*\*/m.test(trimmed);
-    const notJsonShaped = !/^[{[]/.test(trimmed);
-    return hasFence || (hasMdSyntax && notJsonShaped);
-}
-
-// Splits raw markdown text into alternating text/code segments.
-// Each code segment keeps its fence language tag (may be empty).
-function splitMarkdownSegments(text) {
-    const regex = /```(\w+)?\n?([\s\S]*?)```/g;
-    const segments = [];
-    let last = 0;
-    let match;
-    while ((match = regex.exec(text)) !== null) {
-        if (match.index > last) {
-            segments.push({ type: "text", content: text.slice(last, match.index) });
-        }
-        segments.push({ type: "code", lang: (match[1] || "").toLowerCase(), code: match[2].trim() });
-        last = regex.lastIndex;
-    }
-    if (last < text.length) {
-        segments.push({ type: "text", content: text.slice(last) });
-    }
-    return segments;
-}
-
-// Maps a fence's language tag to one of our editor panes, if recognized.
-function mapLangToPane(lang) {
-    if (["js", "javascript", "jsx", "ts", "typescript", "mjs"].includes(lang)) return "js";
-    if (["html", "htm", "xml"].includes(lang)) return "html";
-    if (["css", "scss", "less"].includes(lang)) return "css";
-    return null;
-}
-
-// Best-effort guess when a fence has no (or an unrecognized) language tag.
-function sniffPane(code) {
-    if (/<\/?[a-z][\s\S]*>/i.test(code)) return "html";
-    if (/[.#]?[\w-]+\s*\{[\s\S]*:[^;]+;/.test(code)) return "css";
-    return "js";
-}
-
-// Renders a markdown-fallback message: prose through marked+DOMPurify,
-// each fenced code block as a card with a real "Insert into <PANE>"
-// button (never innerHTML for the code itself, to avoid HTML in the
-// snippet being interpreted, and so it displays byte-for-byte as returned).
-function renderMarkdownFallback(rawText) {
-    const segments = splitMarkdownSegments(rawText);
-
-    const wrapper = elNew("div", { className: "chat-message role-system markdown-fallback" });
-
-    segments.forEach((seg) => {
-        if (seg.type === "text") {
-            if (!seg.content.trim()) return;
-            const textEl = elNew("div", { className: "markdown-fallback-text" });
-            const html = marked.parse(seg.content, { breaks: true });
-            textEl.innerHTML = DOMPurify.sanitize(html, {
-                ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "code", "pre", "ul", "ol", "li", "br", "blockquote", "h1", "h2", "h3"],
-                ALLOWED_ATTR: ["href", "target", "rel"],
-            });
-            wrapper.append(textEl);
-        } else {
-            const pane = mapLangToPane(seg.lang) || sniffPane(seg.code);
-
-            const card = elNew("div", { className: "code-fence-card" });
-            const header = elNew("div", { className: "code-fence-header" });
-            header.append(elNew("span", { className: "code-fence-lang", textContent: (seg.lang || pane).toUpperCase() }));
-
-            const insertBtn = elNew("button", { type: "button", className: "btn-insert accent", textContent: `Insert into ${pane.toUpperCase()}` });
-            header.append(insertBtn);
-            card.append(header);
-
-            const pre = elNew("pre");
-            const codeEl = elNew("code", { textContent: seg.code }); // textContent — never rendered as HTML/markdown
-            pre.append(codeEl);
-            card.append(pre);
-
-            insertBtn.addEventListener(
-                "click",
-                () => {
-                    const snapshot = editorsTextarea[pane].value;
-                    bus.emit("ai:update", { syntax: pane, content: seg.code });
-
-                    header.innerHTML = "";
-                    header.append(
-                        elNew("span", {
-                            className: "code-fence-lang",
-                            textContent: (seg.lang || pane).toUpperCase(),
-                        }),
-                    );
-                    const status = elNew("span", {
-                        className: "suggestion-panes",
-                        innerHTML: `<span class="icon" data-name="check">&#xf313;</span> Inserted into ${pane.toUpperCase()}`,
-                    });
-                    const undoBtn = elNew("button", { className: "btn-discard accent", textContent: "Undo" });
-                    header.append(status, undoBtn);
-
-                    undoBtn.addEventListener(
-                        "click",
-                        () => {
-                            bus.emit("ai:update", { syntax: pane, content: snapshot });
-                            status.textContent = "Reverted";
-                            undoBtn.remove();
-                        },
-                        { once: true },
-                    );
-                },
-                { once: true },
-            );
-
-            wrapper.append(card);
-        }
-    });
-
-    elOutput.append(wrapper);
-    elOutput.scrollTo({ top: elOutput.scrollHeight, behavior: "smooth" });
-    return wrapper;
-}
-
-// Storage: keyed by provider so keys don't collide
-const ls = LS("xode.settings", {
-    provider: "gemini",
-    model: "", // no default — populated once a live model list loads
-    apiKeys: {}, // { gemini: "...", openai: "...", anthropic: "...", ... }
-});
-
-// Cache of live-fetched model lists, keyed by provider.
-// { [providerKey]: { models: [{id,label}], fetchedAt: number, forKey: string } }
-const modelCache = LS("xode.modelCache", {});
-const MODEL_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
-
-function setApiKey(provider, key) {
-    const settings = ls.read();
-    settings.apiKeys = settings.apiKeys || {};
-    settings.apiKeys[provider] = key;
-    ls.update(settings);
-}
-
-// A provider is "ready" to be used/fetched from when either:
-//  - it declares requiresKey: false (e.g. Ollama, running locally), or
-//  - an API key has actually been entered for it
-function isProviderReady(providerKey, apiKey) {
-    const p = PROVIDERS[providerKey];
-    return p.requiresKey === false ? true : !!apiKey;
-}
-
-const getAIConfig = () => {
-    const settings = ls.read();
-    return {
-        provider: settings.provider,
-        model: elModel.value,
-        apiKey: (settings.apiKeys || {})[settings.provider] || "",
-    };
-};
-
-// ---------------------------------------------------------------------
-// Conversation history
-// ---------------------------------------------------------------------
-// The model does NOT need the full HTML/CSS/JS re-sent for every past
-// turn — it only ever needs the *current* code, which is already sent
-// fresh on every call via systemPrompt() (see below). Re-sending code
-// snapshots for old turns would multiply request size by every file's
-// size times the number of turns, which gets into multi-MB territory
-// fast for anything beyond a trivial prototype.
-//
-// So history here is intentionally text-only: what the user asked for,
-// and a one-line summary of what the AI changed. That's enough for the
-// model to track intent across turns ("make it bigger" referring to a
-// button from 3 messages ago) without ever re-transmitting code that's
-// already present, current, and authoritative in the system prompt.
-//
-// Capped to the most recent MAX_HISTORY_TURNS user+assistant pairs.
-const MAX_HISTORY_TURNS = 30; // "units" = one user turn + one assistant turn
-const HISTORY_ENTRY_MAX_CHARS = 2000; // guard against a single huge turn (e.g. pasted error log)
-
-let chatHistory = []; // [{ role: "user" | "assistant", content: "..." }] — text only, never code
-
-function pushHistory(role, content) {
-    const trimmed = content.length > HISTORY_ENTRY_MAX_CHARS ? content.slice(0, HISTORY_ENTRY_MAX_CHARS) + "…" : content;
-    chatHistory.push({ role, content: trimmed });
-    if (chatHistory.length > MAX_HISTORY_TURNS * 2) {
-        chatHistory = chatHistory.slice(-MAX_HISTORY_TURNS * 2);
-    }
-}
-
-// DOM refs
-const elProvider = el(".chat-provider");
-const elApiKey = el(".chat-apiKey");
-const elModel = el(".chat-model");
-const elInput = el(".chat-input");
-const elOutput = el(".chat-output");
-const elSend = el(".chat-send");
-const editorsTextarea = {
-    // textarea editors elements assigned on chat init
-    html: null,
-    css: null,
-    js: null,
-};
-
-// Prompt — always reflects the LIVE, current editor state. This is the
-// single source of truth for code; it's sent fresh on every call, so
-// history never needs to (and must not) carry code snapshots.
-const systemPrompt = () => `You are an expert web developer helping edit an HTML/CSS/JS prototype.
-Current code:
-HTML:
-\`\`\`html
-${editorsTextarea.html.value}
-\`\`\`
-
-CSS:
-\`\`\`css
-${editorsTextarea.css.value}
-\`\`\`
-
-JS:
-\`\`\`js
-${editorsTextarea.js.value}
-\`\`\`
-
-Keep the explanation short and concise, plain language, no code fences inside "explanation" key.
-
-Respond **only** with valid JSON (no extra text, no markdown, no code fences).
-HTML markup should go in the "html" key, CSS in the "css" key, and JS in the "js" key.
-Only create HTML markup that goes within the <BODY> tag.
-All string values must have newlines escaped as \\n and double quotes inside code escaped as \\" — the output must be valid, parseable JSON:
-{
-  "html": "full new HTML or null if unchanged",
-  "css": "full new CSS or null",
-  "js": "full new JS or null",
-  "explanation": "brief explanation of changes"
-}
-If in conversation, don't necessarily respond with code. Provide html, js, css only if code or code suggestions are requested.
-Only return changed panes as full strings. Keep the code functional.`;
-
-// ADAPTERS (chat calls)
-// Each adapter now takes (config, systemText, history, userPrompt).
-// `history` is the lightweight, text-only chatHistory array — never code.
-
-async function callGemini(config, systemText, history, userPrompt) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
-
-    const contents = [
-        ...history.map((m) => ({
-            role: m.role === "assistant" ? "model" : "user",
-            parts: [{ text: m.content }],
-        })),
-        { role: "user", parts: [{ text: userPrompt }] },
-    ];
-
-    const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemText }] },
-            contents,
-            generationConfig: { temperature: 0.1, responseMimeType: "application/json" },
-        }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Gemini request failed");
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-}
-
-async function callOpenAICompatible(config, systemText, history, userPrompt) {
-    const { baseUrl } = PROVIDERS[config.provider];
-    const headers = { "Content-Type": "application/json" };
-    if (config.apiKey) {
-        headers.Authorization = `Bearer ${config.apiKey}`;
-    }
-
-    const messages = [{ role: "system", content: systemText }, ...history.map((m) => ({ role: m.role, content: m.content })), { role: "user", content: userPrompt }];
-
-    const res = await fetch(baseUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-            model: config.model,
-            temperature: 0.1,
-            response_format: { type: "json_object" },
-            messages,
-        }),
-    });
-
-    console.log(res);
-
-    if (!res.ok) {
-        const raw = await res.text();
-        console.error(`${config.provider} error response:`, raw);
-        let message = `${config.provider} request failed (${res.status})`;
-        try {
-            const parsed = JSON.parse(raw);
-            message = parsed.error?.message || parsed.message || parsed.error || message;
-        } catch {
-            /* raw wasn't JSON, keep the generic message but it's logged above */
-        }
-        throw new Error(message);
-    }
-
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || "";
-}
-
-async function callAnthropic(config, systemText, history, userPrompt) {
-    const messages = [...history.map((m) => ({ role: m.role, content: m.content })), { role: "user", content: userPrompt }];
-
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "x-api-key": config.apiKey,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true",
-        },
-        body: JSON.stringify({
-            model: config.model,
-            max_tokens: 4096,
-            system: systemText,
-            messages,
-        }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Anthropic request failed");
-    return data.content?.find((b) => b.type === "text")?.text || "";
-}
-
-// Main AI call, dispatches by provider kind.
-// Returns one of:
-//   { type: "json", data: {...} }       — structured response, parsed
-//   { type: "markdown", raw: "..." }    — model refused/failed JSON but gave readable markdown
-//   null                                — error already shown via addMessage
-async function callAI(userPrompt) {
-    const config = getAIConfig();
-    const providerInfo = PROVIDERS[config.provider];
-    const requiresKey = providerInfo.requiresKey !== false;
-
-    if (requiresKey && !config.apiKey) {
-        addMessage("ai", `❌ Error<br>Please set your ${providerInfo.label} API key first.<br>${providerInfo.keyHelp}`);
-        return null;
-    }
-    if (!config.model) {
-        addMessage("ai", `❌ Error<br>No model selected. ${requiresKey ? `Make sure your ${providerInfo.label} API key is valid so models can load.` : `Make sure ${providerInfo.label} is running locally and that a model is loaded.`}`);
-        return null;
-    }
-
-    // Current code goes ONLY into the system prompt — sent fresh every
-    // call, exactly once. History (below) never carries code.
-    const systemText = systemPrompt();
-
-    try {
-        let text;
-        if (providerInfo.kind === "gemini") text = await callGemini(config, systemText, chatHistory, userPrompt);
-        else if (providerInfo.kind === "anthropic") text = await callAnthropic(config, systemText, chatHistory, userPrompt);
-        else text = await callOpenAICompatible(config, systemText, chatHistory, userPrompt);
-
-        // Only commit to history once we have a usable reply, and only
-        // ever commit lightweight text — never the code payload.
-        try {
-            const parsed = tryParseAIJson(text);
-
-            pushHistory("user", userPrompt);
-            const changedPanes = ["html", "css", "js"].filter((k) => parsed[k] !== null && parsed[k] !== undefined);
-            const summary = changedPanes.length ? `${parsed.explanation || "Change applied."} (updated: ${changedPanes.join(", ")})` : parsed.explanation || "No changes needed.";
-            pushHistory("assistant", summary);
-
-            return { type: "json", data: parsed };
-        } catch (parseErr) {
-            if (looksLikeMarkdown(text)) {
-                pushHistory("user", userPrompt);
-                pushHistory("assistant", text); // pushHistory itself truncates long entries
-                return { type: "markdown", raw: text };
-            }
-            throw parseErr; // genuinely unusable output — falls through to the catch below
-        }
-    } catch (err) {
-        console.error("Error in callAI:", err);
-        addMessage("ai", `❌ Error: ${err.message}`);
-        return null;
-    }
-}
-
-// Chat flow
-async function sendMessage(msg) {
-    const userText = msg ?? elInput.value.trim();
-    if (!userText) return;
-
-    const msgUser = addMessage("user", userText);
-    const elBtns = elNew("div", { className: "chat-message-btns" });
-    const elBtnRetry = elNew("button", {
-        type: "button",
-        className: "chat-retry",
-        innerHTML: '<span class="icon" data-name="arrow-clockwise">&#x10028;</span>',
-        title: "Retry",
-        onclick() {
-            void sendMessage(userText);
-        },
-    });
-    const elBtnEdit = elNew("button", {
-        type: "button",
-        className: "chat-edit",
-        innerHTML: '<span class="icon" data-name="pencil">&#xf18c;</span>',
-        title: "Edit ",
-        onclick() {
-            elInput.value = userText;
-            elInput.focus();
-        },
-    });
-    elBtns.append(elBtnRetry, elBtnEdit);
-    msgUser.append(elBtns);
-
-    elInput.value = "";
-
-    const thinkingId = "thinking-msg-" + Date.now();
-    addMessage("system", '<span class="loader"></span> <em class="thinking">Thinking...</em>', thinkingId);
-
-    try {
-        // No code appended here anymore — the current HTML/CSS/JS is
-        // already sent fresh via systemPrompt() inside callAI(), so
-        // appending it again here would just duplicate the same
-        // payload a second time on every request.
-        const aiResult = await callAI(userText);
-        if (aiResult?.type === "json") {
-            renderSuggestion(aiResult.data);
-        } else if (aiResult?.type === "markdown") {
-            renderMarkdownFallback(aiResult.raw);
-        } else if (aiResult === null) {
-            // callAI already rendered an error message — nothing more to do
-        } else {
-            addMessage("ai", "Sorry, I couldn't process that request.");
-        }
-    } catch (err) {
-        addMessage("ai", `❌ ${err.message || "Something went wrong. Please try again."}`);
-        console.error(err);
-    } finally {
-        removeThinkingMessage(thinkingId);
-    }
-}
-
-// Tracks the most recent auto-applied suggestion's message element,
-// so we can invalidate its Discard button once a newer change lands on top of it.
-let lastAppliedMsgEl = null;
-
-function renderSuggestion(aiResponse) {
-    const changedPanes = ["html", "css", "js"].filter((k) => aiResponse[k] !== null && aiResponse[k] !== undefined);
-
-    if (!changedPanes.length) {
-        addMessage("ai", `${aiResponse.explanation || "No changes needed."}`);
-        return;
-    }
-
-    // 0. Snapshot current pane values BEFORE applying
-    const snapshot = {};
-    changedPanes.forEach((syntax) => {
-        snapshot[syntax] = editorsTextarea[syntax].value;
-    });
-
-    // 1. Apply immediately one Editor pane at a time
-    changedPanes.forEach((syntax) => {
-        bus.emit("ai:update", { syntax, content: aiResponse[syntax] });
-    });
-
-    // A newer change just landed on top of any previous pending one — freeze its Discard button
-    if (lastAppliedMsgEl) {
-        const prevActions = el(".suggestion-actions", lastAppliedMsgEl);
-        if (prevActions) {
-            prevActions.innerHTML = `<span class="suggestion-superseded">Superseded by a later change</span>`;
-        }
-    }
-
-    const msgEl = addMessage(
-        "system",
-        `
-        <p>${aiResponse.explanation || "Change applied."}</p>
-        <div class="suggestion-actions">
-            <span class="suggestion-panes"><span class="icon" data-name="check">&#xf313;</span> Applied to: ${changedPanes.join(", ").toUpperCase()}</span>
-            <button class="btn-discard accent">Discard</button>
-        </div>
-    `,
-    );
-
-    el(".btn-discard", msgEl)?.addEventListener("click", () => {
-        changedPanes.forEach((syntax) => {
-            bus.emit("ai:update", { syntax, content: snapshot[syntax] });
-        });
-        el(".suggestion-actions", msgEl).innerHTML = `<span class="suggestion-discarded">Discarded — reverted to previous version</span>`;
-
-        if (lastAppliedMsgEl === msgEl) lastAppliedMsgEl = null;
-    });
-
-    lastAppliedMsgEl = msgEl;
-}
-
-function addMessage(role, content, customId = null) {
-    const elMessage = elNew("div", {
-        className: `chat-message role-${role}`,
-    });
-    if (customId) elMessage.id = customId;
-
-    if (role === "system") {
-        elMessage.innerHTML = content;
-    } else {
-        // All other roles (user, ai) render through markdown + sanitize.
-        // Safety comes from DOMPurify's allowlist, not from skipping markdown.
-        const html = marked.parse(content, { breaks: true });
-        elMessage.innerHTML = DOMPurify.sanitize(html, {
-            ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "code", "pre", "ul", "ol", "li", "br", "blockquote", "h1", "h2", "h3"],
-            ALLOWED_ATTR: ["href", "target", "rel"],
-        });
-    }
-
-    elOutput.append(elMessage);
-    elOutput.scrollTo({ top: elOutput.scrollHeight, behavior: "smooth" });
-
-    return elMessage;
-}
-
-function removeThinkingMessage(id) {
-    const thinkingMsg = document.getElementById(id);
-    if (thinkingMsg) thinkingMsg.remove();
-}
-
-// Events
-elInput.addEventListener("focus", () => {
-    // Close chat Options on message input focus
-    el(".chat-options").open = false;
-});
-elInput.addEventListener("keydown", function (evt) {
-    if (evt.key === "Enter" && !evt.shiftKey) {
-        evt.preventDefault();
-        if (elInput.value.trim()) {
-            void sendMessage();
-        }
-    }
-});
-elSend.addEventListener("click", () => sendMessage());
-
-// Live model discovery
-//
-// No hardcoded model IDs anywhere below — model lists are always fetched
-// live from each provider once an API key is present. If a fetch fails,
-// the UI shows an explicit error state rather than silently falling back
-// to a stale, possibly-deprecated model ID.
-
-// Patterns for non-chat models (image/video/audio/embedding/etc.) and
-// unpinned "-latest" aliases, excluded so saved projects stay reproducible
-// when reopened later (an alias could silently repoint to a new model).
 const CHAT_EXCLUDE_PATTERNS = [
     /tts/i,
     /image/i,
     /native-audio/i,
-    /embedding/i,
-    /embed/i,
-    /robotics/i,
-    /computer-use/i,
-    /aqa/i,
-    /antigravity/i,
-    /deep-research/i,
-    /lyria/i,
-    /veo/i,
-    /imagen/i,
-    /nano-banana/i,
-    /-latest$/i,
-    /customtools/i,
-    /whisper/i,
-    /dall-e/i,
-    /moderation/i,
-    /davinci|babbage|curie|ada-/i, // legacy OpenAI non-chat
+    /embedding|embed/i,
+    /robotics|computer-use|deep-research/i,
+    /aqa|antigravity|lyria|veo|imagen|nano-banana/i,
+    /customtools|whisper|dall-e|moderation/i,
+    /davinci|babbage|curie|ada-/i,
 ];
-
-function isChatModel(id) {
-    return !CHAT_EXCLUDE_PATTERNS.some((re) => re.test(id));
-}
-
-async function fetchModelsGemini(apiKey) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to fetch Gemini models");
-    const data = await res.json();
-    return data.models
-        .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
-        .map((m) => ({ id: m.name.replace("models/", ""), label: m.displayName || m.name }))
-        .filter((m) => isChatModel(m.id));
-}
-
-async function fetchModelsOpenAICompatible(providerKey, apiKey) {
-    const { baseUrl } = PROVIDERS[providerKey];
-    const listUrl = baseUrl.replace(/\/chat\/completions$/, "/models");
-    const headers = {};
-    if (apiKey) {
-        headers.Authorization = `Bearer ${apiKey}`;
-    }
-
-    const res = await fetch(listUrl, { headers });
-    if (!res.ok) throw new Error(`Failed to fetch ${providerKey} models`);
-    const data = await res.json();
-    return data.data.map((m) => ({ id: m.id, label: m.id.replace(/-/g, " ") })).filter((m) => isChatModel(m.id));
-}
-
-async function fetchModelsAnthropic(apiKey) {
-    const res = await fetch("https://api.anthropic.com/v1/models", {
-        headers: {
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true",
-        },
-    });
-    if (!res.ok) throw new Error("Failed to fetch Anthropic models");
-    const data = await res.json();
-    return data.data.map((m) => ({ id: m.id, label: m.display_name || m.id }));
-}
-
-const MODEL_FETCHERS = {
-    gemini: (providerKey, apiKey) => fetchModelsGemini(apiKey),
-    anthropic: (providerKey, apiKey) => fetchModelsAnthropic(apiKey),
-    "openai-compatible": (providerKey, apiKey) => fetchModelsOpenAICompatible(providerKey, apiKey),
+const MODEL_CACHE_TTL = 24 * 60 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 90 * 1000;
+const MAX_HISTORY_ENTRIES = 60;
+const HISTORY_ENTRY_MAX_CHARS = 4000;
+const MAX_CONTEXT_CHARS = 300_000;
+const DIFF_CONTEXT_LINES = 3;
+const MAX_RENDERED_DIFF_LINES = 1_500;
+const MARKDOWN_CONFIG = {
+    ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "code", "pre", "ul", "ol", "li", "br", "blockquote", "h1", "h2", "h3", "hr"],
+    ALLOWED_ATTR: ["href", "target", "rel"],
 };
 
-// Renders one of five explicit states into the model <select>.
-// state: "no-key" | "loading" | "error" | "empty" | "ready"
-// payload: array of {id, label} — only used when state === "ready"
-function renderModelState(state, payload) {
-    elModel.innerHTML = "";
-    elModel.disabled = true;
+const elements = {
+    provider: el(".chat-provider"),
+    apiKey: el(".chat-apiKey"),
+    rememberKey: el(".chat-remember-key"),
+    toggleKey: el(".chat-toggle-key"),
+    toggleKeyLabel: el(".chat-toggle-key-label"),
+    clearKey: el(".chat-clear-key"),
+    keyStatus: el(".chat-key-status"),
+    model: el(".chat-model"),
+    input: el(".chat-input"),
+    output: el(".chat-output"),
+    send: el(".chat-send"),
+    stop: el(".chat-stop"),
+    newChat: el(".chat-new"),
+    jumpLatest: el(".chat-jump-latest"),
+    options: el(".chat-options"),
+    modelLabel: el(".chat-model-label"),
+    contextStatus: el(".chat-context-status"),
+    explainSelection: el(".chat-explain-selection"),
+    fixConsole: el(".chat-fix-console"),
+};
 
-    if (state === "no-key") {
-        elModel.append(elNew("option", { value: "", textContent: "Enter an API key to load models…" }));
-    } else if (state === "loading") {
-        elModel.append(elNew("option", { value: "", textContent: "Loading models…" }));
-    } else if (state === "error") {
-        elModel.append(elNew("option", { value: "", textContent: "Couldn't load models — check your key" }));
-    } else if (state === "empty") {
-        elModel.append(elNew("option", { value: "", textContent: "No models available" }));
-    } else if (state === "ready") {
-        elModel.disabled = false;
-        payload.forEach(({ id, label }) => {
-            elModel.append(elNew("option", { value: id, textContent: label }));
-        });
+let editors = {};
+let getProjectId = () => null;
+let getConsoleContext = () => "";
+let hasConsoleErrors = () => false;
+let settings = { provider: "gemini", models: {} };
+let chatHistory = [];
+let currentProjectId = null;
+let activeRequest = null;
+let modelRequest = null;
+let projectLoadSequence = 0;
+let initialized = false;
+let lastActiveEditorPane = null;
+
+class ProviderError extends Error {
+    constructor(message, status) {
+        super(message);
+        this.name = "ProviderError";
+        this.status = status;
     }
-    uiUpdateModelLabel(payload?.[0]?.label ?? null);
 }
 
-// Loads the model list for a provider into elModel.
-// Uses a 24h cache (keyed to the exact API key used — or "" for keyless
-// providers like Ollama) to avoid refetching on every provider switch;
-// otherwise fetches live and shows explicit loading/error states while doing so.
-async function refreshModelOptions(providerKey, apiKey) {
-    if (!isProviderReady(providerKey, apiKey)) {
+function editorTextarea(pane) {
+    return editors[pane]?.elTextarea || editors[pane] || null;
+}
+
+function editorValue(pane) {
+    return editorTextarea(pane)?.value || "";
+}
+
+function iconElement(name) {
+    const icon = elNew("i");
+    icon.dataset.lucide = name;
+    return icon;
+}
+
+function iconButton(label, iconName, properties = {}) {
+    const button = elNew("button", properties);
+    button.classList.add("icon-label");
+    button.append(iconElement(iconName), elNew("span", { textContent: label }));
+    return button;
+}
+
+function renderMarkdown(target, content) {
+    const parsed = marked.parse(String(content || ""), { breaks: true });
+    target.innerHTML = DOMPurify.sanitize(parsed, MARKDOWN_CONFIG);
+    target.querySelectorAll("a").forEach((link) => {
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+    });
+}
+
+function isNearBottom() {
+    return elements.output.scrollHeight - elements.output.scrollTop - elements.output.clientHeight < 80;
+}
+
+function scrollToLatest(force = false) {
+    if (!force && !isNearBottom()) return;
+    elements.output.scrollTo({ top: elements.output.scrollHeight, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    elements.jumpLatest.hidden = true;
+}
+
+function addMessage(role, content, { historyIndex = null, forceScroll = false } = {}) {
+    const shouldScroll = forceScroll || isNearBottom();
+    const message = elNew("div", { className: `chat-message role-${role}` });
+    renderMarkdown(message, content);
+
+    if (role === "user" && historyIndex !== null) {
+        const controls = elNew("div", { className: "chat-message-btns" });
+        const retry = iconButton("Retry", "refresh-cw", { type: "button", className: "chat-retry", title: "Regenerate from this message" });
+        const edit = iconButton("Edit", "pencil-line", { type: "button", className: "chat-edit", title: "Edit from this message" });
+        retry.addEventListener("click", async () => {
+            await branchConversation(historyIndex, message);
+            await sendMessage(content);
+        });
+        edit.addEventListener("click", async () => {
+            await branchConversation(historyIndex, message);
+            elements.input.value = content;
+            elements.input.focus();
+        });
+        controls.append(retry, edit);
+        renderIcons(controls);
+        message.append(controls);
+    }
+
+    elements.output.append(message);
+    if (shouldScroll) scrollToLatest(true);
+    else elements.jumpLatest.hidden = false;
+    return message;
+}
+
+function addStatusMessage(text) {
+    const message = elNew("div", { className: "chat-message role-system chat-thinking" });
+    const loader = elNew("span", { className: "loader", ariaHidden: "true" });
+    const label = elNew("em", { className: "thinking", textContent: text });
+    message.append(loader, " ", label);
+    elements.output.append(message);
+    scrollToLatest(true);
+    return { message, label };
+}
+
+function addWelcome() {
+    const message = elNew("div", { className: "chat-message role-system chat-welcome" });
+    message.append(elNew("h3", { textContent: "✨ Hi, I'm Xody" }), elNew("p", { textContent: "I can explain your project, investigate console errors, and update your HTML, CSS, or JavaScript." }));
+    elements.output.append(message);
+}
+
+function historyEntry(role, content) {
+    const trimmed = content.length > HISTORY_ENTRY_MAX_CHARS ? `${content.slice(0, HISTORY_ENTRY_MAX_CHARS)}…` : content;
+    return { id: crypto.randomUUID(), role, content: trimmed, createdAt: Date.now() };
+}
+
+async function persistHistory() {
+    try {
+        await saveConversation(currentProjectId, chatHistory);
+    } catch (error) {
+        console.warn("Could not save AI conversation", error);
+    }
+}
+
+function pushHistory(role, content) {
+    chatHistory.push(historyEntry(role, String(content)));
+    if (chatHistory.length > MAX_HISTORY_ENTRIES) chatHistory = chatHistory.slice(-MAX_HISTORY_ENTRIES);
+    void persistHistory();
+}
+
+async function branchConversation(historyIndex, messageElement) {
+    if (activeRequest) stopActiveRequest();
+    chatHistory = chatHistory.slice(0, historyIndex);
+    let node = messageElement;
+    while (node) {
+        const next = node.nextElementSibling;
+        node.remove();
+        node = next;
+    }
+    await persistHistory();
+}
+
+async function setProject(projectId) {
+    const sequence = ++projectLoadSequence;
+    if (activeRequest) stopActiveRequest();
+    currentProjectId = projectId ? String(projectId) : null;
+    elements.output.replaceChildren();
+    chatHistory = await loadConversation(currentProjectId);
+    if (sequence !== projectLoadSequence) return;
+
+    if (!chatHistory.length) {
+        addWelcome();
+        return;
+    }
+
+    chatHistory.forEach((entry, index) => {
+        if (entry.role === "user") addMessage("user", entry.content, { historyIndex: index });
+        else addMessage("ai", entry.content);
+    });
+    scrollToLatest(true);
+}
+
+function selectedEditorContext() {
+    if (!lastActiveEditorPane) return null;
+    const textarea = editorTextarea(lastActiveEditorPane);
+    if (!textarea || textarea.selectionStart === textarea.selectionEnd) return null;
+    return { pane: lastActiveEditorPane, content: textarea.value.slice(textarea.selectionStart, textarea.selectionEnd) };
+}
+
+function trimForContext(content, limit) {
+    if (content.length <= limit) return content;
+    const half = Math.floor(limit / 2);
+    return `${content.slice(0, half)}\n\n/* … middle omitted to fit the model context … */\n\n${content.slice(-half)}`;
+}
+
+function buildSystemPrompt() {
+    const values = Object.fromEntries(["html", "css", "js"].map((pane) => [pane, editorValue(pane)]));
+    const totalLength = Object.values(values).reduce((total, value) => total + value.length, 0);
+    const paneLimit = totalLength > MAX_CONTEXT_CHARS ? Math.floor(MAX_CONTEXT_CHARS / 3) : MAX_CONTEXT_CHARS;
+    const selection = selectedEditorContext();
+    const consoleOutput = String(getConsoleContext() || "").slice(-12_000);
+
+    return `You are Xody, an expert web developer helping with an HTML/CSS/JavaScript prototype.
+The editor's current state is authoritative. Keep explanations short, concrete, and in plain language.
+The app immediately applies every non-null pane you return. Describe what you changed without making claims beyond the returned code.
+Only include a pane when the user asked for a code change. Return the complete replacement content for every changed pane and null for every unchanged pane.
+HTML must contain only markup that belongs inside the BODY element.
+
+Respond with exactly one valid JSON object and no surrounding markdown:
+{
+  "html": "complete replacement HTML or null",
+  "css": "complete replacement CSS or null",
+  "js": "complete replacement JavaScript or null",
+  "explanation": "brief explanation"
+}
+
+CURRENT HTML${values.html.length > paneLimit ? " (context shortened)" : ""}:
+\`\`\`html
+${trimForContext(values.html, paneLimit)}
+\`\`\`
+
+CURRENT CSS${values.css.length > paneLimit ? " (context shortened)" : ""}:
+\`\`\`css
+${trimForContext(values.css, paneLimit)}
+\`\`\`
+
+CURRENT JAVASCRIPT${values.js.length > paneLimit ? " (context shortened)" : ""}:
+\`\`\`js
+${trimForContext(values.js, paneLimit)}
+\`\`\`
+${selection ? `\nUSER SELECTION (${selection.pane.toUpperCase()}):\n\`\`\`${selection.pane}\n${trimForContext(selection.content, 50_000)}\n\`\`\`` : ""}
+${consoleOutput ? `\nRECENT PREVIEW CONSOLE OUTPUT:\n\`\`\`text\n${consoleOutput}\n\`\`\`` : ""}`;
+}
+
+async function readErrorResponse(response, providerLabel) {
+    let message = `${providerLabel} request failed (${response.status})`;
+    try {
+        const data = JSON.parse(await response.text());
+        message = data.error?.message || data.message || (typeof data.error === "string" ? data.error : message);
+    } catch {
+        // Avoid exposing arbitrary HTML error pages or provider diagnostics.
+    }
+    throw new ProviderError(message, response.status);
+}
+
+async function fetchJson(url, options, providerLabel) {
+    const response = await fetch(url, options);
+    if (!response.ok) await readErrorResponse(response, providerLabel);
+    try {
+        return await response.json();
+    } catch {
+        throw new ProviderError(`${providerLabel} returned an unreadable response`, response.status);
+    }
+}
+
+async function callGemini(config, systemText, history, userPrompt, signal) {
+    const data = await fetchJson(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent`,
+        {
+            method: "POST",
+            signal,
+            headers: { "Content-Type": "application/json", "x-goog-api-key": config.apiKey },
+            body: JSON.stringify({
+                systemInstruction: { parts: [{ text: systemText }] },
+                contents: [...history.map((message) => ({ role: message.role === "assistant" ? "model" : "user", parts: [{ text: message.content }] })), { role: "user", parts: [{ text: userPrompt }] }],
+                generationConfig: { temperature: 0.1, responseMimeType: "application/json" },
+            }),
+        },
+        PROVIDERS.gemini.label,
+    );
+    return data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
+}
+
+async function callOpenAICompatible(config, systemText, history, userPrompt, signal) {
+    const provider = PROVIDERS[config.provider];
+    const headers = { "Content-Type": "application/json" };
+    if (config.apiKey) headers.Authorization = `Bearer ${config.apiKey}`;
+    const data = await fetchJson(
+        provider.baseUrl,
+        {
+            method: "POST",
+            signal,
+            headers,
+            body: JSON.stringify({
+                model: config.model,
+                temperature: 0.1,
+                response_format: { type: "json_object" },
+                messages: [{ role: "system", content: systemText }, ...history.map(({ role, content }) => ({ role, content })), { role: "user", content: userPrompt }],
+            }),
+        },
+        provider.label,
+    );
+    return data.choices?.[0]?.message?.content || "";
+}
+
+async function callAnthropic(config, systemText, history, userPrompt, signal) {
+    const data = await fetchJson(
+        "https://api.anthropic.com/v1/messages",
+        {
+            method: "POST",
+            signal,
+            headers: { "Content-Type": "application/json", "x-api-key": config.apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+            body: JSON.stringify({
+                model: config.model,
+                max_tokens: 8192,
+                system: systemText,
+                messages: [...history.map(({ role, content }) => ({ role, content })), { role: "user", content: userPrompt }],
+            }),
+        },
+        PROVIDERS.anthropic.label,
+    );
+    return (
+        data.content
+            ?.filter((block) => block.type === "text")
+            .map((block) => block.text)
+            .join("\n") || ""
+    );
+}
+
+async function getAIConfig() {
+    const provider = elements.provider.value;
+    return { provider, model: elements.model.value, apiKey: await getApiKey(provider) };
+}
+
+function assertReady(config) {
+    const provider = PROVIDERS[config.provider];
+    if (!provider) throw new Error("Choose a supported AI provider.");
+    if (provider.requiresKey !== false && !config.apiKey) throw new Error(`Add a ${provider.label} API key in Options first. ${provider.keyHelp}`);
+    if (!config.model) throw new Error(`Choose a ${provider.label} model in Options first.`);
+}
+
+async function callAI(config, history, userPrompt, signal, updateProgress) {
+    const provider = PROVIDERS[config.provider];
+    updateProgress(`Waiting for ${provider.label}…`);
+    const systemText = buildSystemPrompt();
+    let rawText;
+    if (provider.kind === "gemini") rawText = await callGemini(config, systemText, history, userPrompt, signal);
+    else if (provider.kind === "anthropic") rawText = await callAnthropic(config, systemText, history, userPrompt, signal);
+    else rawText = await callOpenAICompatible(config, systemText, history, userPrompt, signal);
+
+    updateProgress("Checking the response…");
+    try {
+        return { type: "structured", data: parseAIResponse(rawText) };
+    } catch (error) {
+        if (!rawText.trim()) throw error;
+        return { type: "text", raw: rawText };
+    }
+}
+
+function setBusy(isBusy) {
+    elements.output.setAttribute("aria-busy", String(isBusy));
+    elements.input.disabled = isBusy;
+    elements.send.hidden = isBusy;
+    elements.stop.hidden = !isBusy;
+    elements.provider.disabled = isBusy;
+    elements.model.disabled = isBusy || !elements.model.options.length;
+    elements.newChat.disabled = isBusy;
+}
+
+function stopActiveRequest() {
+    activeRequest?.controller.abort(new DOMException("Generation stopped", "AbortError"));
+}
+
+function humanizeError(error) {
+    if (error?.name === "AbortError") return error.message === "Request timed out" ? "The provider took too long to respond. Try again or choose a faster model." : "Generation stopped.";
+    if (error instanceof ProviderError && error.status === 401) return "The provider rejected this API key. Open Options and replace it.";
+    if (error instanceof ProviderError && error.status === 429) return "The provider's rate limit was reached. Wait briefly, then retry.";
+    if (error instanceof TypeError && /fetch/i.test(error.message)) return "Could not reach the provider. Check your connection and the provider's browser/CORS settings.";
+    return error?.message || "Something went wrong. Please try again.";
+}
+
+function paneStats(before, after) {
+    const beforeLines = before ? before.split("\n").length : 0;
+    const afterLines = after ? after.split("\n").length : 0;
+    const delta = afterLines - beforeLines;
+    return `${beforeLines} → ${afterLines} lines${delta === 0 ? "" : ` (${delta > 0 ? "+" : ""}${delta})`}`;
+}
+
+function diffPartLines(value) {
+    const lines = value.split("\n");
+    if (lines.at(-1) === "") lines.pop();
+    return lines;
+}
+
+function renderPaneDiff(pane, parts) {
+    const diff = elNew("div", { className: "suggestion-diff", ariaLabel: `${pane.toUpperCase()} code diff` });
+    const content = elNew("div", { className: "suggestion-diff-content" });
+    let oldLine = 1;
+    let newLine = 1;
+    let renderedLines = 0;
+    let truncated = false;
+
+    const addRow = (kind, text, oldNumber = "", newNumber = "") => {
+        if (renderedLines >= MAX_RENDERED_DIFF_LINES) {
+            truncated = true;
+            return false;
+        }
+        const marker = kind === "added" ? "+" : kind === "removed" ? "−" : " ";
+        const row = elNew("div", { className: `diff-line diff-${kind}` });
+        if (kind === "skip") {
+            row.append(elNew("code", { className: "diff-code", textContent: text }));
+        } else {
+            row.append(
+                elNew("span", { className: "diff-line-number", textContent: oldNumber }),
+                elNew("span", { className: "diff-line-number", textContent: newNumber }),
+                elNew("span", { className: "diff-marker", textContent: marker }),
+                elNew("code", { className: "diff-code", textContent: text || " " }),
+            );
+        }
+        content.append(row);
+        renderedLines += 1;
+        return true;
+    };
+
+    const addCodeLine = (kind, text) => {
+        const oldNumber = kind === "added" ? "" : oldLine;
+        const newNumber = kind === "removed" ? "" : newLine;
+        if (!addRow(kind, text, oldNumber, newNumber)) return false;
+        if (kind !== "added") oldLine += 1;
+        if (kind !== "removed") newLine += 1;
+        return true;
+    };
+
+    for (let partIndex = 0; partIndex < parts.length && !truncated; partIndex += 1) {
+        const part = parts[partIndex];
+        const lines = diffPartLines(part.value);
+        const kind = part.added ? "added" : part.removed ? "removed" : "context";
+
+        if (kind !== "context" || lines.length <= DIFF_CONTEXT_LINES * 2) {
+            for (const line of lines) {
+                if (!addCodeLine(kind, line)) break;
+            }
+            continue;
+        }
+
+        const keepStart = parts[partIndex - 1]?.added || parts[partIndex - 1]?.removed ? DIFF_CONTEXT_LINES : 0;
+        const keepEnd = parts[partIndex + 1]?.added || parts[partIndex + 1]?.removed ? DIFF_CONTEXT_LINES : 0;
+        const skipped = lines.length - keepStart - keepEnd;
+
+        for (const line of lines.slice(0, keepStart)) {
+            if (!addCodeLine(kind, line)) break;
+        }
+        if (truncated) break;
+        if (skipped > 0) {
+            addRow("skip", `⋯ ${skipped} unchanged ${skipped === 1 ? "line" : "lines"}`);
+            oldLine += skipped;
+            newLine += skipped;
+        }
+        for (const line of lines.slice(lines.length - keepEnd)) {
+            if (!addCodeLine(kind, line)) break;
+        }
+    }
+
+    if (truncated) {
+        const notice = elNew("p", { className: "diff-truncated", textContent: `Diff preview limited to ${MAX_RENDERED_DIFF_LINES.toLocaleString()} lines.` });
+        content.append(notice);
+    }
+    diff.append(content);
+    return diff;
+}
+
+function renderSuggestion(response) {
+    const shouldScroll = isNearBottom();
+    const message = addMessage("ai", response.explanation);
+    const snapshots = Object.fromEntries(["html", "css", "js"].filter((pane) => response[pane] !== null).map((pane) => [pane, { before: editorValue(pane), after: response[pane] }]));
+    const changedPanes = Object.keys(snapshots).filter((pane) => snapshots[pane].before !== snapshots[pane].after);
+    if (!changedPanes.length) return;
+
+    const review = elNew("section", { className: "suggestion-review", ariaLabel: "Applied AI code changes" });
+    changedPanes.forEach((pane) => {
+        const details = elNew("details", { className: "suggestion-pane" });
+        const summary = elNew("summary", { textContent: `${pane.toUpperCase()} · ${paneStats(snapshots[pane].before, snapshots[pane].after)}` });
+        const parts = diffLines(snapshots[pane].before, snapshots[pane].after);
+        details.append(summary, renderPaneDiff(pane, parts));
+        review.append(details);
+    });
+
+    const status = elNew("p", { className: "suggestion-status", ariaLive: "polite" });
+    const actions = elNew("div", { className: "suggestion-actions" });
+    const undo = iconButton("Undo AI change", "undo-2", { type: "button" });
+    const reapply = iconButton("Re-apply AI change", "redo-2", { type: "button", className: "accent", hidden: true });
+    actions.append(undo, reapply);
+    renderIcons(actions);
+    review.append(status, actions);
+    message.append(review);
+
+    const changeVersion = (from, to) => {
+        const conflicts = changedPanes.filter((pane) => editorValue(pane) !== snapshots[pane][from]);
+        if (conflicts.length) {
+            status.textContent = `${conflicts.join(", ").toUpperCase()} changed afterward. The newer code was preserved.`;
+            return false;
+        }
+        changedPanes.forEach((pane) => bus.emit("ai:update", { syntax: pane, content: snapshots[pane][to] }));
+        return true;
+    };
+
+    changedPanes.forEach((pane) => bus.emit("ai:update", { syntax: pane, content: snapshots[pane].after }));
+    status.textContent = `Applied to ${changedPanes.join(", ").toUpperCase()}.`;
+
+    undo.addEventListener("click", () => {
+        if (!changeVersion("after", "before")) return;
+        status.textContent = "AI changes undone.";
+        undo.hidden = true;
+        reapply.hidden = false;
+    });
+    reapply.addEventListener("click", () => {
+        if (!changeVersion("before", "after")) return;
+        status.textContent = `Re-applied to ${changedPanes.join(", ").toUpperCase()}.`;
+        reapply.hidden = true;
+        undo.hidden = false;
+    });
+
+    if (shouldScroll) scrollToLatest(true);
+    else elements.jumpLatest.hidden = false;
+}
+
+function renderTextResponse(rawText) {
+    const shouldScroll = isNearBottom();
+    const segments = splitMarkdownSegments(rawText);
+    const wrapper = elNew("div", { className: "chat-message role-ai markdown-fallback" });
+    segments.forEach((segment) => {
+        if (segment.type === "text") {
+            if (!segment.content.trim()) return;
+            const prose = elNew("div", { className: "markdown-fallback-text" });
+            renderMarkdown(prose, segment.content);
+            wrapper.append(prose);
+            return;
+        }
+
+        const pane = mapLanguageToPane(segment.lang) || sniffPane(segment.code);
+        const card = elNew("div", { className: "code-fence-card" });
+        const header = elNew("div", { className: "code-fence-header" });
+        const insert = iconButton(`Insert in ${pane.toUpperCase()}`, "plus", { type: "button", className: "accent" });
+        const replace = iconButton(`Replace ${pane.toUpperCase()}`, "replace", { type: "button" });
+        const copy = iconButton("Copy", "copy", { type: "button" });
+        const status = elNew("span", { className: "suggestion-status", ariaLive: "polite" });
+        header.append(elNew("span", { className: "code-fence-lang", textContent: (segment.lang || pane).toUpperCase() }), insert, replace, copy);
+        const pre = elNew("pre");
+        pre.append(elNew("code", { textContent: segment.code }));
+        card.append(header, pre, status);
+
+        insert.addEventListener("click", () => {
+            const textarea = editorTextarea(pane);
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            bus.emit("ai:update", { syntax: pane, content: textarea.value.slice(0, start) + segment.code + textarea.value.slice(end) });
+            status.textContent = `Inserted into ${pane.toUpperCase()}.`;
+        });
+        replace.addEventListener("click", () => {
+            bus.emit("ai:update", { syntax: pane, content: segment.code });
+            status.textContent = `Replaced ${pane.toUpperCase()}.`;
+        });
+        copy.addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(segment.code);
+                status.textContent = "Copied.";
+            } catch {
+                status.textContent = "Copy was blocked by the browser. Select the code manually.";
+            }
+        });
+        wrapper.append(card);
+    });
+    renderIcons(wrapper);
+    elements.output.append(wrapper);
+    if (shouldScroll) scrollToLatest(true);
+    else elements.jumpLatest.hidden = false;
+}
+
+async function sendMessage(message) {
+    const userText = String(message ?? elements.input.value).trim();
+    if (!userText || activeRequest) return;
+
+    let config;
+    try {
+        config = await getAIConfig();
+        assertReady(config);
+    } catch (error) {
+        addMessage("ai", `**Cannot send:** ${humanizeError(error)}`, { forceScroll: true });
+        return;
+    }
+
+    const projectId = currentProjectId;
+    const historyBeforeUser = chatHistory.length;
+    const providerHistory = chatHistory.map(({ role, content }) => ({ role, content }));
+    addMessage("user", userText, { historyIndex: historyBeforeUser, forceScroll: true });
+    pushHistory("user", userText);
+    elements.input.value = "";
+
+    const progress = addStatusMessage(`Contacting ${PROVIDERS[config.provider].label}…`);
+    const controller = new AbortController();
+    const requestId = crypto.randomUUID();
+    const timeout = setTimeout(() => controller.abort(new DOMException("Request timed out", "AbortError")), REQUEST_TIMEOUT_MS);
+    activeRequest = { id: requestId, controller, projectId };
+    setBusy(true);
+
+    try {
+        const result = await callAI(config, providerHistory, userText, controller.signal, (text) => {
+            progress.label.textContent = text;
+        });
+        if (activeRequest?.id !== requestId || currentProjectId !== projectId) return;
+        if (result.type === "structured") {
+            renderSuggestion(result.data);
+            pushHistory("assistant", summarizeChanges(result.data));
+        } else {
+            renderTextResponse(result.raw);
+            pushHistory("assistant", result.raw);
+        }
+    } catch (error) {
+        if (currentProjectId === projectId) addMessage("ai", `**${humanizeError(error)}**`);
+    } finally {
+        clearTimeout(timeout);
+        progress.message.remove();
+        if (activeRequest?.id === requestId) {
+            activeRequest = null;
+            setBusy(false);
+            elements.input.focus();
+        }
+    }
+}
+
+function isChatModel(id) {
+    return !CHAT_EXCLUDE_PATTERNS.some((pattern) => pattern.test(id));
+}
+
+async function fetchModelsGemini(apiKey, signal) {
+    const data = await fetchJson("https://generativelanguage.googleapis.com/v1beta/models", { signal, headers: { "x-goog-api-key": apiKey } }, PROVIDERS.gemini.label);
+    return (data.models || [])
+        .filter((model) => model.supportedGenerationMethods?.includes("generateContent"))
+        .map((model) => ({ id: model.name.replace("models/", ""), label: model.displayName || model.name }))
+        .filter((model) => isChatModel(model.id));
+}
+
+async function fetchModelsOpenAICompatible(providerKey, apiKey, signal) {
+    const provider = PROVIDERS[providerKey];
+    const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
+    const data = await fetchJson(provider.baseUrl.replace(/\/chat\/completions$/, "/models"), { signal, headers }, provider.label);
+    return (data.data || []).map((model) => ({ id: model.id, label: model.id.replace(/-/g, " ") })).filter((model) => isChatModel(model.id));
+}
+
+async function fetchModelsAnthropic(apiKey, signal) {
+    const data = await fetchJson("https://api.anthropic.com/v1/models", { signal, headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" } }, PROVIDERS.anthropic.label);
+    return (data.data || []).map((model) => ({ id: model.id, label: model.display_name || model.id }));
+}
+
+function renderModelState(state, models = []) {
+    elements.model.replaceChildren();
+    elements.model.disabled = true;
+    const labels = { "no-key": "Add an API key to load models…", loading: "Loading models…", error: "Couldn't load models — check the key or CORS", empty: "No compatible chat models found" };
+    if (state !== "ready") {
+        elements.model.append(elNew("option", { value: "", textContent: labels[state] || "Models unavailable" }));
+        updateModelLabel();
+        return;
+    }
+    models.forEach(({ id, label }) => elements.model.append(elNew("option", { value: id, textContent: label })));
+    const savedModel = settings.models?.[elements.provider.value];
+    if (savedModel && models.some((model) => model.id === savedModel)) elements.model.value = savedModel;
+    else if (models[0]) {
+        elements.model.value = models[0].id;
+        settings = { ...settings, models: { ...settings.models, [elements.provider.value]: models[0].id } };
+        void updateChatSettings({ models: { [elements.provider.value]: models[0].id } });
+    }
+    elements.model.disabled = Boolean(activeRequest);
+    updateModelLabel();
+}
+
+function updateModelLabel() {
+    const provider = PROVIDERS[elements.provider.value];
+    const model = elements.model.value;
+    elements.modelLabel.textContent = model ? model.replace(/-/g, " ") : provider?.label || "Options";
+    elements.modelLabel.title = model ? `${provider?.label} · ${model}` : provider?.label || "AI options";
+}
+
+async function refreshKeyStatus(providerKey) {
+    const provider = PROVIDERS[providerKey];
+    elements.apiKey.value = "";
+    elements.apiKey.type = "password";
+    elements.toggleKey.textContent = "Show typed key";
+    if (provider.requiresKey === false) {
+        elements.apiKey.disabled = true;
+        elements.rememberKey.disabled = true;
+        elements.toggleKey.disabled = true;
+        elements.clearKey.disabled = true;
+        elements.keyStatus.textContent = provider.keyHelp;
+        return;
+    }
+    const [available, remembered] = await Promise.all([hasApiKey(providerKey), isApiKeyRemembered(providerKey)]);
+    if (elements.provider.value !== providerKey) return;
+    elements.apiKey.disabled = false;
+    elements.rememberKey.disabled = false;
+    elements.toggleKey.disabled = false;
+    elements.clearKey.disabled = !available;
+    elements.rememberKey.checked = remembered;
+    elements.apiKey.placeholder = available ? (remembered ? "Encrypted key saved" : "Key available for this session") : provider.keyPlaceholder;
+    elements.keyStatus.textContent = available ? (remembered ? "This key is encrypted in IndexedDB on this device." : "This key will be forgotten when the page closes.") : provider.keyHelp;
+}
+
+async function refreshModelOptions(providerKey) {
+    modelRequest?.abort();
+    const controller = new AbortController();
+    modelRequest = controller;
+    const provider = PROVIDERS[providerKey];
+    const apiKey = await getApiKey(providerKey);
+    if (elements.provider.value !== providerKey) return;
+    if (provider.requiresKey !== false && !apiKey) {
         renderModelState("no-key");
         return;
     }
 
-    const cacheKey = apiKey || "__no_key__"; // keyless providers share one cache slot
-    const cache = modelCache.read();
-    const cached = cache[providerKey];
-    const isFresh = cached && cached.forKey === cacheKey && Date.now() - cached.fetchedAt < MODEL_CACHE_TTL;
-    if (isFresh) {
+    const fingerprint = await credentialFingerprint(apiKey);
+    const cached = await getModelCache(providerKey);
+    if (cached?.credentialFingerprint === fingerprint && Date.now() - cached.fetchedAt < MODEL_CACHE_TTL) {
         renderModelState("ready", cached.models);
         return;
     }
 
     renderModelState("loading");
-
     try {
-        const fetcher = MODEL_FETCHERS[PROVIDERS[providerKey].kind];
-        const models = await fetcher(providerKey, apiKey);
-
+        let models;
+        if (provider.kind === "gemini") models = await fetchModelsGemini(apiKey, controller.signal);
+        else if (provider.kind === "anthropic") models = await fetchModelsAnthropic(apiKey, controller.signal);
+        else models = await fetchModelsOpenAICompatible(providerKey, apiKey, controller.signal);
+        if (controller.signal.aborted || elements.provider.value !== providerKey) return;
         if (!models.length) {
             renderModelState("empty");
             return;
         }
-
-        cache[providerKey] = { models, fetchedAt: Date.now(), forKey: cacheKey };
-        modelCache.update(cache);
+        await setModelCache(providerKey, { models, fetchedAt: Date.now(), credentialFingerprint: fingerprint });
         renderModelState("ready", models);
-    } catch (err) {
-        console.warn(`Model fetch failed for ${providerKey}:`, err.message);
-        renderModelState("error");
+    } catch (error) {
+        if (error.name !== "AbortError" && elements.provider.value === providerKey) renderModelState("error");
+    } finally {
+        if (modelRequest === controller) modelRequest = null;
     }
 }
 
-// Provider / model / key wiring
-
-// Populate provider <select> once
-Object.entries(PROVIDERS).forEach(([key, p]) => {
-    elProvider.append(elNew("option", { value: key, textContent: p.label }));
-});
-
-const uiUpdateModelLabel = (suggestedModel) => {
-    const settings = ls.read();
-    const elModelLabel = el(".chat-model-label");
-    const modelName = settings.model || suggestedModel;
-    elModelLabel.textContent = modelName?.replace(/-/g, " ") || "Options";
-    elModelLabel.title = settings.provider ?? "Unknown Provider";
-};
-
-async function loadProviderIntoUI(providerKey) {
-    const settings = ls.read();
-    const apiKey = (settings.apiKeys || {})[providerKey] || "";
-
-    elApiKey.placeholder = PROVIDERS[providerKey].keyPlaceholder;
-    elApiKey.value = apiKey;
-
-    await refreshModelOptions(providerKey, apiKey);
-
-    // restore last-used model for this provider if it's still present in the loaded list
-    const savedModel = settings.model;
-    if (savedModel && [...elModel.options].some((o) => o.value === savedModel)) {
-        elModel.value = savedModel;
-    }
+async function loadProvider(providerKey) {
+    elements.apiKey.placeholder = PROVIDERS[providerKey].keyPlaceholder;
+    await refreshKeyStatus(providerKey);
+    if (elements.provider.value !== providerKey) return;
+    await refreshModelOptions(providerKey);
 }
 
-elProvider.addEventListener("input", async () => {
-    ls.update({ provider: elProvider.value, model: null });
-    await loadProviderIntoUI(elProvider.value);
-});
+function updateContextStatus() {
+    const selection = selectedEditorContext();
+    const consoleText = String(getConsoleContext() || "");
+    const parts = [selection ? `${selection.pane.toUpperCase()} selection included` : "Current project included"];
+    if (consoleText) parts.push("recent console output included");
+    elements.contextStatus.textContent = parts.join(" · ");
+    elements.explainSelection.hidden = !selection;
+    elements.fixConsole.hidden = !hasConsoleErrors();
+}
 
-elModel.addEventListener("input", () => {
-    ls.update({ model: elModel.value });
-    uiUpdateModelLabel();
-});
+function wireEvents() {
+    for (const pane of ["html", "css", "js"]) {
+        editorTextarea(pane)?.addEventListener("focus", () => {
+            lastActiveEditorPane = pane;
+            updateContextStatus();
+        });
+    }
+    elements.input.addEventListener("focus", () => {
+        elements.options.open = false;
+        updateContextStatus();
+    });
+    document.addEventListener("pointerdown", (event) => {
+        if (elements.options.open && !elements.options.contains(event.target)) elements.options.open = false;
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || !elements.options.open) return;
+        elements.options.open = false;
+        elements.options.querySelector("summary")?.focus();
+    });
+    elements.input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+            event.preventDefault();
+            void sendMessage();
+        }
+    });
+    elements.send.addEventListener("click", () => void sendMessage());
+    elements.stop.addEventListener("click", stopActiveRequest);
+    elements.toggleKey.addEventListener("click", () => {
+        const isVisible = elements.apiKey.type === "text";
+        elements.apiKey.type = isVisible ? "password" : "text";
+        elements.toggleKeyLabel.textContent = isVisible ? "Show typed key" : "Hide typed key";
+        elements.toggleKey.querySelector("[data-lucide]")?.replaceWith(iconElement(isVisible ? "eye" : "eye-off"));
+        renderIcons(elements.toggleKey);
+    });
+    elements.jumpLatest.addEventListener("click", () => scrollToLatest(true));
+    elements.output.addEventListener("scroll", () => {
+        elements.jumpLatest.hidden = isNearBottom();
+    });
+    elements.newChat.addEventListener("click", async () => {
+        if (chatHistory.length && !confirm("Clear this project's AI conversation? Your project code will not be changed.")) return;
+        chatHistory = [];
+        await clearConversation(currentProjectId);
+        elements.output.replaceChildren();
+        addWelcome();
+    });
+    document.querySelectorAll("[data-chat-prompt]").forEach((button) => button.addEventListener("click", () => void sendMessage(button.dataset.chatPrompt)));
+    elements.provider.addEventListener("change", async () => {
+        const provider = elements.provider.value;
+        settings = await updateChatSettings({ provider });
+        if (elements.provider.value === provider) await loadProvider(provider);
+    });
+    elements.model.addEventListener("change", async () => {
+        const provider = elements.provider.value;
+        const model = elements.model.value;
+        settings = await updateChatSettings({ models: { [provider]: model } });
+        updateModelLabel();
+    });
+    elements.apiKey.addEventListener("change", async () => {
+        const provider = elements.provider.value;
+        const value = elements.apiKey.value.trim();
+        if (!value) return;
+        await saveApiKey(provider, value, { remember: elements.rememberKey.checked });
+        if (elements.provider.value !== provider) return;
+        elements.apiKey.value = "";
+        await refreshKeyStatus(provider);
+        if (elements.provider.value === provider) await refreshModelOptions(provider);
+    });
+    elements.rememberKey.addEventListener("change", async () => {
+        const provider = elements.provider.value;
+        const remember = elements.rememberKey.checked;
+        const key = elements.apiKey.value.trim() || (await getApiKey(provider));
+        if (key) await saveApiKey(provider, key, { remember });
+        if (elements.provider.value === provider) await refreshKeyStatus(provider);
+    });
+    elements.clearKey.addEventListener("click", async () => {
+        const provider = elements.provider.value;
+        await clearApiKey(provider);
+        if (elements.provider.value !== provider) return;
+        await refreshKeyStatus(provider);
+        renderModelState("no-key");
+    });
+    bus.on("project:changed", async ({ id }) => {
+        await setProject(id);
+        updateContextStatus();
+    });
+    bus.on("project:deleted", ({ id }) => void clearConversation(id));
+    bus.on("project:rekeyed", async ({ oldId, newId }) => {
+        await moveConversation(oldId, newId);
+        if (currentProjectId === String(oldId)) await setProject(newId);
+    });
+    bus.on("console:changed", updateContextStatus);
+    document.addEventListener("selectionchange", updateContextStatus);
+}
 
-elApiKey.addEventListener("change", async () => {
-    setApiKey(elProvider.value, elApiKey.value);
-    await refreshModelOptions(elProvider.value, elApiKey.value);
-});
+export async function init(options) {
+    editors = options.editors || options;
+    getProjectId = options.getProjectId || (() => null);
+    getConsoleContext = options.getConsoleContext || (() => "");
+    hasConsoleErrors = options.hasConsoleErrors || (() => false);
+    await initChatStorage();
 
-// Init
-(async () => {
-    const initialSettings = ls.read();
-    elProvider.value = initialSettings.provider || "gemini";
-    await loadProviderIntoUI(elProvider.value);
-    addMessage("system", `<h3>✨︎ Hi, I'm Xody</h3>your AI assistant.<br>Choose a provider, select a model, and ask a question to get started.`);
-})().catch((error) => {
-    // Handle the error here
-    console.error(error);
-});
+    if (!initialized) {
+        Object.entries(PROVIDERS).forEach(([key, provider]) => elements.provider.append(elNew("option", { value: key, textContent: provider.label })));
+        wireEvents();
+        initialized = true;
+    }
 
-// Export initialization to get textarea editors
-export const init = (editorsBySyntax) => Object.assign(editorsTextarea, editorsBySyntax);
+    settings = await getChatSettings();
+    elements.provider.value = PROVIDERS[settings.provider] ? settings.provider : "gemini";
+    await loadProvider(elements.provider.value);
+    await setProject(getProjectId());
+    updateContextStatus();
+}

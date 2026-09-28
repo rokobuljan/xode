@@ -64,8 +64,8 @@ export function mount(data, varName = "state", root = document.body) {
         return expr === varName || expr.startsWith(varName + ".");
     }
 
-    // read-only display bindings: data-rea-text / data-rea-class / data-rea-open / data-rea-value
-    // these accept full expressions (e.g. "project.name.toUpperCase()"), read-only
+    // Read-only display bindings. Values are resolved as property paths instead
+    // of executable expressions so DOM attributes can never evaluate code.
     root.querySelectorAll("[data-rea-text], [data-rea-class], [data-rea-open], [data-rea-value]").forEach((el) => {
         bind(el.dataset.reaText, (v) => (el.textContent = v));
         bind(el.dataset.reaClass, (v) => (el.className = v));
@@ -115,8 +115,8 @@ export function mount(data, varName = "state", root = document.body) {
     function bind(expr, apply) {
         if (!expr) return;
         if (!ownsExpr(expr)) return; // belongs to a different mount() call — skip
-        const fn = new Function(varName, `return (${expr})`);
-        effect(() => apply(fn(data)));
+        const keys = expr.split(".").slice(1);
+        effect(() => apply(keys.reduce((value, key) => value?.[key], data)));
     }
 }
 

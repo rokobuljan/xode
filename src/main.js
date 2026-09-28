@@ -20,6 +20,9 @@ import { reactive, effect, mount, persist } from "./js/reactive.js";
 import { LS, el, els, elNew, download, formatDateTime, params, countLines } from "./js/utils.js";
 import { initProjectStorage, openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from "./js/project.js";
 import { Editor } from "./js/editor.js";
+import { renderIcons } from "./js/icons.js";
+
+renderIcons();
 
 await initProjectStorage();
 const initialProject = await openProject();
@@ -64,6 +67,7 @@ const projectInit = async (isNew = true, id) => {
     else params.delete("g");
 
     previewCurrentProject("all");
+    bus.emit("project:changed", { id: currentProjectState.id });
 };
 
 /**
@@ -166,6 +170,97 @@ addEventListener("message", async (evt) => {
 });
 
 const elProjectsList = el("#projects-list");
+const elProjectDeleteDialog = el("#project-delete-dialog");
+const elProjectDeleteTitle = el("#project-delete-title");
+const elProjectDeleteDescription = el("#project-delete-description");
+const elProjectDeleteGistNote = el(".project-delete-gist-note", elProjectDeleteDialog);
+const elProjectDeleteStatus = el(".project-delete-status", elProjectDeleteDialog);
+const elProjectDeleteLocal = el(".project-delete-local", elProjectDeleteDialog);
+const elProjectDeleteGist = el(".project-delete-gist", elProjectDeleteDialog);
+let pendingProjectDeletion = null;
+let isProjectDeleteBusy = false;
+
+const setProjectDeleteBusy = (isBusy) => {
+    isProjectDeleteBusy = isBusy;
+    els("button", elProjectDeleteDialog).forEach((button) => {
+        button.disabled = isBusy;
+    });
+    if (!isBusy) elProjectDeleteGist.disabled = !pendingProjectDeletion?.gistId || !hasToken();
+};
+
+const openProjectDeleteDialog = (project) => {
+    pendingProjectDeletion = {
+        id: String(project.id),
+        gistId: project.gistId ? String(project.gistId) : null,
+        name: String(project.name || "Untitled"),
+    };
+
+    const hasGist = Boolean(pendingProjectDeletion.gistId);
+    const canDeleteGist = hasGist && hasToken();
+    elProjectDeleteTitle.textContent = `Delete “${pendingProjectDeletion.name}”?`;
+    elProjectDeleteDescription.textContent = "This permanently deletes the project data stored in this browser.";
+    elProjectDeleteGist.hidden = !hasGist;
+    elProjectDeleteGist.disabled = !canDeleteGist;
+    elProjectDeleteGist.title = canDeleteGist ? "Delete the local project and its GitHub Gist" : "Connect GitHub to delete the linked Gist";
+    elProjectDeleteGistNote.hidden = !hasGist;
+    elProjectDeleteGistNote.textContent = canDeleteGist ? "This project is linked to a GitHub Gist. Deleting the Gist cannot be undone." : "The linked Gist will remain on GitHub because no GitHub token is connected.";
+    elProjectDeleteStatus.textContent = "";
+    setProjectDeleteBusy(false);
+    elProjectDeleteDialog.showModal();
+};
+
+const deleteLocalProject = async (project) => {
+    const wasActiveProject = String(currentProjectState.id) === project.id;
+    await deleteProject(project.id);
+    bus.emit("project:deleted", { id: project.id });
+
+    if (wasActiveProject) {
+        params.delete("g");
+        const [firstProject] = await listProjects();
+        if (firstProject) await projectInit(false, firstProject.id);
+        else await projectInit();
+    }
+
+    await drawProjects();
+};
+
+const confirmProjectDeletion = async (deleteGist) => {
+    const project = pendingProjectDeletion;
+    if (!project || (deleteGist && !project.gistId)) return;
+
+    setProjectDeleteBusy(true);
+    elProjectDeleteStatus.textContent = deleteGist ? "Deleting GitHub Gist…" : "Deleting local project…";
+    let gistWasDeleted = false;
+
+    try {
+        if (deleteGist) {
+            await gist.delete(project.gistId);
+            gistWasDeleted = true;
+            elProjectDeleteStatus.textContent = "Gist deleted. Removing local project…";
+        }
+        await deleteLocalProject(project);
+        pendingProjectDeletion = null;
+        elProjectDeleteDialog.close("deleted");
+    } catch (error) {
+        elProjectDeleteStatus.textContent = gistWasDeleted ? `The Gist was deleted, but the local project could not be removed: ${error.message}` : `Nothing was deleted locally: ${error.message}`;
+        setProjectDeleteBusy(false);
+    }
+};
+
+elProjectDeleteLocal.addEventListener("click", () => void confirmProjectDeletion(false));
+elProjectDeleteGist.addEventListener("click", () => void confirmProjectDeletion(true));
+elProjectDeleteDialog.addEventListener("close", () => {
+    isProjectDeleteBusy = false;
+    pendingProjectDeletion = null;
+    elProjectDeleteStatus.textContent = "";
+});
+elProjectDeleteDialog.addEventListener("cancel", (event) => {
+    if (isProjectDeleteBusy) event.preventDefault();
+});
+elProjectDeleteDialog.addEventListener("click", (event) => {
+    if (!isProjectDeleteBusy && event.target === elProjectDeleteDialog) elProjectDeleteDialog.close("cancel");
+});
+
 let drawProjectsSequence = 0;
 const drawProjects = async () => {
     const sequence = ++drawProjectsSequence;
@@ -205,9 +300,7 @@ const drawProjects = async () => {
         });
 
         elThumbnail.append(elThumbnailIframe);
-        const gistLinkHTML = projectData.gistId
-            ? `<a href="https://gist.github.com/${projectData.gistId}" target="_blank" rel="noopener noreferrer" title="External Github Gist"><span class="icon" data-name="github-logo">&#xf772;</span></a>`
-            : "";
+        const gistLinkHTML = projectData.gistId ? `<a href="https://gist.github.com/${projectData.gistId}" target="_blank" rel="noopener noreferrer" title="External GitHub Gist"><i data-lucide="github"></i></a>` : "";
         const elProject = elNew("div", {
             id: `project-${projectData.id}`,
             className: "project",
@@ -216,39 +309,18 @@ const drawProjects = async () => {
                 <br>
                 <span class="project-actions">
                     ${gistLinkHTML}
-                    <button data-download-id="${projectData.id}" type="button" title="Download"><span class="icon" data-name="download">&#xf3b7;</span></button>
-                    <button data-delete-id="${projectData.id}" type="button" title="Delete"><span class="icon" data-name="trash">&#xf202;</span></button>
+                    <button data-download-id="${projectData.id}" type="button" title="Download"><i data-lucide="download"></i></button>
+                    <button data-delete-id="${projectData.id}" type="button" title="Delete"><i data-lucide="trash-2"></i></button>
                 </span>
             </div>`,
         });
+        renderIcons(elProject);
         const elName = el(".project-name", elProject);
         elName.textContent = projectData.name; // safe — no HTML parsing
         elName.title = title; // safe — DOM property, not string-parsed
         elProject.prepend(elThumbnail);
 
-        el(`[data-delete-id]`, elProject).addEventListener(
-            "click",
-            () => {
-                if (confirm(`Delete project: "${projectData.name}"?`)) {
-                    requestAnimationFrame(async () => {
-                        el(`#project-${projectData.id}`).remove();
-                        const wasActiveProject = currentProjectState.id === projectData.id;
-                        // Delete from storage first so subsequent listProjects() reflects the removal
-                        await deleteProject(projectData.id);
-                        if (wasActiveProject) {
-                            params.delete("g"); // Remove from URI params to avoid reloading deleted gist
-                            const [firstProject] = await listProjects();
-                            if (firstProject) {
-                                await projectInit(false, firstProject.id);
-                            } else {
-                                await projectInit(); // init a new empty project
-                            }
-                        }
-                    });
-                }
-            },
-            { capture: true },
-        );
+        el(`[data-delete-id]`, elProject).addEventListener("click", () => openProjectDeleteDialog(projectData));
 
         el(`[data-download-id]`, elProject).addEventListener("click", () => {
             void downloadProject(projectData.id);
@@ -352,9 +424,13 @@ el("#project-new").addEventListener("click", async () => {
     await drawProjects(); // redraw old ones
 });
 
-// Update html from AI
+el("#project-delete").addEventListener("click", () => openProjectDeleteDialog(currentProjectState));
+
+// Apply an AI change through the Editor API so highlighting, preview updates,
+// persistence, and the editor's undo stack remain in sync.
 bus.on("ai:update", ({ syntax, content }) => {
-    currentProjectState[syntax] = content; // Update and save
+    if (!editors[syntax] || typeof content !== "string") return;
+    editors[syntax].setValue(content, { history: true, origin: "ai" });
 });
 
 // GISTS
@@ -514,6 +590,7 @@ const gistPublish = async (project) => {
             await saveProject(project); // Save a local copy with the new ID
             if (oldId && oldId !== project.id) {
                 await deleteProject(oldId);
+                bus.emit("project:rekeyed", { oldId, newId: project.id });
             }
             new Toast({
                 head: "Published",
@@ -551,6 +628,7 @@ const gistPublish = async (project) => {
                     await saveProject(project);
                     if (oldId && oldId !== project.id) {
                         await deleteProject(oldId);
+                        bus.emit("project:rekeyed", { oldId, newId: project.id });
                     }
                     params.set("g", project.gistId);
                     new Toast({
@@ -658,9 +736,11 @@ if (params.get("g")) {
 persist(currentProjectState, saveProject, 300); // Persist changes to project every 300ms
 await drawProjects();
 
-// Initialize chat
-initChat({
-    html: editors.html.elTextarea,
-    css: editors.css.elTextarea,
-    js: editors.js.elTextarea,
+// Initialize the serverless AI assistant. Conversations and optional encrypted
+// API keys are stored in IndexedDB by the chat module.
+await initChat({
+    editors,
+    getProjectId: () => currentProjectState.id,
+    getConsoleContext: () => paneConsole.getRecentOutput(),
+    hasConsoleErrors: () => paneConsole.hasErrors(),
 });

@@ -10,6 +10,7 @@ import { el, elNew, LS } from "./utils.js";
 import { extractColors } from "./colorExtract.js";
 import { getAutoIndentEdit } from "./editorIndent.js";
 import Toast from "./toast.js";
+import { renderIcons } from "./icons.js";
 
 const lsSettings = LS("xode.settings");
 
@@ -436,7 +437,8 @@ export class Editor {
         const charCount = selectedText.length;
         const lineCount = selectedText.split("\n").length;
         const hasCount = charCount > 0;
-        this.elSelectionStat.innerHTML = hasCount ? `<span class= "icon" data-name="text-t">&#x10125;</span> ${charCount} &nbsp; <span class="icon" data-name="wrap-text">&#xf11d;</span> ${lineCount}` : "";
+        this.elSelectionStat.innerHTML = hasCount ? `<i data-lucide="type"></i> ${charCount} &nbsp; <i data-lucide="wrap-text"></i> ${lineCount}` : "";
+        if (hasCount) renderIcons(this.elSelectionStat);
     }
     emmetExpand() {
         const source = this.elTextarea.value;

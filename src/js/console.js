@@ -1,3 +1,4 @@
+import { bus } from "./bus.js";
 import { el, elNew } from "./utils.js";
 
 const paneConsole = {
@@ -12,6 +13,8 @@ const paneConsole = {
     history: [],
     historyIndex: 0,
     tempInput: "",
+    /** @type {Array<{type: string, text: string, line: string | number | null, createdAt: number}>} */
+    entries: [],
     init() {
         this.el = el(`[data-view="console"] .console`);
         this.elBtnClear = el(`[data-view="console"] .console-clear`);
@@ -71,9 +74,12 @@ const paneConsole = {
     },
     print({ type, args, line }) {
         const logType = type.split(":")[1] || "log";
+        const text = args.join("\n").trimStart();
+        this.entries.push({ type: logType, text, line: line ?? null, createdAt: Date.now() });
+        if (this.entries.length > 100) this.entries = this.entries.slice(-100);
         const elBlock = elNew("code", {
             className: `log ${logType}`,
-            textContent: args.join("\n").trimStart(),
+            textContent: text,
         });
         const elLine = elNew("span", {
             className: "log-line",
@@ -81,6 +87,7 @@ const paneConsole = {
         });
         elBlock.append(elLine);
         this.inputLine.before(elBlock);
+        this.notifyChange();
     },
     focusInput() {
         if (this.inputElement) {
@@ -161,11 +168,13 @@ const paneConsole = {
         try {
             // Try Function constructor first (safer)
             try {
+                // The console is explicitly a user-authored JavaScript REPL.
+                // oxlint-disable-next-line typescript/no-implied-eval
                 const result = new Function(`"use strict"; return (${input})`)();
                 if (result !== undefined) {
                     this.print({ type: "console:result", args: [this.formatValue(result)] });
                 }
-            } catch (_err) {
+            } catch {
                 // If that fails, try direct eval
                 const result = window.eval(input);
                 if (result !== undefined) {
@@ -214,7 +223,21 @@ const paneConsole = {
     },
     clear() {
         this.el.innerHTML = "";
+        this.entries = [];
         this.createInputLine();
+        this.notifyChange();
+    },
+    hasErrors() {
+        return this.entries.some(({ type }) => type === "error");
+    },
+    notifyChange() {
+        bus.emit("console:changed", { hasErrors: this.hasErrors() });
+    },
+    getRecentOutput(limit = 10) {
+        return this.entries
+            .slice(-limit)
+            .map(({ type, text, line }) => `[${type}]${line ? ` line ${line}` : ""} ${text}`)
+            .join("\n");
     },
 };
 

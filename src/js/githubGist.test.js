@@ -50,3 +50,21 @@ describe("authenticated Gist listing", () => {
         expect(fetch.mock.calls[0][1].headers.Authorization).toBe("Bearer github-token");
     });
 });
+
+describe("authenticated Gist deletion", () => {
+    it("deletes the requested Gist with the stored token", async () => {
+        fetch.mockResolvedValueOnce({ ok: true, status: 204 });
+
+        const { default: gist, setToken } = await loadGistModule();
+        setToken("github-token");
+
+        await expect(gist.delete("gist-to-delete")).resolves.toBe(true);
+        expect(fetch).toHaveBeenCalledWith(
+            "https://api.github.com/gists/gist-to-delete",
+            expect.objectContaining({
+                method: "DELETE",
+                headers: expect.objectContaining({ Authorization: "Bearer github-token" }),
+            }),
+        );
+    });
+});

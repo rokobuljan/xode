@@ -29,11 +29,11 @@
             </svg>
 
             <button class="md-show" type="button" data-modal="#modal-projects" title="Project Settings">
-                <span class="icon" data-name="folder-simple">&#xfdf9;</span>
+                <i data-lucide="folder"></i>
                 <span data-rea-text="project.name">Untitled</span>
             </button>
             <button class="downloadCurrentProject md-show" type="button" title="Download project">
-                <span class="icon" data-name="download">&#xf3b7;</span>
+                <i data-lucide="download"></i>
             </button>
 
             <div class="tabs">
@@ -51,16 +51,16 @@
                 </label>
                 <label class="tab ckbtn" title="Toggle Console">
                     <input type="checkbox" data-rea-model="project.panes.console" />
-                    <span class="icon" data-name="terminal">&#xf478;</span>
+                    <i data-lucide="terminal"></i>
                 </label>
                 <label class="tab ckbtn" title="Toggle Live preview">
                     <input type="checkbox" data-rea-model="project.panes.preview" />
-                    <span class="md-hide icon" data-name="eye--fill">&#xf31d;</span>
+                    <i class="md-hide" data-lucide="eye"></i>
                     <span class="md-show">Preview</span>
                 </label>
                 <label class="tab ckbtn" title="Toggle Rich Editor">
                     <input type="checkbox" data-rea-model="project.panes.richEditor" data-action="designMode" />
-                    <span class="icon" data-name="pencil-line">&#xf113;</span>
+                    <i data-lucide="pencil-line"></i>
                 </label>
                 <label class="tab ckbtn" title="Toggle AI Chat">
                     <input type="checkbox" data-rea-model="project.panes.chat" />
@@ -73,7 +73,7 @@
             </label>
             <button id="run" type="button" title="Run JS">
                 <span class="md-show">Run</span>
-                <span class="icon" data-name="play">&#xf42d;</span>
+                <i data-lucide="play"></i>
             </button>
         </nav>
 
@@ -104,44 +104,38 @@
                 <div class="splitview col" data-view="preview" data-rea-open="project.panes.preview">
                     <div data-view="richEditor" data-rea-open-inner data-rea-open="project.panes.richEditor">
                         <div class="cmd-group">
-                            <span data-cmd="bold" title="Bold" class="icon" data-name="bold">&#xf320;</span>
-                            <span data-cmd="italic" alt="Italic" title="Italic" class="icon" data-name="italic">&#xf10a;</span>
-                            <span data-cmd="underline" alt="Underline" title="Underline" class="icon" data-name="text-underline">&#xf197;</span>
-                            <span data-cmd="strikeThrough" alt="Strike Through" title="Strike Through" class="icon" data-name="text-strikethrough">&#xfa5d;</span>
-                            <span data-cmd="superscript" alt="Superscript" title="Superscript" class="icon" data-name="text-superscript">&#xfa02;</span>
-                            <span data-cmd="subscript" alt="Subscript" title="Subscript" class="icon" data-name="text-subscript">&#xf0e6;</span>
+                            <i data-lucide="bold" data-cmd="bold" title="Bold"></i>
+                            <i data-lucide="italic" data-cmd="italic" title="Italic"></i>
+                            <i data-lucide="underline" data-cmd="underline" title="Underline"></i>
+                            <i data-lucide="strikethrough" data-cmd="strikeThrough" title="Strike Through"></i>
+                            <i data-lucide="superscript" data-cmd="superscript" title="Superscript"></i>
+                            <i data-lucide="subscript" data-cmd="subscript" title="Subscript"></i>
                         </div>
                         <div class="cmd-group">
-                            <span data-cmd="formatBlock" title="Paragraph" data-par="P" class="icon" data-name="paragraph">&#xfeeb;</span>
-                            <span data-cmd="formatBlock" title="H1" data-par="H1" class="icon" data-name="text-h-one">&#xfb8e;</span>
-                            <span data-cmd="formatBlock" title="H2" data-par="H2" class="icon" data-name="text-h-two">&#x10083;</span>
-                            <span data-cmd="formatBlock" title="H3" data-par="H3" class="icon" data-name="text-h-three">&#xf797;</span>
-                        </div>
-                        <!-- <div class="cmd-group">
-                    <span data-cmd="removeFormat" data-par="foreColor" alt="Text Color" title="Text Color" class="icon"
-                        data-name="palette">&#xf919;</span>
-                    <span data-cmd="removeFormat" data-par="backColor" alt="Text Background" title="Text Background"
-                        class="icon" data-name="text-t--fill">&#xf0d4;</span>
-                </div> -->
-                        <div class="cmd-group">
-                            <span data-cmd="InsertUnorderedList" data-cmdref="UL" alt="Unordered List" title="Unordered List" class="icon" data-name="list">&#xf58e;</span>
-                            <span data-cmd="InsertOrderedList" data-cmdref="OL" alt="Ordered List" title="Ordered List" class="icon" data-name="list-ordered">&#xf322;</span>
-                            <span data-cmd="insertHorizontalRule" alt="Insert Horizontal Rule" title="Insert Horizontal Rule" class="icon" data-name="minus">&#xf02f;</span>
-                            <span data-cmd="InsertImage" alt="Insert Image" title="Insert Image" class="icon" data-name="image1">&#xf6eb;</span>
-                            <span data-cmd="CreateLink" alt="Link" title="Link" class="icon" data-name="link-2">&#xf235;</span>
+                            <i data-lucide="pilcrow" data-cmd="formatBlock" title="Paragraph" data-par="P"></i>
+                            <i data-lucide="heading-1" data-cmd="formatBlock" title="H1" data-par="H1"></i>
+                            <i data-lucide="heading-2" data-cmd="formatBlock" title="H2" data-par="H2"></i>
+                            <i data-lucide="heading-3" data-cmd="formatBlock" title="H3" data-par="H3"></i>
                         </div>
                         <div class="cmd-group">
-                            <span data-cmd="justifyLeft" alt="Align left" title="Align Left" class="icon" data-name="align-left">&#xf008;</span>
-                            <span data-cmd="justifyCenter" alt="Align center" title="Align Center" class="icon" data-name="align-center">&#xf0f9;</span>
-                            <span data-cmd="justifyRight" alt="Align right" title="Align Right" class="icon" data-name="align-right">&#xf293;</span>
-                            <span data-cmd="justifyFull" alt="Align justify" title="Align Full" class="icon" data-name="align-justify">&#xf4a9;</span>
+                            <i data-lucide="list" data-cmd="InsertUnorderedList" data-cmdref="UL" title="Unordered List"></i>
+                            <i data-lucide="list-ordered" data-cmd="InsertOrderedList" data-cmdref="OL" title="Ordered List"></i>
+                            <i data-lucide="minus" data-cmd="insertHorizontalRule" title="Insert Horizontal Rule"></i>
+                            <i data-lucide="image" data-cmd="InsertImage" title="Insert Image"></i>
+                            <i data-lucide="link" data-cmd="CreateLink" title="Link"></i>
                         </div>
                         <div class="cmd-group">
-                            <span data-cmd="indent" alt="Indent" title="Indent" class="icon" data-name="indent-increase">&#xf15c;</span>
-                            <span data-cmd="outdent" alt="Outdent" title="Outdent" class="icon" data-name="indent-decrease">&#xf0b2;</span>
+                            <i data-lucide="align-left" data-cmd="justifyLeft" title="Align Left"></i>
+                            <i data-lucide="align-center" data-cmd="justifyCenter" title="Align Center"></i>
+                            <i data-lucide="align-right" data-cmd="justifyRight" title="Align Right"></i>
+                            <i data-lucide="align-justify" data-cmd="justifyFull" title="Align Full"></i>
                         </div>
                         <div class="cmd-group">
-                            <span data-cmd="removeFormat" alt="Remove Formattimg/Styles" title="Remove Formatting/Styles" class="icon" data-name="remove-formatting">&#xf175;</span>
+                            <i data-lucide="list-indent-increase" data-cmd="indent" title="Indent"></i>
+                            <i data-lucide="list-indent-decrease" data-cmd="outdent" title="Outdent"></i>
+                        </div>
+                        <div class="cmd-group">
+                            <i data-lucide="remove-formatting" data-cmd="removeFormat" title="Remove Formatting/Styles"></i>
                         </div>
                     </div>
 
@@ -152,35 +146,79 @@
                 </div>
             </div>
             <div class="splitter"></div>
-            <aside class="splitview chat" data-view="chat" data-rea-open="project.panes.chat" style="--grow: 25">
-                <div class="chat-output"></div>
+            <aside class="splitview chat" data-view="chat" data-rea-open="project.panes.chat" style="--grow: 25" aria-label="AI coding assistant">
+                <div class="chat-output" role="log" aria-live="polite" aria-relevant="additions" aria-busy="false"></div>
                 <div class="chat-question">
+                    <button type="button" class="chat-jump-latest icon-label" hidden><i data-lucide="arrow-down"></i><span>Jump to latest</span></button>
+                    <div class="chat-quick-actions" aria-label="Suggested prompts">
+                        <button type="button" class="chat-explain-selection icon-label" data-chat-prompt="Explain the selected code." hidden><i data-lucide="wand-sparkles"></i><span>Explain selection</span></button>
+                        <button type="button" class="chat-fix-console icon-label" data-chat-prompt="Find and fix the most recent console error. Explain the cause briefly before proposing changes." hidden>
+                            <i data-lucide="message-circle-warning"></i><span>Fix console error</span>
+                        </button>
+                    </div>
                     <div class="glow-input">
                         <div class="glow-border"></div>
-                        <textarea class="chat-input" placeholder="✨&#xfe0e; ask Xody"></textarea>
+                        <label class="visually-hidden" for="chat-input">Message Xody</label>
+                        <textarea id="chat-input" class="chat-input" placeholder="✨&#xfe0e; ask Xody" aria-describedby="chat-context-status"></textarea>
                     </div>
+                    <div id="chat-context-status" class="chat-context-status" aria-live="polite"></div>
                     <div class="chat-actions">
                         <details class="chat-options">
-                            <summary>
-                                <span class="icon" data-name="settings">&#xf3dc;</span>
-                                <span class="chat-model-label">Options</span>
+                            <summary class="chat-options-trigger">
+                                <i class="chat-options-trigger-icon" data-lucide="settings"></i>
+                                <span class="chat-options-trigger-copy">
+                                    <span class="chat-options-kicker">AI model</span>
+                                    <span class="chat-model-label">Options</span>
+                                </span>
+                                <i class="chat-options-chevron" data-lucide="chevron-down"></i>
                             </summary>
                             <div class="details-body">
-                                <label title="Select Provider">
-                                    <span><span class="icon" data-name="cloud">&#xf0d1;</span></span>
-                                    <select class="chat-provider"></select>
-                                </label>
-                                <label title="Api Key">
-                                    <span><span class="icon" data-name="key-round">&#xf12c;</span></span>
-                                    <input type="password" class="chat-apiKey" placeholder="Api key" value="" />
-                                </label>
-                                <label title="Select Model">
-                                    <span><span class="icon" data-name="library">&#xf4ff;</span></span>
-                                    <select class="chat-model"></select>
-                                </label>
+                                <header class="chat-options-header">
+                                    <h3><i data-lucide="settings"></i><span>Xody settings</span></h3>
+                                    <span class="chat-local-badge"><span aria-hidden="true">●</span> Stored locally</span>
+                                </header>
+
+                                <section class="chat-option-section" aria-labelledby="chat-model-heading">
+                                    <h4 id="chat-model-heading" class="chat-option-section-title"><i data-lucide="plug"></i><span>Connection</span></h4>
+                                    <div class="chat-option-grid">
+                                        <label class="chat-field" title="Select provider">
+                                            <span class="chat-field-label"><i data-lucide="cloud"></i> Provider</span>
+                                            <select class="chat-provider" aria-label="AI provider"></select>
+                                        </label>
+                                        <label class="chat-field" title="Select model">
+                                            <span class="chat-field-label"><i data-lucide="library"></i> Model</span>
+                                            <select class="chat-model" aria-label="AI model"></select>
+                                        </label>
+                                    </div>
+                                </section>
+
+                                <section class="chat-option-section" aria-labelledby="chat-key-heading">
+                                    <h4 id="chat-key-heading" class="chat-option-section-title"><i data-lucide="key-round"></i><span>API key</span></h4>
+                                    <label class="chat-field chat-key-field" title="API key">
+                                        <span class="visually-hidden">API key</span>
+                                        <input type="password" class="chat-apiKey" placeholder="Enter a new key" value="" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="API key" />
+                                    </label>
+                                    <p class="chat-key-status" aria-live="polite"></p>
+                                    <div class="chat-key-controls">
+                                        <button type="button" class="chat-toggle-key icon-label" title="Show or hide the key being entered"><i data-lucide="eye"></i><span class="chat-toggle-key-label">Show typed key</span></button>
+                                        <button type="button" class="chat-clear-key danger-ghost icon-label" title="Forget the API key"><i data-lucide="trash-2"></i><span>Forget key</span></button>
+                                    </div>
+                                    <label class="chat-switch">
+                                        <input type="checkbox" class="chat-remember-key" />
+                                        <span class="chat-switch-control" aria-hidden="true"></span>
+                                        <span class="chat-switch-copy"><strong>Remember on this device</strong><small>Encrypt the key before saving it in IndexedDB.</small></span>
+                                    </label>
+                                </section>
+
+                                <div class="chat-privacy" role="note">
+                                    <i data-lucide="shield-check"></i>
+                                    <p><strong>Serverless by design.</strong> Keys never leave this browser except when sent directly to the selected AI provider. Same-origin malicious code can still access browser-held secrets.</p>
+                                </div>
                             </div>
                         </details>
-                        <button type="button" class="chat-send gradient"><span class="icon" data-name="arrow-up">&#xf129;</span></button>
+                        <button type="button" class="chat-new icon-label" title="Start a new chat"><i data-lucide="message-circle-plus"></i><span>New chat</span></button>
+                        <button type="button" class="chat-stop icon-label" title="Stop generating" hidden><i data-lucide="square"></i><span>Stop</span></button>
+                        <button type="button" class="chat-send gradient" title="Send message" aria-label="Send message"><i data-lucide="arrow-up"></i></button>
                     </div>
                 </div>
             </aside>
@@ -189,7 +227,7 @@
         <div class="modal-wrapper">
             <div class="modal row" id="modal-projects">
                 <button class="modal-close" type="button" data-modal>
-                    <span class="icon" data-name="x1">&#xf488;</span>
+                    <i data-lucide="x"></i>
                 </button>
                 <div class="col">
                     <div class="modal-head row">
@@ -198,62 +236,65 @@
                         </svg>
                         <br />
                         <button class="gradient lg" type="button" id="project-new">
-                            <span class="icon" data-name="plus">&#xf317;</span>
+                            <i data-lucide="plus"></i>
                             New Project
                         </button>
                     </div>
                     <div class="modal-body">
                         <h2>
-                            <span class="icon" data-name="folder">&#xf045;</span>
+                            <i data-lucide="folder"></i>
                             <span>Project</span>
                         </h2>
                         <div class="col">
                             <label>
-                                <span><span class="icon" data-name="folder">&#xf045;</span> Name</span>
+                                <span><i data-lucide="folder"></i> Name</span>
                                 <input data-rea-model="project.name" class="currentProjectName" type="text" placeholder="Project Name" value="" maxlength="20" minlength="3" />
                             </label>
                             <label>
-                                <span><span class="icon" data-name="info">&#xf2e0;</span> Description</span>
+                                <span><i data-lucide="info"></i> Description</span>
                                 <textarea data-rea-model="project.description" class="currentProjectDescription" placeholder="Project Description"></textarea>
                             </label>
-                            <div class="row">
+                            <div class="row gap-05">
                                 <br />
                                 <button class="downloadCurrentProject" type="button" title="Download project">
-                                    <span class="icon" data-name="download">&#xf3b7;</span>
+                                    <i data-lucide="download"></i>
                                     <span class="md-show">Download</span>
                                 </button>
                                 <button type="button" id="githubPublish" class="accent" title="Publish to GitHub Gist">
-                                    <span class="icon" data-name="github-logo">&#xf772;</span>
+                                    <i data-lucide="github"></i>
                                     Publish
+                                </button>
+                                <button type="button" id="project-delete" class="danger" title="Delete project" aria-label="Delete project">
+                                    <i data-lucide="trash-2"></i>
                                 </button>
                             </div>
                         </div>
                         <h2>
-                            <span class="icon" data-name="cloud-download">&#xf094;</span>
+                            <i data-lucide="cloud-download"></i>
                             <span>Load Gist</span>
                         </h2>
                         <label>
-                            <span><span class="icon" data-name="github-logo">&#xf772;</span> Gist ID</span>
+                            <span><i data-lucide="github"></i> Gist ID</span>
                             <input id="githubLoadId" type="text" placeholder="GitHub Gist ID" />
-                            <button type="button" id="githubLoad" class="accent" title="Load Gist"><span class="icon" data-name="download-simple">&#xfed9;</span> Load Project</button>
+                            <button type="button" id="githubLoad" class="accent" title="Load Gist"><i data-lucide="download"></i> Load Project</button>
                         </label>
 
                         <h2>
-                            <span class="icon" data-name="github-logo">&#xf772;</span>
+                            <i data-lucide="github"></i>
                             <span>GitHub Connect</span>
                         </h2>
                         <div class="github-status" data-rea-open="settings.isGithubEnabled">
                             <span class="github-status-label">
-                                <span class="icon" data-name="check-fat">&#xf056;</span>
+                                <i data-lucide="check"></i>
                                 Connected
                             </span>
                             <div class="github-actions">
                                 <button type="button" id="githubFetch" class="accent" title="Fetch XODE projects from your GitHub Gists">
-                                    <span class="icon" data-name="cloud-download">&#xf094;</span>
+                                    <i data-lucide="cloud-download"></i>
                                     Fetch XODE Gists
                                 </button>
                                 <button type="button" id="githubTokenDelete" title="Delete token and disconnect">
-                                    <span class="icon" data-name="trash">&#xf202;</span>
+                                    <i data-lucide="trash-2"></i>
                                     <span class="disconnect-label">Disconnect</span>
                                 </button>
                             </div>
@@ -265,17 +306,17 @@
                             </p>
                             <div class="form-group">
                                 <label>
-                                    <span><span class="icon" data-name="key-round">&#xf12c;</span> Token</span>
+                                    <span><i data-lucide="key-round"></i> Token</span>
                                     <input id="githubToken" type="password" placeholder="GitHub Token (classic)" />
                                 </label>
                             </div>
                         </div>
 
-                        <h2><span class="icon" data-name="settings">&#xf3dc;</span> Global Settings</h2>
+                        <h2><i data-lucide="settings"></i> Global Settings</h2>
                         <div class="form-group">
                             <label>
                                 <span title="Indent spaces">
-                                    <span class="icon" data-name="indent-increase">&#xf15c;</span>
+                                    <i data-lucide="list-indent-increase"></i>
                                     Tab width
                                 </span>
                                 <select id="tabWidth">
@@ -284,7 +325,7 @@
                                 </select>
                             </label>
                             <p class="note">
-                                <span class="icon" data-name="info">&#xf2e0;</span><br />
+                                <i data-lucide="info"></i><br />
                                 Format using <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd><br />
                                 <b>Emmet</b> syntax supported in HTML &amp; CSS.
                             </p>
@@ -298,11 +339,11 @@
                 <div class="col" style="flex: 2">
                     <div class="modal-head">
                         <h2>
-                            <span class="icon" data-name="folder-search">&#xf0a4;</span>
+                            <i data-lucide="folder-search"></i>
                             All projects
                         </h2>
                         <label>
-                            <i class="icon" data-name="search">&#xf5ae;</i>
+                            <i data-lucide="search"></i>
                             <input id="projects-search" type="text" placeholder="Search..." />
                         </label>
                     </div>
@@ -312,6 +353,28 @@
                 </div>
             </div>
         </div>
+
+        <dialog class="project-delete-dialog" id="project-delete-dialog" aria-labelledby="project-delete-title" aria-describedby="project-delete-description">
+            <form method="dialog">
+                <button class="project-delete-close" type="submit" value="cancel" aria-label="Close delete project dialog">
+                    <i data-lucide="x"></i>
+                </button>
+                <header>
+                    <i data-lucide="trash-2"></i>
+                    <h2 id="project-delete-title">Delete project?</h2>
+                </header>
+                <div class="project-delete-body">
+                    <p id="project-delete-description"></p>
+                    <p class="project-delete-gist-note" hidden></p>
+                    <p class="project-delete-status" role="status" aria-live="polite"></p>
+                </div>
+                <footer class="project-delete-actions">
+                    <button type="submit" value="cancel" class="icon-label"><i data-lucide="x"></i><span>Cancel</span></button>
+                    <button type="button" class="project-delete-local icon-label"><i data-lucide="trash-2"></i><span>Delete locally</span></button>
+                    <button type="button" class="project-delete-gist danger icon-label"><i data-lucide="github"></i><span>Delete locally and Gist</span></button>
+                </footer>
+            </form>
+        </dialog>
 
         <script type="module" src="/src/main.js"></script>
     </body>

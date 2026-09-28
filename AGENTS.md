@@ -6,6 +6,17 @@ This project is using Vite+, a unified toolchain built on top of Vite, Rolldown,
 
 Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.dev/guide/.
 
+## Built-in Commands vs Scripts
+
+`vp <name>` runs a built-in command. `vp run <name>` runs a `package.json` script or a `vite.config.ts` task. Scripts cannot overwrite built-ins, so `vp dev` and `vp run dev` may do different things. Check `package.json` and `vite.config.ts` first, and run `vp run <name>` when the project defines a script or task with that name.
+
+## Tool Versions
+
+Run `vp toolchain` to show versions and relationships in the active Vite+
+release. Add a tool name to select part of the graph. For example, run
+`vp toolchain vite`. Use `--global` to ignore the local `vite-plus` package. Use
+`vp why <package>` to show the package-manager dependency graph.
+
 ## Review Checklist
 
 - [ ] Run `vp install` after pulling remote changes and before getting started.
@@ -14,3 +25,27 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
 <!--VITE PLUS END-->
+
+<!--USER PREFERENCES START-->
+
+## Responses
+
+Be concise. Lead with the answer. No preamble, no recap, no offers of further help. Fragments are fine.
+
+<!--USER PREFERENCES END-->
+
+<--PROJECT GUIDELINES START-->
+
+## Visual design
+
+Use a borderless visual language. Decorative lines are not part of the design.
+
+- Do not add borders, divider lines, horizontal rules, or outlined cards to group interface elements
+- Create hierarchy with spacing, typography, subtle background-color changes, and the existing Xode brand colors
+- Use semantic background tints, rather than outlines, to distinguish states such as added and removed diff lines
+- Preserve visible keyboard-focus indicators and other accessibility affordances; the borderless rule must not make controls harder to identify or use
+- Use CSS props vars defined in base.css
+- Use CSS modules where possible and reuse those classes, utils, atoms, and modules styles instead of redesigning common styles from scratch
+- Use CSS Nesting in a module manner i.e: .chat {} in a chat.css file, and nest the descendants inside of it
+
+<!--PROJECT GUIDELINES END-->

@@ -102,6 +102,82 @@
     top: 0.5rem;
 }
 
+.project-delete-dialog {
+    width: min(30rem, calc(100% - 2rem));
+    padding: 1.25rem;
+    border: 0;
+    border-radius: 0;
+    background: var(--bg);
+    color: var(--fg);
+    box-shadow: 0 0.5rem 3rem -1rem #000d;
+
+    &:modal {
+        position: fixed;
+        inset: 0;
+        margin: auto;
+    }
+
+    &::backdrop {
+        background: #0009;
+        backdrop-filter: blur(1px);
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    header {
+        display: flex;
+        gap: 0.65rem;
+        align-items: center;
+        padding-right: 2rem;
+
+        > .lucide {
+            color: var(--ce);
+            font-size: 1.2rem;
+        }
+    }
+
+    h2,
+    p {
+        margin: 0;
+    }
+}
+
+.project-delete-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+}
+
+.project-delete-body {
+    display: grid;
+    gap: 0.65rem;
+    color: color-mix(in srgb, var(--fg), var(--bg) 22%);
+}
+
+.project-delete-gist-note,
+.project-delete-status {
+    font-size: 0.8rem;
+}
+
+.project-delete-gist-note {
+    color: color-mix(in srgb, var(--fg), var(--bg) 42%);
+}
+
+.project-delete-status:not(:empty) {
+    color: var(--ce);
+}
+
+.project-delete-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
 @media (width <= 768px) {
     .modal-wrapper {
         align-items: stretch;
