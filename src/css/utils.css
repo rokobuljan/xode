@@ -1,3 +1,7 @@
+[hidden] {
+    display: none !important;
+}
+
 .ml-auto {
     margin-left: auto;
 }

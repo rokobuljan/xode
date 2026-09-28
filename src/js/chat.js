@@ -81,6 +81,7 @@ const REQUEST_TIMEOUT_MS = 90 * 1000;
 const MAX_HISTORY_ENTRIES = 60;
 const HISTORY_ENTRY_MAX_CHARS = 4000;
 const MAX_CONTEXT_CHARS = 300_000;
+const LATEST_SCROLL_THRESHOLD = 80;
 const DIFF_CONTEXT_LINES = 3;
 const MAX_RENDERED_DIFF_LINES = 1_500;
 const MARKDOWN_CONFIG = {
@@ -162,7 +163,11 @@ function renderMarkdown(target, content) {
 }
 
 function isNearBottom() {
-    return elements.output.scrollHeight - elements.output.scrollTop - elements.output.clientHeight < 80;
+    return elements.output.scrollHeight - elements.output.scrollTop - elements.output.clientHeight <= LATEST_SCROLL_THRESHOLD;
+}
+
+function updateJumpLatestVisibility() {
+    elements.jumpLatest.hidden = isNearBottom();
 }
 
 function scrollToLatest(force = false) {
@@ -196,7 +201,7 @@ function addMessage(role, content, { historyIndex = null, forceScroll = false } 
 
     elements.output.append(message);
     if (shouldScroll) scrollToLatest(true);
-    else elements.jumpLatest.hidden = false;
+    else updateJumpLatestVisibility();
     return message;
 }
 
@@ -214,6 +219,7 @@ function addWelcome() {
     const message = elNew("div", { className: "chat-message role-system chat-welcome" });
     message.append(elNew("h3", { textContent: "✨ Hi, I'm Xody" }), elNew("p", { textContent: "I can explain your project, investigate console errors, and update your HTML, CSS, or JavaScript." }));
     elements.output.append(message);
+    updateJumpLatestVisibility();
 }
 
 function historyEntry(role, content) {
@@ -244,6 +250,7 @@ async function branchConversation(historyIndex, messageElement) {
         node.remove();
         node = next;
     }
+    updateJumpLatestVisibility();
     await persistHistory();
 }
 
@@ -598,7 +605,7 @@ function renderSuggestion(response) {
     });
 
     if (shouldScroll) scrollToLatest(true);
-    else elements.jumpLatest.hidden = false;
+    else updateJumpLatestVisibility();
 }
 
 function renderTextResponse(rawText) {
@@ -650,7 +657,7 @@ function renderTextResponse(rawText) {
     renderIcons(wrapper);
     elements.output.append(wrapper);
     if (shouldScroll) scrollToLatest(true);
-    else elements.jumpLatest.hidden = false;
+    else updateJumpLatestVisibility();
 }
 
 async function sendMessage(message) {
@@ -872,9 +879,7 @@ function wireEvents() {
         renderIcons(elements.toggleKey);
     });
     elements.jumpLatest.addEventListener("click", () => scrollToLatest(true));
-    elements.output.addEventListener("scroll", () => {
-        elements.jumpLatest.hidden = isNearBottom();
-    });
+    elements.output.addEventListener("scroll", updateJumpLatestVisibility, { passive: true });
     elements.newChat.addEventListener("click", async () => {
         if (chatHistory.length && !confirm("Clear this project's AI conversation? Your project code will not be changed.")) return;
         chatHistory = [];
