@@ -124,6 +124,43 @@ document.addEventListener("input", () => {
         notifyParent({ type: "content-changed", html: document.documentElement.outerHTML });
     }, 250);
 });
+document.addEventListener(
+    "click",
+    (evt) => {
+        if (evt.defaultPrevented) return;
+        const anchor = evt.target.closest?.("a[href]");
+        const href = anchor?.getAttribute("href")?.trim();
+        if (href == null) return;
+        if (!href.startsWith("#")) {
+            const hasScheme = /^[A-Za-z][A-Za-z\d+.-]*:/.test(href);
+            if (!hasScheme && !href.startsWith("//")) evt.preventDefault();
+            return;
+        }
+
+        evt.preventDefault();
+        let fragment = href.slice(1);
+        try {
+            fragment = decodeURIComponent(fragment);
+        } catch {
+            // Keep malformed escape sequences usable as literal IDs.
+        }
+
+        const scrollRoot = document.scrollingElement;
+        if (!scrollRoot) return;
+        if (!fragment) {
+            scrollRoot.scrollTop = 0;
+            scrollRoot.scrollLeft = 0;
+            return;
+        }
+
+        const target = document.getElementById(fragment) ?? document.getElementsByName(fragment)[0];
+        if (!target) return;
+        const bounds = target.getBoundingClientRect();
+        scrollRoot.scrollTop += bounds.top;
+        scrollRoot.scrollLeft += bounds.left;
+    },
+    true,
+);
 const actions = {
     designMode: (val) => {
         document.designMode = val ? "on" : "off";
