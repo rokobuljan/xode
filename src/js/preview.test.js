@@ -33,4 +33,11 @@ describe("project document generation", () => {
         expect(PREVIEW_SANDBOX).toContain("allow-scripts");
         expect(PREVIEW_SANDBOX).not.toContain("allow-same-origin");
     });
+
+    it("keeps an unfinished HTML tag from consuming the preview script", () => {
+        const html = generatePreviewHTML({ name: "Test", description: "", html: "<button", css: "", js: "", scriptType: "module" });
+
+        expect(html).toMatch(/<button>\s*<script id="◆xode-js"/);
+        expect(html).not.toContain("<button>//# sourceURL=js");
+    });
 });

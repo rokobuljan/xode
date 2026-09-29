@@ -19,6 +19,11 @@ function escapeScriptEnd(value) {
     return String(value ?? "").replace(/<\/script/gi, "<\\/script");
 }
 
+function closeDanglingTag(value) {
+    const html = String(value ?? "");
+    return /<\/?[A-Za-z][^<>]*$/.test(html) ? `${html}>` : html;
+}
+
 /**
  * Build a complete project document for the editor preview, thumbnails, and downloads.
  * Preview documents always run in an opaque-origin sandbox; source filtering is not a
@@ -31,6 +36,7 @@ export function generatePreviewHTML(project, consumer = "app") {
     const description = escapeHtml(project.description?.trim() || "");
     const scriptType = normalizeScriptType(project.scriptType);
     const typeAttribute = scriptType === "module" ? ' type="module"' : "";
+    const projectHTML = closeDanglingTag(project.html);
     const injectScript = /*html*/ `<script id="◆xode-inject" {{◆xode-previewOffsets}} src="inject.js?t=${Date.now()}"></script>`;
     let previewHTML = /*html*/ `<!DOCTYPE html>
     <html lang="en">
@@ -64,13 +70,13 @@ export function generatePreviewHTML(project, consumer = "app") {
         ${isApp ? injectScript : ""}
     </head>
     <body${isApp ? ' id="◆xode-html" spellcheck="false"' : ""}>
-        ${project.html ?? ""}
+        ${projectHTML}
         <script${isApp ? ' id="◆xode-js"' : ""}${typeAttribute}>${escapeScriptEnd(project.js)}${isApp ? "//# sourceURL=js" : ""}</script>
     </body>
     </html>`;
     const previewOffsets = {
         htmlStartLine: countLines(previewHTML.split(/<body(?:.*?>)?/)[0]) + 1,
-        jsStartLine: countLines(previewHTML) + countLines(project.html ?? ""),
+        jsStartLine: countLines(previewHTML) + countLines(projectHTML),
     };
     return previewHTML.replace("{{◆xode-previewOffsets}}", `data-previewoffsets='${JSON.stringify(previewOffsets)}'`);
 }
