@@ -1,7 +1,14 @@
 import { defineConfig } from "vite-plus";
 
+const frameProtectionHeaders = {
+    "Content-Security-Policy": "frame-ancestors 'none'",
+    "X-Frame-Options": "DENY",
+};
+
 export default defineConfig({
     base: "./",
+    server: { headers: frameProtectionHeaders },
+    preview: { headers: frameProtectionHeaders },
     staged: {
         "*": "vp check --fix",
     },

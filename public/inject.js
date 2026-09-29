@@ -5,6 +5,14 @@ const DEFAULT_SOURCE_OFFSETS = Object.assign(
     },
     JSON.parse(document.querySelector("#◆xode-inject").dataset.previewoffsets),
 );
+const EDITOR_ORIGIN = new URL(document.baseURI).origin;
+const targetsEditorOrigin = (value) => {
+    try {
+        return new URL(value, document.baseURI).origin === EDITOR_ORIGIN;
+    } catch {
+        return false;
+    }
+};
 
 const getSourceName = (file = "") => {
     if (file === "js") return "js";
@@ -132,8 +140,7 @@ document.addEventListener(
         const href = anchor?.getAttribute("href")?.trim();
         if (href == null) return;
         if (!href.startsWith("#")) {
-            const hasScheme = /^[A-Za-z][A-Za-z\d+.-]*:/.test(href);
-            if (!hasScheme && !href.startsWith("//")) evt.preventDefault();
+            if (targetsEditorOrigin(href)) evt.preventDefault();
             return;
         }
 
@@ -158,6 +165,16 @@ document.addEventListener(
         const bounds = target.getBoundingClientRect();
         scrollRoot.scrollTop += bounds.top;
         scrollRoot.scrollLeft += bounds.left;
+    },
+    true,
+);
+document.addEventListener(
+    "submit",
+    (evt) => {
+        const form = evt.target;
+        if (form?.tagName !== "FORM") return;
+        const action = evt.submitter?.getAttribute("formaction") ?? form.getAttribute("action") ?? "";
+        if (targetsEditorOrigin(action.trim())) evt.preventDefault();
     },
     true,
 );
