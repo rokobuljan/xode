@@ -425,6 +425,7 @@ const updateProjectShareDialog = () => {
     elProjectShareUrl.value = hasSelection && pendingProjectShare ? createProjectShareUrl(window.location.href, pendingProjectShare.gistId, selectedSharePanes()) : "";
     elProjectShareCopy.disabled = !hasSelection;
     elProjectShareButton.disabled = !hasSelection;
+    delete elProjectShareStatus.dataset.type;
     elProjectShareStatus.textContent = hasSelection ? "" : "Select at least one pane.";
 };
 
@@ -443,8 +444,10 @@ elProjectShareUrl.addEventListener("click", () => elProjectShareUrl.select());
 elProjectShareCopy.addEventListener("click", async () => {
     try {
         await copyText(elProjectShareUrl.value);
-        elProjectShareStatus.textContent = "Link copied.";
+        elProjectShareStatus.dataset.type = "success";
+        elProjectShareStatus.textContent = "Link copied to clipboard!";
     } catch (error) {
+        delete elProjectShareStatus.dataset.type;
         elProjectShareStatus.textContent = `Could not copy link: ${error.message}`;
     }
 });
@@ -456,6 +459,7 @@ elProjectShareButton.addEventListener("click", async () => {
 });
 elProjectShareDialog.addEventListener("close", () => {
     pendingProjectShare = null;
+    delete elProjectShareStatus.dataset.type;
     elProjectShareStatus.textContent = "";
 });
 elProjectShareDialog.addEventListener("click", (event) => {

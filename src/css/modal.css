@@ -325,7 +325,7 @@
         padding-right: 2.5rem;
 
         > .lucide {
-            color: var(--ce);
+            color: currentColor;
             font-size: 1.2rem;
         }
     }
@@ -353,6 +353,10 @@
 
     .status:not(:empty) {
         color: var(--ce);
+    }
+
+    .status[data-type="success"] {
+        color: var(--success);
     }
 
     .actions {
