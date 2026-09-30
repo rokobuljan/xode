@@ -23,6 +23,7 @@ import { Editor } from "./js/editor.js";
 import { renderIcons } from "./js/icons.js";
 import { isolatePane, isPaneIsolationGesture, isViewPane, paneNameFromModel } from "./js/paneTabs.js";
 import { generatePreviewHTML, PREVIEW_SANDBOX } from "./js/preview.js";
+import { createProjectShareUrl, decodeSharedPanes, SHAREABLE_PANES } from "./js/sharePanes.js";
 
 renderIcons();
 
@@ -138,6 +139,10 @@ const elProjectDeleteGistNote = el('[data-delete-element="gist-note"]', elProjec
 const elProjectDeleteStatus = el('[data-delete-element="status"]', elProjectDeleteDialog);
 const elProjectDeleteLocal = el('[data-delete-action="local"]', elProjectDeleteDialog);
 const elProjectDeleteGist = el('[data-delete-action="gist"]', elProjectDeleteDialog);
+const elProjectShareDialog = el("#project-share-dialog");
+const elProjectShareStatus = el('[data-share-element="status"]', elProjectShareDialog);
+const elProjectShareButton = el('[data-share-action="share"]', elProjectShareDialog);
+const elProjectShareInputs = els('.pane-options input[type="checkbox"]', elProjectShareDialog);
 let pendingProjectDeletion = null;
 let isProjectDeleteBusy = false;
 const PROJECTS_PAGE_SIZE = 30;
@@ -305,7 +310,7 @@ const drawProjects = async ({ reset = false } = {}) => {
         });
 
         el(`[data-share-id]`, elProject)?.addEventListener("click", () => {
-            void shareProject(projectData);
+            openProjectShareDialog(projectData);
         });
 
         const activateProject = () => {
@@ -356,14 +361,6 @@ els('[data-project-action="download-current"]').forEach((elBtnDownload) => {
     elBtnDownload.addEventListener("click", () => void downloadProject(currentProjectState.id));
 });
 
-const projectShareUrl = (gistId) => {
-    const url = new URL(window.location.href);
-    url.search = "";
-    url.hash = "";
-    url.searchParams.set("g", gistId);
-    return url.toString();
-};
-
 const updateProjectShareButtons = () => {
     const isPublished = Boolean(currentProjectState.gistId);
     els('[data-project-action="share-current"]').forEach((button) => {
@@ -388,10 +385,10 @@ const copyText = async (value) => {
     if (!copied) throw new Error("Copy is not available in this browser");
 };
 
-async function shareProject(project) {
+async function shareProject(project, panes) {
     if (!project.gistId) return;
 
-    const url = projectShareUrl(project.gistId);
+    const url = createProjectShareUrl(window.location.href, project.gistId, panes);
     const shareData = {
         title: project.name?.trim() || "Untitled XODE project",
         text: project.description?.trim() || "Open this XODE project",
@@ -401,22 +398,59 @@ async function shareProject(project) {
     if (navigator.share) {
         try {
             await navigator.share(shareData);
-            return;
+            return true;
         } catch (error) {
-            if (error.name === "AbortError") return;
+            if (error.name === "AbortError") return false;
         }
     }
 
     try {
         await copyText(url);
         new Toast({ head: "Share link copied", body: "Anyone with this link can open the published project.", type: "success", time: 3000 });
+        return true;
     } catch (error) {
         new Toast({ head: "Could not copy link", body: error.message, type: "error", time: 0 });
+        return false;
     }
 }
 
+let pendingProjectShare = null;
+
+const selectedSharePanes = () => Object.fromEntries(SHAREABLE_PANES.map(({ name }) => [name, [...elProjectShareInputs].some((input) => input.value === name && input.checked)]));
+
+const updateProjectShareDialog = () => {
+    const hasSelection = [...elProjectShareInputs].some((input) => input.checked);
+    elProjectShareButton.disabled = !hasSelection;
+    elProjectShareStatus.textContent = hasSelection ? "" : "Select at least one pane.";
+};
+
+function openProjectShareDialog(project) {
+    if (!project.gistId) return;
+    pendingProjectShare = project;
+    elProjectShareInputs.forEach((input) => {
+        input.checked = Boolean(project.panes?.[input.value]);
+    });
+    updateProjectShareDialog();
+    elProjectShareDialog.showModal();
+}
+
+elProjectShareInputs.forEach((input) => input.addEventListener("change", updateProjectShareDialog));
+elProjectShareButton.addEventListener("click", async () => {
+    if (!pendingProjectShare || elProjectShareButton.disabled) return;
+    elProjectShareButton.disabled = true;
+    if (await shareProject(pendingProjectShare, selectedSharePanes())) elProjectShareDialog.close("shared");
+    else updateProjectShareDialog();
+});
+elProjectShareDialog.addEventListener("close", () => {
+    pendingProjectShare = null;
+    elProjectShareStatus.textContent = "";
+});
+elProjectShareDialog.addEventListener("click", (event) => {
+    if (event.target === elProjectShareDialog) elProjectShareDialog.close("cancel");
+});
+
 els('[data-project-action="share-current"]').forEach((button) => {
-    button.addEventListener("click", () => void shareProject(currentProjectState));
+    button.addEventListener("click", () => openProjectShareDialog(currentProjectState));
 });
 
 // Editor exec commander for richEditor mode (text editing buttons)
@@ -806,6 +840,8 @@ if (params.get("g")) {
 } else {
     await projectInit(false); // Load latest Project
 }
+const sharedPanes = decodeSharedPanes(params.get("p"));
+if (sharedPanes) Object.assign(currentProjectState.panes, sharedPanes);
 persist(currentProjectState, saveProject, 300); // Persist changes to project every 300ms
 await drawProjects();
 

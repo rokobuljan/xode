@@ -358,3 +358,42 @@
         gap: 0.5rem;
     }
 }
+
+.share-dialog {
+    .pane-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+
+        label {
+            position: relative;
+            display: inline-flex;
+            cursor: pointer;
+
+            input {
+                position: absolute;
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            span {
+                padding: 0.55rem 0.75rem;
+                background: var(--surface-2);
+                color: var(--text-muted);
+                transition:
+                    background var(--motion-fast),
+                    color var(--motion-fast);
+            }
+
+            input:checked + span {
+                background: var(--accent-soft);
+                color: var(--c1);
+            }
+
+            input:focus-visible + span {
+                outline: 2px solid var(--c1);
+                outline-offset: 1px;
+            }
+        }
+    }
+}

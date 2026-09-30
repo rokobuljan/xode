@@ -316,10 +316,6 @@
                                 Connected
                             </span>
                             <div class="actions">
-                                <button type="button" id="githubFetch" class="button-primary" title="Fetch XODE projects from your GitHub Gists">
-                                    <i data-lucide="cloud-download"></i>
-                                    <span id="githubFetchLabel">Fetch XODE Gists</span>
-                                </button>
                                 <button type="button" id="githubTokenDelete" title="Delete token and disconnect">
                                     <i data-lucide="log-out"></i>
                                     <span>Disconnect</span>
@@ -369,6 +365,10 @@
                             <i data-lucide="folder-search"></i>
                             Projects
                         </h2>
+                        <button type="button" id="githubFetch" class="button-primary" title="Fetch XODE projects from your GitHub Gists">
+                            <i data-lucide="cloud-download"></i>
+                            <span id="githubFetchLabel">Fetch Gists</span>
+                        </button>
                         <label>
                             <i data-lucide="search"></i>
                             <input id="projects-search" type="text" placeholder="Search..." />
@@ -400,6 +400,30 @@
                     <button type="submit" value="cancel"><i data-lucide="x"></i><span>Cancel</span></button>
                     <button type="button" data-delete-action="local"><i data-lucide="trash-2"></i><span>Delete locally</span></button>
                     <button type="button" class="button-danger" data-delete-action="gist"><i data-lucide="github"></i><span>Delete locally and Gist</span></button>
+                </footer>
+            </form>
+        </dialog>
+
+        <dialog class="confirm-dialog share-dialog" id="project-share-dialog" aria-labelledby="project-share-title" aria-describedby="project-share-description">
+            <form method="dialog">
+                <header>
+                    <i data-lucide="share-2"></i>
+                    <h2 id="project-share-title">Share project</h2>
+                </header>
+                <div class="copy">
+                    <p id="project-share-description">Choose panes visible when someone opens this link.</p>
+                    <div class="pane-options">
+                        <label><input type="checkbox" value="html" /><span>HTML</span></label>
+                        <label><input type="checkbox" value="css" /><span>CSS</span></label>
+                        <label><input type="checkbox" value="js" /><span>JS</span></label>
+                        <label><input type="checkbox" value="console" /><span>Console</span></label>
+                        <label><input type="checkbox" value="preview" /><span>Preview</span></label>
+                    </div>
+                    <p class="status" data-share-element="status" role="status" aria-live="polite"></p>
+                </div>
+                <footer class="actions">
+                    <button type="submit" value="cancel"><i data-lucide="x"></i><span>Close</span></button>
+                    <button type="button" class="button-primary" data-share-action="share"><i data-lucide="share-2"></i><span>Share</span></button>
                 </footer>
             </form>
         </dialog>

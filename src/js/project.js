@@ -19,14 +19,14 @@ const LEGACY_PROJECT_PREFIX = `${APP_PREFIX}-project-`;
 const LAST_KEY = `${APP_PREFIX}-last-project`;
 const legacyProjectKey = (id) => `${LEGACY_PROJECT_PREFIX}${id}`;
 
-const DEFAULT_PANES = {
+export const DEFAULT_PANES = {
     html: true,
     js: true,
     css: true,
-    console: true,
+    console: false,
     preview: true,
     richEditor: false,
-    chat: true,
+    chat: false,
 };
 const DEFAULT_SCRIPT_TYPE = "module";
 
