@@ -364,6 +364,18 @@
 }
 
 .share-dialog {
+    .share-link {
+        display: flex;
+        gap: 0.5rem;
+
+        input {
+            min-width: 0;
+            flex: 1;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+    }
+
     .pane-options {
         display: flex;
         flex-wrap: wrap;

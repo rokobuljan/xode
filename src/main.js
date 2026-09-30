@@ -141,6 +141,8 @@ const elProjectDeleteLocal = el('[data-delete-action="local"]', elProjectDeleteD
 const elProjectDeleteGist = el('[data-delete-action="gist"]', elProjectDeleteDialog);
 const elProjectShareDialog = el("#project-share-dialog");
 const elProjectShareStatus = el('[data-share-element="status"]', elProjectShareDialog);
+const elProjectShareUrl = el('[data-share-element="url"]', elProjectShareDialog);
+const elProjectShareCopy = el('[data-share-action="copy"]', elProjectShareDialog);
 const elProjectShareButton = el('[data-share-action="share"]', elProjectShareDialog);
 const elProjectShareInputs = els('.pane-options input[type="checkbox"]', elProjectShareDialog);
 let pendingProjectDeletion = null;
@@ -420,6 +422,8 @@ const selectedSharePanes = () => Object.fromEntries(SHAREABLE_PANES.map(({ name 
 
 const updateProjectShareDialog = () => {
     const hasSelection = [...elProjectShareInputs].some((input) => input.checked);
+    elProjectShareUrl.value = hasSelection && pendingProjectShare ? createProjectShareUrl(window.location.href, pendingProjectShare.gistId, selectedSharePanes()) : "";
+    elProjectShareCopy.disabled = !hasSelection;
     elProjectShareButton.disabled = !hasSelection;
     elProjectShareStatus.textContent = hasSelection ? "" : "Select at least one pane.";
 };
@@ -435,6 +439,15 @@ function openProjectShareDialog(project) {
 }
 
 elProjectShareInputs.forEach((input) => input.addEventListener("change", updateProjectShareDialog));
+elProjectShareUrl.addEventListener("click", () => elProjectShareUrl.select());
+elProjectShareCopy.addEventListener("click", async () => {
+    try {
+        await copyText(elProjectShareUrl.value);
+        elProjectShareStatus.textContent = "Link copied.";
+    } catch (error) {
+        elProjectShareStatus.textContent = `Could not copy link: ${error.message}`;
+    }
+});
 elProjectShareButton.addEventListener("click", async () => {
     if (!pendingProjectShare || elProjectShareButton.disabled) return;
     elProjectShareButton.disabled = true;
@@ -780,6 +793,7 @@ const elTabs = el("#top .view-tabs");
 elTabs.addEventListener("click", (evt) => {
     const elTab = evt.target.closest(".view-toggle");
     if (!elTab) return;
+    if (params.get("p") !== undefined) params.delete("p");
     const elTabCheckbox = el("[data-rea-model]", elTab);
     const pane = paneNameFromModel(elTabCheckbox?.dataset.reaModel);
     if (!isPaneIsolationGesture(evt, pane)) return;
