@@ -63,7 +63,7 @@
         }
 
         &::selection {
-            background: color-mix(in srgb, var(--c1), transparent 68%);
+            background: color-mix(in srgb, var(--c1), transparent 80%);
         }
 
         &::placeholder {
