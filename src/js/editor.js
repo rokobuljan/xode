@@ -516,6 +516,11 @@ export class Editor {
         const ranges = [];
         let idx = 0;
         while ((idx = text.indexOf(selected, idx)) !== -1) {
+            // The textarea already paints the active selection.
+            if (idx === start) {
+                idx += selected.length;
+                continue;
+            }
             const s = locate(map, idx);
             const e = locate(map, idx + selected.length);
             if (s && e) {
