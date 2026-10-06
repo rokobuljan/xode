@@ -57,6 +57,7 @@
         color: transparent;
         caret-color: var(--text-strong);
         padding-bottom: 50cqh !important;
+        outline: none;
 
         &:focus {
             box-shadow: none;
