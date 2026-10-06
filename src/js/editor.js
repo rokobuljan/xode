@@ -8,11 +8,12 @@ import prettierPluginPostcss from "prettier/plugins/postcss";
 
 import { el, elNew, LS } from "./utils.js";
 import { extractColors } from "./colorExtract.js";
-import { getAutoIndentEdit } from "./editorIndent.js";
+import { getAutoIndentEdit, normalizeTabWidth } from "./editorIndent.js";
 import Toast from "./toast.js";
 import { renderIcons } from "./icons.js";
 
 const lsSettings = LS("xode.settings");
+const getTabWidth = () => normalizeTabWidth(lsSettings.read("tabWidth"));
 
 const customEmmetSnippets = {
     html: {
@@ -70,7 +71,7 @@ const formatCode = async (code, language) => {
         plugins: pluginMap[parser],
         semi: true,
         singleQuote: true,
-        tabWidth: Number(lsSettings.read("tabWidth")),
+        tabWidth: getTabWidth(),
         htmlWhitespaceSensitivity: "ignore",
         bracketSameLine: true,
     });
@@ -167,7 +168,7 @@ export class Editor {
                 }
                 // Tab = insert spaces (no Emmet expansion was made)
                 else {
-                    this.insertAtCaret(" ".repeat(Number(lsSettings.read("tabWidth"))));
+                    this.insertAtCaret(" ".repeat(getTabWidth()));
                 }
             }
             // Undo / Redo — handled entirely by our own stack, not the browser's
@@ -391,7 +392,7 @@ export class Editor {
                 const start = ta.selectionStart;
                 const value = ta.value;
 
-                const edit = getAutoIndentEdit(value, start, ta.selectionEnd, Number(lsSettings.read("tabWidth")));
+                const edit = getAutoIndentEdit(value, start, ta.selectionEnd, getTabWidth());
 
                 // Use insertAtCaret to ensure highlight, history, and events all work
                 this.insertAtCaret(edit.text, edit.caretOffset);
@@ -409,7 +410,7 @@ export class Editor {
 
                     // Check if line contains only spaces before cursor
                     if (currentLine.match(/^\s*$/)) {
-                        const tabWidth = Number(lsSettings.read("tabWidth"));
+                        const tabWidth = getTabWidth();
                         const spacesToRemove = currentLine.length % tabWidth || tabWidth;
 
                         // Only apply if we're removing spaces
@@ -451,7 +452,7 @@ export class Editor {
         // 3. Expand the abbreviation and replace the text
         try {
             let expanded = expand(abbreviation, { syntax: this.syntax, type, snippets: customEmmetSnippets[this.syntax] ?? {} });
-            expanded = expanded.replace(/\t/g, " ".repeat(Number(lsSettings.read("tabWidth")))); // Replace tabs with 4 spaces
+            expanded = expanded.replace(/\t/g, " ".repeat(getTabWidth()));
             // Replace the extracted abbreviation with the expanded code
             const newValue = source.substring(0, start) + expanded + source.substring(end);
             const newCaretPos = start + expanded.length;

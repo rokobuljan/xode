@@ -1,6 +1,16 @@
 /* global describe, expect, it */
 
-import { getAutoIndentEdit } from "./editorIndent.js";
+import { getAutoIndentEdit, normalizeTabWidth } from "./editorIndent.js";
+
+describe("editor indentation settings", () => {
+    it.each([undefined, null, "", 0, -1, "invalid", 2.5])("defaults invalid or missing width %s to four spaces", (width) => {
+        expect(" ".repeat(normalizeTabWidth(width))).toBe("    ");
+    });
+
+    it.each([2, "2", 4, "8"])("uses saved width %s", (width) => {
+        expect(normalizeTabWidth(width)).toBe(Number(width));
+    });
+});
 
 function applyEdit(value, position, edit) {
     return {

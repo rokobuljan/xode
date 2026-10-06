@@ -1,3 +1,8 @@
+export function normalizeTabWidth(value) {
+    const width = Number(value);
+    return Number.isInteger(width) && width > 0 ? width : 4;
+}
+
 export function getAutoIndentEdit(value, selectionStart, selectionEnd, tabWidth) {
     const lineStart = value.lastIndexOf("\n", selectionStart - 1) + 1;
     const currentLine = value.substring(lineStart, selectionStart);

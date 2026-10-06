@@ -20,6 +20,7 @@ import { reactive, effect, mount, persist } from "./js/reactive.js";
 import { LS, el, els, elNew, download, formatDateTime, params } from "./js/utils.js";
 import { initProjectStorage, openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from "./js/project.js";
 import { Editor } from "./js/editor.js";
+import { normalizeTabWidth } from "./js/editorIndent.js";
 import { renderIcons } from "./js/icons.js";
 import { isolatePane, isPaneIsolationGesture, isViewPane, paneNameFromModel } from "./js/paneTabs.js";
 import { generatePreviewHTML, PREVIEW_SANDBOX } from "./js/preview.js";
@@ -31,7 +32,7 @@ await initProjectStorage();
 const initialProject = await openProject();
 
 const lsSettings = LS("xode.settings");
-const tabWidth = Number(lsSettings.read("tabWidth") ?? 4);
+const tabWidth = normalizeTabWidth(lsSettings.read("tabWidth"));
 const editors = {};
 const elPreview = el("#preview"); // the iframe
 elPreview.setAttribute("sandbox", PREVIEW_SANDBOX);
