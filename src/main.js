@@ -25,7 +25,7 @@ import RichEditorDialog from "./js/editor/richEditorDialog.js";
 import { normalizeTabWidth } from "./js/editor/editorIndent.js";
 import { renderIcons } from "./js/ui/icons.js";
 import { isolatePane, isPaneIsolationGesture, isViewPane, paneNameFromModel } from "./js/ui/paneTabs.js";
-import { generatePreviewHTML, PREVIEW_SANDBOX } from "./js/preview/preview.js";
+import { generatePreviewHTML, isProjectEmpty, PREVIEW_SANDBOX } from "./js/preview/preview.js";
 import { createProjectShareUrl, decodeSharedPanes, SHAREABLE_PANES } from "./js/projects/sharePanes.js";
 
 renderIcons();
@@ -37,6 +37,7 @@ const lsSettings = LS("xode.settings");
 const tabWidth = normalizeTabWidth(lsSettings.read("tabWidth"));
 const editors = {};
 const elPreview = el("#preview"); // the iframe
+const elPreviewWelcome = el("#preview-welcome");
 const richEditorDialog = new RichEditorDialog();
 let pendingRichDialog = null;
 elPreview.addEventListener("load", () => {
@@ -412,6 +413,7 @@ els('[data-project-action="download-current"]').forEach((elBtnDownload) => {
 const updateProjectShareButtons = () => {
     const isPublished = Boolean(currentProjectState.gistId);
     els('[data-project-action="share-current"]').forEach((button) => {
+        button.hidden = !isPublished;
         button.disabled = !isPublished;
         button.title = isPublished ? "Share published project" : "Publish this project before sharing";
     });
@@ -1049,6 +1051,20 @@ paneConsole.init();
 
 // app boot — runs exactly once
 const currentProjectState = reactive(initialProject); // Open latest Project
+effect(updateProjectShareButtons);
+effect(() => {
+    const showWelcome = isProjectEmpty(currentProjectState) && !currentProjectState.panes.richEditor;
+    elPreviewWelcome.hidden = !showWelcome;
+    elPreview.inert = showWelcome;
+});
+el("#preview-start").addEventListener("click", () => {
+    currentProjectState.panes.html = true;
+    editors.html.elTextarea.focus({ preventScroll: true });
+});
+el("#preview-ask-ai").addEventListener("click", () => {
+    currentProjectState.panes.chat = true;
+    el("#chat-input").focus({ preventScroll: true });
+});
 effect(() => {
     void remoteProjects.revision;
     updateSyncButtons();

@@ -1,6 +1,23 @@
 /* global describe, expect, it */
 
-import { generatePreviewHTML, normalizeScriptType, PREVIEW_SANDBOX } from "./preview.js";
+import { generatePreviewHTML, isProjectEmpty, normalizeScriptType, PREVIEW_SANDBOX } from "./preview.js";
+
+describe("empty preview state", () => {
+    it("treats missing and whitespace-only code as empty", () => {
+        expect(isProjectEmpty({})).toBe(true);
+        expect(isProjectEmpty({ html: " \n\t", css: "\n ", js: "\t" })).toBe(true);
+    });
+
+    it.each(["html", "css", "js"])("keeps the live preview when only %s has code", (pane) => {
+        expect(isProjectEmpty({ html: "", css: "", js: "", [pane]: "/* code */" })).toBe(false);
+    });
+
+    it.each(["app", "preview", "download"])("keeps welcome markup out of %s project documents", (consumer) => {
+        const html = generatePreviewHTML({ html: "", css: "", js: "" }, consumer);
+        expect(html).not.toContain("preview-welcome");
+        expect(html).not.toContain("Start creating");
+    });
+});
 
 describe("project document generation", () => {
     it("writes escaped title and description metadata into downloads", () => {

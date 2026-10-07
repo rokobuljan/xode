@@ -44,7 +44,7 @@
             <button class="desktop-only" type="button" data-project-action="download-current" title="Download project as .html">
                 <i data-lucide="download"></i>
             </button>
-            <button class="desktop-only" type="button" data-project-action="share-current" title="Publish this project before sharing" disabled>
+            <button class="desktop-only" type="button" data-project-action="share-current" title="Publish this project before sharing" hidden disabled>
                 <i data-lucide="share-2"></i>
             </button>
 
@@ -152,6 +152,28 @@
                     <div class="preview-stage">
                         <!-- SECURITY ALERT: do NOT add allow-same-origin in the sandbox rules, it breaks localStorage isolation for user code. -->
                         <iframe id="preview" class="preview-frame" sandbox="allow-modals allow-forms allow-pointer-lock allow-popups allow-scripts" credentialless referrerpolicy="no-referrer" allow=""></iframe>
+                        <section id="preview-welcome" class="preview-welcome" aria-labelledby="preview-welcome-title" hidden>
+                            <div class="welcome-content">
+                                <svg class="welcome-brand" viewBox="0 0 282 72" aria-label="Xode" role="img">
+                                    <use href="#logo-xode"></use>
+                                </svg>
+                                <p class="welcome-kicker">Prototype code ideas.</p>
+                                <h1 id="preview-welcome-title">Start creating.</h1>
+                                <p class="welcome-intro">Try an idea, build a little tool, make something fun. Your HTML, CSS, and JavaScript come to life here.</p>
+                                <div class="welcome-actions">
+                                    <button id="preview-start" type="button" class="button-primary"><i data-lucide="plus"></i><span>Start creating</span></button>
+                                    <button id="preview-ask-ai" type="button" class="button-secondary"><i data-lucide="wand-sparkles"></i><span>Ask AI</span></button>
+                                </div>
+                                <div class="welcome-sharing" data-rea-open-inner data-rea-open="settings.isGithubDisabled">
+                                    <p>Made something you love? Connect GitHub to publish your projects and share your creations.</p>
+                                    <button type="button" class="button-quiet" data-modal="#modal-projects"><i data-lucide="github"></i><span>Connect GitHub</span></button>
+                                </div>
+                                <div class="welcome-sharing" data-rea-open-inner data-rea-open="settings.isGithubEnabled">
+                                    <p>GitHub is connected. When your idea is ready, publish it and share it with the world.</p>
+                                    <button type="button" class="button-quiet" data-modal="#modal-projects"><i data-lucide="folder-search"></i><span>Open Projects</span></button>
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>
@@ -284,7 +306,7 @@
                                     <i data-lucide="download"></i>
                                     <span class="desktop-only">Download</span>
                                 </button>
-                                <button type="button" data-project-action="share-current" title="Publish this project before sharing" disabled>
+                                <button type="button" data-project-action="share-current" title="Publish this project before sharing" hidden disabled>
                                     <i data-lucide="share-2"></i>
                                     <span class="desktop-only">Share</span>
                                 </button>

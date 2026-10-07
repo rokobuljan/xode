@@ -115,6 +115,11 @@ button {
     }
 }
 
+.button-secondary {
+    background: var(--c2);
+    color: var(--foreground);
+}
+
 .button-danger {
     background: var(--ce);
     color: var(--foreground);

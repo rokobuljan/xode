@@ -2,6 +2,10 @@ import { countLines } from "../shared/utils.js";
 
 export const PREVIEW_SANDBOX = "allow-modals allow-forms allow-pointer-lock allow-popups allow-scripts";
 
+export function isProjectEmpty(project) {
+    return ["html", "css", "js"].every((pane) => !String(project[pane] ?? "").trim());
+}
+
 export function normalizeScriptType(value) {
     return value === "classic" ? "classic" : "module";
 }
