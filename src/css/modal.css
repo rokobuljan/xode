@@ -198,7 +198,7 @@
         }
 
         .status-label {
-            color: color-mix(in srgb, var(--fg), var(--bg) 20%);
+            color: var(--success);
         }
 
         &[data-open="false"] {

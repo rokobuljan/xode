@@ -6,6 +6,9 @@ export function closeModals() {
 
 // Modal
 addEventListener("click", (evt) => {
+    // Native dialogs own their clicks, including close buttons and backdrops.
+    if (evt.target.closest("dialog")) return;
+
     const elBtn = evt.target.closest("[data-modal]");
 
     // Click inside modal (but not on a close modal button)

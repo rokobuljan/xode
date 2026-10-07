@@ -13,6 +13,7 @@ import { init as initChat } from "./js/chat.js";
 import Toast from "./js/toast.js";
 import "./js/consoleWarning.js";
 import gist, { setToken, getToken, hasToken, clearToken, GistApiError, GIST_PAGE_SIZE, XODE_MANIFEST_FILENAME, createXodeManifestFile, hasXodeManifest, readXodeManifest } from "./js/githubGist.js";
+import { projectContent, hasRemoteChanges, hasPushChanges } from "./js/projectSync.js";
 import { bus } from "./js/bus.js";
 
 import { reactive, effect, mount, persist } from "./js/reactive.js";
@@ -78,6 +79,7 @@ const projectInit = async (isNew = true, id) => {
     previewCurrentProject("all");
     updateProjectShareButtons();
     bus.emit("project:changed", { id: currentProjectState.id });
+    void checkRemoteProject();
 };
 
 let previewTimeoutId;
@@ -234,10 +236,27 @@ elProjectDeleteDialog.addEventListener("click", (event) => {
 });
 
 let drawProjectsSequence = 0;
+const renderedProjects = new Map();
+const knownProjectIds = new Set();
+const updateProjectCardMetadata = (project) => {
+    const card = document.getElementById(`project-${project.id}`);
+    if (!card) return;
+    const title = `${project.name} ${project.description ? " ? " + project.description : ""} | ${formatDateTime(project.updatedAt)}`;
+    const name = el(".name", card);
+    const preview = el(".preview", card);
+    name.textContent = project.name;
+    name.title = title;
+    preview.title = title;
+    preview.setAttribute("aria-label", `Open ${project.name || "Untitled"}`);
+    // Event handlers retain this record, so keep dialog metadata current too.
+    const rendered = renderedProjects.get(project.id);
+    if (rendered) Object.assign(rendered, { name: project.name, description: project.description, updatedAt: project.updatedAt });
+};
 const drawProjects = async ({ reset = false } = {}) => {
     if (reset) visibleProjectCount = PROJECTS_PAGE_SIZE;
     const sequence = ++drawProjectsSequence;
     const projectSummaries = await listProjects();
+    projectSummaries.forEach(({ id }) => knownProjectIds.add(id));
     const filteredSummaries = projectSummaries.filter((project) => {
         const full = `${project.name ?? ""} ${project.description ?? ""} ${project.id} ${new Date(project.updatedAt).toLocaleString()}`;
         return full.toLowerCase().includes(projectSearch);
@@ -247,10 +266,16 @@ const drawProjects = async ({ reset = false } = {}) => {
     if (sequence !== drawProjectsSequence) return;
 
     elProjectsList.innerHTML = "";
+    renderedProjects.clear();
     elProjectsMore.hidden = visibleSummaries.length >= filteredSummaries.length;
     const remainingProjects = Math.max(0, filteredSummaries.length - visibleSummaries.length);
     el("span", elProjectsMore).textContent = `Load ${Math.min(PROJECTS_PAGE_SIZE, remainingProjects)} more project${remainingProjects === 1 ? "" : "s"}`;
     projects.forEach((projectData) => {
+        if (projectData.id === currentProjectState.id) {
+            projectData.name = currentProjectState.name;
+            projectData.description = currentProjectState.description;
+        }
+        renderedProjects.set(projectData.id, projectData);
         const title = `${projectData.name} ${projectData.description ? " — " + projectData.description : ""} | ${formatDateTime(projectData.updatedAt)}`;
         const elThumbnail = elNew("div", { className: "preview", title });
         // elThumbnail.dataset.modal = "";
@@ -545,6 +570,12 @@ const elGithubFetch = el("#githubFetch");
 const elGithubFetchLabel = el("#githubFetchLabel");
 let nextGistPage = 1;
 let hasMoreGists = true;
+let isFetchingGists = false;
+let isPublishing = false;
+const remoteProjects = reactive({ revision: 0 });
+const remoteGistsById = new Map();
+const elRemoteUpdate = el("#githubUpdate");
+const elTopPublish = el('[data-project-action="publish-current"]');
 
 const resetGistPagination = () => {
     nextGistPage = 1;
@@ -558,7 +589,8 @@ const updateElGithubToken = () => {
     else elGithubToken.placeholder = "GitHub Token (classic)";
     elGithubTokenDelete.disabled = !token;
     elGithubPublish.disabled = !token;
-    elGithubFetch.disabled = !token || !hasMoreGists;
+    elGithubFetch.disabled = !token || isFetchingGists;
+    updateSyncButtons();
     settingsState.isGithubEnabled = !!token;
     settingsState.isGithubDisabled = !token;
 };
@@ -585,6 +617,58 @@ elGithubLoad.addEventListener("click", async () => {
     elGithubLoadId.value = "";
 });
 
+const updateSyncButtons = () => {
+    const remote = remoteGistsById.get(currentProjectState.gistId);
+    elRemoteUpdate.hidden = !remote || !hasRemoteChanges(currentProjectState, gistToProject(remote));
+    const canPush = hasPushChanges(currentProjectState, remote ? gistToProject(remote) : undefined);
+    elTopPublish.hidden = !canPush;
+    elGithubPublish.hidden = !canPush;
+    elTopPublish.disabled = !hasToken() || isPublishing;
+    elGithubPublish.disabled = !hasToken() || isPublishing;
+};
+const cacheRemoteGist = async (id) => {
+    const remote = await gist.read(id);
+    remoteGistsById.set(id, remote);
+    remoteProjects.revision += 1;
+    return remote;
+};
+const checkRemoteProject = async () => {
+    const id = currentProjectState.gistId;
+    if (!id) return;
+    try {
+        await cacheRemoteGist(id);
+    } catch (error) {
+        console.warn("Could not check for Gist updates", error);
+    }
+};
+const markProjectSynced = (project, remote) => {
+    project.gistSnapshot = projectContent(project);
+    project.gistUpdatedAt = remote.updated_at;
+    remoteGistsById.set(remote.id, remote);
+    remoteProjects.revision += 1;
+};
+elRemoteUpdate.addEventListener("click", async () => {
+    const id = currentProjectState.id;
+    const gistId = currentProjectState.gistId;
+    elRemoteUpdate.disabled = true;
+    try {
+        const remote = await cacheRemoteGist(gistId);
+        if (currentProjectState.id !== id) return;
+        if (currentProjectState.gistSnapshot !== projectContent(currentProjectState) && !confirm("Replace local changes with the updated GitHub Gist?")) return;
+        Object.assign(currentProjectState, gistToProject(remote));
+        currentProjectState.gistSnapshot = projectContent(currentProjectState);
+        await saveProject(currentProjectState);
+        await projectInit(false, id);
+        await drawProjects();
+    } catch (error) {
+        new Toast({ head: "Could not update project", body: error.message, type: "error", time: 0 });
+    } finally {
+        elRemoteUpdate.disabled = false;
+        updateSyncButtons();
+    }
+});
+addEventListener("focus", () => void checkRemoteProject());
+
 const gistToProject = (data) => {
     const files = { html: "", css: "", js: "" };
     Object.entries(data.files).forEach(([name, file]) => {
@@ -598,6 +682,7 @@ const gistToProject = (data) => {
     return {
         id: data.id,
         gistId: data.id,
+        gistUpdatedAt: data.updated_at,
         name: projName,
         description: descriptionParts.join(" — "),
         html: files.html,
@@ -609,7 +694,9 @@ const gistToProject = (data) => {
 
 const importGist = async (data) => {
     if (await loadProject(data.id)) return false;
-    await createProject(gistToProject(data));
+    const project = gistToProject(data);
+    project.gistSnapshot = projectContent(project);
+    await createProject(project);
     return true;
 };
 
@@ -624,7 +711,10 @@ const gistLoad = async (gistId) => {
 };
 
 elGithubFetch.addEventListener("click", async () => {
-    elGithubFetch.disabled = true;
+    if (isFetchingGists) return;
+    if (!hasMoreGists) resetGistPagination();
+    isFetchingGists = true;
+    updateElGithubToken();
 
     try {
         const page = nextGistPage;
@@ -640,7 +730,13 @@ elGithubFetch.addEventListener("click", async () => {
             await Promise.all(
                 batch.map(async ({ id }) => {
                     if (await loadProject(id)) {
-                        skipped += 1;
+                        try {
+                            await cacheRemoteGist(id);
+                            skipped += 1;
+                        } catch (error) {
+                            failed += 1;
+                            console.error(`Could not check Gist ${id}`, error);
+                        }
                         return;
                     }
 
@@ -660,7 +756,7 @@ elGithubFetch.addEventListener("click", async () => {
 
         if (gistPage.length < GIST_PAGE_SIZE) {
             hasMoreGists = false;
-            elGithubFetchLabel.textContent = "All Gists fetched";
+            elGithubFetchLabel.textContent = "Refresh Gists";
         } else {
             nextGistPage += 1;
             elGithubFetchLabel.textContent = `Fetch next ${GIST_PAGE_SIZE} Gists`;
@@ -683,6 +779,7 @@ elGithubFetch.addEventListener("click", async () => {
             time: 0,
         });
     } finally {
+        isFetchingGists = false;
         updateElGithubToken();
     }
 });
@@ -692,9 +789,14 @@ const gistPublish = async (project) => {
     if (project.html?.trim()) files["index.html"] = { content: project.html };
     if (project.js?.trim()) files["script.js"] = { content: project.js };
     if (project.css?.trim()) files["style.css"] = { content: project.css };
-    if (Object.keys(files).length === 0) {
+    if (Object.keys(files).length === 0 && !project.gistId) {
         console.warn("Nothing to publish — all panes are empty");
         return;
+    }
+    if (project.gistId) {
+        for (const filename of ["index.html", "script.js", "style.css"]) {
+            if (!files[filename]) files[filename] = null;
+        }
     }
     files[XODE_MANIFEST_FILENAME] = createXodeManifestFile(project);
     const projName = project.name?.trim() || "Untitled";
@@ -708,6 +810,7 @@ const gistPublish = async (project) => {
             const oldId = project.id;
             project.id = res.id;
             project.gistId = res.id;
+            markProjectSynced(project, res);
             await saveProject(project); // Save a local copy with the new ID
             if (oldId && oldId !== project.id) {
                 await deleteProject(oldId);
@@ -733,7 +836,9 @@ const gistPublish = async (project) => {
     // PUBLISH - Update
     else {
         try {
-            await gist.update(project.gistId, { description, files });
+            const res = await gist.update(project.gistId, { description, files });
+            markProjectSynced(project, res);
+            await saveProject(project);
             new Toast({
                 head: "Updated",
                 type: "success",
@@ -744,10 +849,11 @@ const gistPublish = async (project) => {
             if (err instanceof GistApiError && err.status === 404) {
                 try {
                     const forked = await gist.fork(project.gistId);
-                    await gist.update(forked.id, { description, files });
+                    const res = await gist.update(forked.id, { description, files });
                     const oldId = project.id;
                     project.id = forked.id;
                     project.gistId = forked.id;
+                    markProjectSynced(project, res);
                     await saveProject(project);
                     if (oldId && oldId !== project.id) {
                         await deleteProject(oldId);
@@ -782,9 +888,26 @@ const gistPublish = async (project) => {
     await drawProjects();
 };
 
-elGithubPublish.addEventListener("click", () => {
-    void gistPublish(currentProjectState);
-});
+const publishCurrentProject = async () => {
+    if (isPublishing || !hasToken()) return;
+    isPublishing = true;
+    updateSyncButtons();
+    const project = JSON.parse(JSON.stringify(currentProjectState));
+    const originalId = project.id;
+    try {
+        await gistPublish(project);
+        if (currentProjectState.id === originalId && project.gistSnapshot) {
+            Object.assign(currentProjectState, { id: project.id, gistId: project.gistId, gistSnapshot: project.gistSnapshot, gistUpdatedAt: project.gistUpdatedAt });
+            await saveProject(currentProjectState);
+            updateProjectShareButtons();
+        }
+    } finally {
+        isPublishing = false;
+        updateSyncButtons();
+    }
+};
+elGithubPublish.addEventListener("click", () => void publishCurrentProject());
+elTopPublish.addEventListener("click", () => void publishCurrentProject());
 
 // Tab width - Change indentation spaces for code format (prettier)
 const elTabWidth = el("#tabWidth");
@@ -840,6 +963,18 @@ paneConsole.init();
 
 // app boot — runs exactly once
 const currentProjectState = reactive(initialProject); // Open latest Project
+effect(() => {
+    void remoteProjects.revision;
+    updateSyncButtons();
+});
+effect(() => {
+    updateProjectCardMetadata({
+        id: currentProjectState.id,
+        name: currentProjectState.name,
+        description: currentProjectState.description,
+        updatedAt: currentProjectState.updatedAt,
+    });
+});
 mount(currentProjectState, "project"); // Mount project to DOM and bind events
 watchEditors(currentProjectState, editors, previewCurrentProject);
 watchScriptType(currentProjectState, previewCurrentProject);
@@ -861,7 +996,18 @@ if (params.get("g")) {
 }
 const sharedPanes = decodeSharedPanes(params.get("p"));
 if (sharedPanes) Object.assign(currentProjectState.panes, sharedPanes);
-persist(currentProjectState, saveProject, 300); // Persist changes to project every 300ms
+persist(
+    currentProjectState,
+    async (project) => {
+        await saveProject(project);
+        if (project.id === currentProjectState.id) updateProjectCardMetadata(project);
+        if (!knownProjectIds.has(project.id)) {
+            knownProjectIds.add(project.id);
+            await drawProjects();
+        }
+    },
+    300,
+); // Persist changes to project every 300ms
 await drawProjects();
 
 // Initialize the serverless AI assistant. Conversations and optional encrypted

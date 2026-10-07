@@ -38,6 +38,9 @@
                 <i data-lucide="folder"></i>
                 <span data-rea-text="project.name">Untitled</span>
             </button>
+            <button class="desktop-only" type="button" data-project-action="publish-current" title="Publish to GitHub Gist" aria-label="Publish project" hidden>
+                <i data-lucide="send"></i>
+            </button>
             <button class="desktop-only" type="button" data-project-action="download-current" title="Download project">
                 <i data-lucide="download"></i>
             </button>
@@ -284,9 +287,10 @@
                                     <i data-lucide="share-2"></i>
                                     <span>Share</span>
                                 </button>
+                                <button id="githubUpdate" type="button" title="Update local project from GitHub Gist" hidden><i data-lucide="cloud-download"></i><span>Pull</span></button>
                                 <button type="button" id="githubPublish" class="button-primary" title="Publish to GitHub Gist">
-                                    <i data-lucide="github"></i>
-                                    Publish
+                                    <i data-lucide="send"></i>
+                                    Push
                                 </button>
                                 <button type="button" id="project-delete" class="button-danger" title="Delete project" aria-label="Delete project">
                                     <i data-lucide="trash-2"></i>
@@ -365,7 +369,7 @@
                         </h2>
                         <button type="button" id="githubFetch" class="button-primary" title="Fetch XODE projects from your GitHub Gists">
                             <i data-lucide="cloud-download"></i>
-                            <span id="githubFetchLabel">Fetch Gists</span>
+                            <span id="githubFetchLabel">Pull Gists</span>
                         </button>
                         <label>
                             <i data-lucide="search"></i>
