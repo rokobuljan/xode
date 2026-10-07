@@ -143,6 +143,8 @@ const elProjectDeleteStatus = el('[data-delete-element="status"]', elProjectDele
 const elProjectDeleteLocal = el('[data-delete-action="local"]', elProjectDeleteDialog);
 const elProjectDeleteGist = el('[data-delete-action="gist"]', elProjectDeleteDialog);
 const elProjectShareDialog = el("#project-share-dialog");
+const elProjectSharePublish = el('[data-share-action="publish"]', elProjectShareDialog);
+const elProjectSharePublishNotice = el('[data-share-element="publish-notice"]', elProjectShareDialog);
 const elProjectShareStatus = el('[data-share-element="status"]', elProjectShareDialog);
 const elProjectShareUrl = el('[data-share-element="url"]', elProjectShareDialog);
 const elProjectShareCopy = el('[data-share-action="copy"]', elProjectShareDialog);
@@ -317,7 +319,7 @@ const drawProjects = async ({ reset = false } = {}) => {
                 <span class="actions">
                     ${gistLinkHTML}
                     ${projectData.gistId ? `<button data-share-id="${projectData.id}" type="button" title="Share published project"><i data-lucide="share-2"></i></button>` : ""}
-                    <button data-download-id="${projectData.id}" type="button" title="Download"><i data-lucide="download"></i></button>
+                    <button data-download-id="${projectData.id}" type="button" title="Download project as .html"><i data-lucide="download"></i></button>
                     <button data-delete-id="${projectData.id}" type="button" title="Delete"><i data-lucide="trash-2"></i></button>
                 </span>
             </div>`,
@@ -338,7 +340,7 @@ const drawProjects = async ({ reset = false } = {}) => {
         });
 
         el(`[data-share-id]`, elProject)?.addEventListener("click", () => {
-            openProjectShareDialog(projectData);
+            void openProjectShareDialog(projectData);
         });
 
         const activateProject = () => {
@@ -446,7 +448,17 @@ let pendingProjectShare = null;
 
 const selectedSharePanes = () => Object.fromEntries(SHAREABLE_PANES.map(({ name }) => [name, [...elProjectShareInputs].some((input) => input.value === name && input.checked)]));
 
+const updateSharePublishNotice = () => {
+    elProjectSharePublish.disabled = !hasToken() || isPublishing;
+    elProjectSharePublish.title = hasToken() ? "Push changes to GitHub Gist" : "Connect GitHub to push changes";
+    el("span", elProjectSharePublish).textContent = isPublishing ? "Pushing?" : "Push changes";
+    const project = pendingProjectShare;
+    const remote = project && remoteGistsById.get(project.gistId);
+    elProjectSharePublishNotice.hidden = !project || !hasPushChanges(project, remote ? gistToProject(remote) : undefined);
+};
+
 const updateProjectShareDialog = () => {
+    updateSharePublishNotice();
     const hasSelection = [...elProjectShareInputs].some((input) => input.checked);
     elProjectShareUrl.value = hasSelection && pendingProjectShare ? createProjectShareUrl(window.location.href, pendingProjectShare.gistId, selectedSharePanes()) : "";
     elProjectShareCopy.disabled = !hasSelection;
@@ -455,14 +467,28 @@ const updateProjectShareDialog = () => {
     elProjectShareStatus.textContent = hasSelection ? "" : "Select at least one pane.";
 };
 
-function openProjectShareDialog(project) {
+async function openProjectShareDialog(project) {
     if (!project.gistId) return;
+    // Cards contain injected preview HTML; compare the actual project instead.
+    try {
+        project = project.id === currentProjectState.id ? currentProjectState : await loadProject(project.id);
+        if (!project?.gistId) return;
+    } catch (error) {
+        new Toast({ head: "Could not open share dialog", body: error.message, type: "error", time: 0 });
+        return;
+    }
     pendingProjectShare = project;
     elProjectShareInputs.forEach((input) => {
         input.checked = Boolean(project.panes?.[input.value]);
     });
     updateProjectShareDialog();
     elProjectShareDialog.showModal();
+    try {
+        await cacheRemoteGist(project.gistId);
+    } catch (error) {
+        console.warn("Could not check shared project for unpublished changes", error);
+    }
+    if (pendingProjectShare === project) updateSharePublishNotice();
 }
 
 elProjectShareInputs.forEach((input) => input.addEventListener("change", updateProjectShareDialog));
@@ -485,6 +511,7 @@ elProjectShareButton.addEventListener("click", async () => {
 });
 elProjectShareDialog.addEventListener("close", () => {
     pendingProjectShare = null;
+    elProjectSharePublishNotice.hidden = true;
     delete elProjectShareStatus.dataset.type;
     elProjectShareStatus.textContent = "";
 });
@@ -493,7 +520,7 @@ elProjectShareDialog.addEventListener("click", (event) => {
 });
 
 els('[data-project-action="share-current"]').forEach((button) => {
-    button.addEventListener("click", () => openProjectShareDialog(currentProjectState));
+    button.addEventListener("click", () => void openProjectShareDialog(currentProjectState));
 });
 
 // Editor exec commander for richEditor mode (text editing buttons)
@@ -623,6 +650,7 @@ const updateSyncButtons = () => {
     const canPush = hasPushChanges(currentProjectState, remote ? gistToProject(remote) : undefined);
     elTopPublish.hidden = !canPush;
     elGithubPublish.hidden = !canPush;
+    if (pendingProjectShare) updateSharePublishNotice();
     elTopPublish.disabled = !hasToken() || isPublishing;
     elGithubPublish.disabled = !hasToken() || isPublishing;
 };
@@ -785,6 +813,7 @@ elGithubFetch.addEventListener("click", async () => {
 });
 
 const gistPublish = async (project) => {
+    let wasPublished = false;
     const files = {};
     if (project.html?.trim()) files["index.html"] = { content: project.html };
     if (project.js?.trim()) files["script.js"] = { content: project.js };
@@ -811,12 +840,13 @@ const gistPublish = async (project) => {
             project.id = res.id;
             project.gistId = res.id;
             markProjectSynced(project, res);
+            wasPublished = true;
             await saveProject(project); // Save a local copy with the new ID
             if (oldId && oldId !== project.id) {
                 await deleteProject(oldId);
                 bus.emit("project:rekeyed", { oldId, newId: project.id });
             }
-            params.set("g", project.gistId);
+            if (currentProjectState.id === oldId) params.set("g", project.gistId);
             updateProjectShareButtons();
             new Toast({
                 head: "Published",
@@ -838,6 +868,7 @@ const gistPublish = async (project) => {
         try {
             const res = await gist.update(project.gistId, { description, files });
             markProjectSynced(project, res);
+            wasPublished = true;
             await saveProject(project);
             new Toast({
                 head: "Updated",
@@ -854,12 +885,13 @@ const gistPublish = async (project) => {
                     project.id = forked.id;
                     project.gistId = forked.id;
                     markProjectSynced(project, res);
+                    wasPublished = true;
                     await saveProject(project);
                     if (oldId && oldId !== project.id) {
                         await deleteProject(oldId);
                         bus.emit("project:rekeyed", { oldId, newId: project.id });
                     }
-                    params.set("g", project.gistId);
+                    if (currentProjectState.id === oldId) params.set("g", project.gistId);
                     updateProjectShareButtons();
                     new Toast({
                         head: "Forked",
@@ -886,26 +918,47 @@ const gistPublish = async (project) => {
         }
     }
     await drawProjects();
+    return wasPublished;
 };
 
-const publishCurrentProject = async () => {
+const publishCurrentProject = async (source = currentProjectState) => {
     if (isPublishing || !hasToken()) return;
     isPublishing = true;
     updateSyncButtons();
-    const project = JSON.parse(JSON.stringify(currentProjectState));
+    const project = JSON.parse(JSON.stringify(source));
     const originalId = project.id;
     try {
-        await gistPublish(project);
-        if (currentProjectState.id === originalId && project.gistSnapshot) {
-            Object.assign(currentProjectState, { id: project.id, gistId: project.gistId, gistSnapshot: project.gistSnapshot, gistUpdatedAt: project.gistUpdatedAt });
+        const wasPublished = await gistPublish(project);
+        if (!wasPublished) return false;
+        const syncMetadata = { id: project.id, gistId: project.gistId, gistSnapshot: project.gistSnapshot, gistUpdatedAt: project.gistUpdatedAt };
+        Object.assign(source, syncMetadata);
+        if (currentProjectState.id === originalId || currentProjectState === source) {
+            Object.assign(currentProjectState, syncMetadata);
             await saveProject(currentProjectState);
             updateProjectShareButtons();
         }
+        return true;
     } finally {
         isPublishing = false;
         updateSyncButtons();
     }
 };
+elProjectSharePublish.addEventListener("click", async () => {
+    const project = pendingProjectShare;
+    if (!project || elProjectSharePublish.disabled) return;
+    try {
+        const wasPublished = await publishCurrentProject(project);
+        if (pendingProjectShare !== project) return;
+        updateProjectShareDialog();
+        if (wasPublished) {
+            elProjectShareStatus.dataset.type = "success";
+            elProjectShareStatus.textContent = "Changes pushed. Your share link is ready.";
+        }
+    } catch (error) {
+        delete elProjectShareStatus.dataset.type;
+        elProjectShareStatus.textContent = `Could not push changes: ${error.message}`;
+    }
+});
 elGithubPublish.addEventListener("click", () => void publishCurrentProject());
 elTopPublish.addEventListener("click", () => void publishCurrentProject());
 

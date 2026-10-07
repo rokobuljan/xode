@@ -41,7 +41,7 @@
             <button class="desktop-only" type="button" data-project-action="publish-current" title="Publish to GitHub Gist" aria-label="Publish project" hidden>
                 <i data-lucide="send"></i>
             </button>
-            <button class="desktop-only" type="button" data-project-action="download-current" title="Download project">
+            <button class="desktop-only" type="button" data-project-action="download-current" title="Download project as .html">
                 <i data-lucide="download"></i>
             </button>
             <button class="desktop-only" type="button" data-project-action="share-current" title="Publish this project before sharing" disabled>
@@ -279,7 +279,7 @@
                                 </select>
                             </label>
                             <div class="form-actions">
-                                <button type="button" data-project-action="download-current" title="Download project">
+                                <button type="button" data-project-action="download-current" title="Download project as .html">
                                     <i data-lucide="download"></i>
                                     <span class="desktop-only">Download</span>
                                 </button>
@@ -414,6 +414,10 @@
                 </header>
                 <div class="copy">
                     <p id="project-share-description">Choose the visible panes when someone opens this link</p>
+                    <div class="publish-notice" data-share-element="publish-notice" hidden>
+                        <p role="status" aria-live="polite">This link shares the last pushed version. Your local changes aren't included.</p>
+                        <button type="button" class="button-primary" data-share-action="publish"><i data-lucide="send"></i><span>Push changes</span></button>
+                    </div>
                     <div class="pane-options">
                         <label><input type="checkbox" value="html" /><span>HTML</span></label>
                         <label><input type="checkbox" value="css" /><span>CSS</span></label>
