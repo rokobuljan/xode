@@ -1,0 +1,123 @@
+.embed {
+    .embed-bar {
+        display: flex;
+        align-items: center;
+        flex: 0 0 auto;
+        gap: 0.75rem;
+        padding: 0.5rem;
+        background: var(--surface-1);
+
+        .embed-brand {
+            display: flex;
+            flex: 0 0 auto;
+            color: var(--text-strong);
+
+            svg {
+                width: 3.8rem;
+                height: 1rem;
+            }
+        }
+
+        nav {
+            display: flex;
+            flex: 1;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+
+        button {
+            background: transparent;
+            color: var(--text-muted);
+
+            &[aria-pressed="true"] {
+                background: var(--accent-soft);
+                color: var(--c1);
+            }
+        }
+
+        #embed-open {
+            flex: 0 0 auto;
+            padding: 0.4rem;
+            font-size: 0.75rem;
+        }
+
+        @media (width < 480px) {
+            flex-wrap: wrap;
+
+            nav {
+                order: 1;
+                flex-basis: 100%;
+            }
+
+            #embed-open {
+                margin-left: auto;
+            }
+        }
+    }
+
+    .embed-content {
+        position: relative;
+        min-height: 0;
+        flex: 1;
+        background: var(--surface-0);
+
+        .embed-pane {
+            background: var(--surface-inset);
+        }
+
+        > .splitter,
+        .embed-code-panes > .splitter {
+            background: transparent;
+        }
+
+        iframe,
+        pre,
+        #embed-console {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        iframe {
+            display: block;
+            background: var(--foreground);
+        }
+
+        pre,
+        #embed-console {
+            overflow: auto;
+            padding: 1rem;
+            background: var(--surface-inset);
+            color: var(--text);
+            font: var(--content-font-size)/1.6 var(--font-mono);
+            tab-size: 4;
+        }
+
+        #embed-console {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+
+            [data-level="warn"] {
+                color: var(--warning);
+            }
+            [data-level="error"] {
+                color: var(--ce);
+            }
+        }
+
+        p {
+            padding: 1.25rem;
+            color: var(--text-muted);
+
+            &[data-type="error"] {
+                color: var(--ce);
+            }
+        }
+    }
+
+    [hidden] {
+        display: none !important;
+    }
+}

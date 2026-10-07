@@ -397,6 +397,25 @@
 }
 
 .share-dialog {
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+
+    .embed-code {
+        display: grid;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+
+        textarea {
+            width: 100%;
+            resize: vertical;
+            font: 0.75rem/1.5 var(--font-mono);
+        }
+
+        button {
+            justify-self: start;
+        }
+    }
+
     .publish-notice {
         display: grid;
         justify-items: start;

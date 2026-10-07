@@ -447,7 +447,7 @@
                     <h2 id="project-share-title">Share project</h2>
                 </header>
                 <div class="copy">
-                    <p id="project-share-description">Choose the visible panes when someone opens this link</p>
+                    <p id="project-share-description">Choose the visible panes for the share link and embedded viewer.</p>
                     <div class="publish-notice" data-share-element="publish-notice" hidden>
                         <p role="status" aria-live="polite">This link shares the last pushed version. Your local changes aren't included.<br />Push changes before sharing.</p>
                         <button type="button" class="button-primary" data-share-action="publish"><i data-lucide="send"></i><span>Push changes</span></button>
@@ -462,6 +462,12 @@
                     <div class="share-link">
                         <input type="url" data-share-element="url" aria-label="Share link" readonly />
                         <button type="button" data-share-action="copy"><i data-lucide="copy"></i><span>Copy</span></button>
+                    </div>
+                    <div class="embed-code">
+                        <label for="project-embed-code">Embed project</label>
+                        <p class="gist-note">Read-only tabs, Xode logo, and a link to the app. Uses the last pushed version.</p>
+                        <textarea id="project-embed-code" data-share-element="embed-code" aria-label="Embed code" rows="3" readonly spellcheck="false"></textarea>
+                        <button type="button" data-share-action="copy-embed"><i data-lucide="code"></i><span>Copy embed code</span></button>
                     </div>
                     <p class="status" data-share-element="status" role="status" aria-live="polite"></p>
                 </div>

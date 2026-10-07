@@ -1,12 +1,6 @@
 import { DEFAULT_PANES } from "./project.js";
-
-export const SHAREABLE_PANES = [
-    { name: "html", code: "h", label: "HTML" },
-    { name: "css", code: "c", label: "CSS" },
-    { name: "js", code: "j", label: "JS" },
-    { name: "console", code: "o", label: "Console" },
-    { name: "preview", code: "p", label: "Preview" },
-];
+import { SHAREABLE_PANES } from "./sharePaneOptions.js";
+export { SHAREABLE_PANES };
 
 export function encodeSharedPanes(panes) {
     return SHAREABLE_PANES.filter(({ name }) => panes?.[name])

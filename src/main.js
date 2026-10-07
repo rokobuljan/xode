@@ -29,6 +29,7 @@ import { renderIcons } from "./js/ui/icons.js";
 import { isolatePane, isPaneIsolationGesture, isViewPane, paneNameFromModel } from "./js/ui/paneTabs.js";
 import { generatePreviewHTML, isProjectEmpty, PREVIEW_SANDBOX } from "./js/preview/preview.js";
 import { createProjectShareUrl, decodeSharedPanes, encodeSharedPanes, parseGistReference, SHAREABLE_PANES } from "./js/projects/sharePanes.js";
+import { createProjectEmbedCode } from "./js/projects/embedProject.js";
 
 renderIcons();
 
@@ -169,6 +170,8 @@ const elProjectSharePublishNotice = el('[data-share-element="publish-notice"]', 
 const elProjectShareStatus = el('[data-share-element="status"]', elProjectShareDialog);
 const elProjectShareUrl = el('[data-share-element="url"]', elProjectShareDialog);
 const elProjectShareCopy = el('[data-share-action="copy"]', elProjectShareDialog);
+const elProjectEmbedCode = el('[data-share-element="embed-code"]', elProjectShareDialog);
+const elProjectEmbedCopy = el('[data-share-action="copy-embed"]', elProjectShareDialog);
 const elProjectShareButton = el('[data-share-action="share"]', elProjectShareDialog);
 const elProjectShareInputs = els('.pane-options input[type="checkbox"]', elProjectShareDialog);
 let pendingProjectDeletion = null;
@@ -430,7 +433,7 @@ const copyText = async (value) => {
     const textarea = elNew("textarea", { value });
     textarea.setAttribute("readonly", "");
     textarea.className = "sr-only";
-    document.body.append(textarea);
+    (document.querySelector("dialog[open]") || document.body).append(textarea);
     textarea.select();
     const copied = document.execCommand("copy");
     textarea.remove();
@@ -483,7 +486,9 @@ const updateProjectShareDialog = () => {
     updateSharePublishNotice();
     const hasSelection = [...elProjectShareInputs].some((input) => input.checked);
     elProjectShareUrl.value = hasSelection && pendingProjectShare ? createProjectShareUrl(window.location.href, pendingProjectShare.gistId, selectedSharePanes()) : "";
+    elProjectEmbedCode.value = hasSelection && pendingProjectShare ? createProjectEmbedCode(window.location.href, pendingProjectShare.gistId, selectedSharePanes(), pendingProjectShare.name || "Untitled") : "";
     elProjectShareCopy.disabled = !hasSelection;
+    elProjectEmbedCopy.disabled = !hasSelection;
     elProjectShareButton.disabled = !hasSelection;
     delete elProjectShareStatus.dataset.type;
     elProjectShareStatus.textContent = hasSelection ? "" : "Select at least one pane.";
@@ -515,6 +520,18 @@ async function openProjectShareDialog(project) {
 
 elProjectShareInputs.forEach((input) => input.addEventListener("change", updateProjectShareDialog));
 elProjectShareUrl.addEventListener("click", () => elProjectShareUrl.select());
+elProjectEmbedCode.addEventListener("click", () => elProjectEmbedCode.select());
+elProjectEmbedCopy.addEventListener("click", async () => {
+    if (elProjectEmbedCopy.disabled) return;
+    try {
+        await copyText(elProjectEmbedCode.value);
+        elProjectShareStatus.dataset.type = "success";
+        elProjectShareStatus.textContent = "Embed code copied to clipboard!";
+    } catch (error) {
+        delete elProjectShareStatus.dataset.type;
+        elProjectShareStatus.textContent = `Could not copy embed code: ${error.message}`;
+    }
+});
 elProjectShareCopy.addEventListener("click", async () => {
     try {
         await copyText(elProjectShareUrl.value);
