@@ -990,6 +990,18 @@ elTabWidth.addEventListener("input", () => {
 });
 elTabWidth.value = tabWidth;
 
+// User typography is shared by the editors and chat, independently of projects.
+const elFontSize = el("#fontSize");
+elFontSize.value = lsSettings.read("fontSize") ?? elFontSize.defaultValue;
+if (!elFontSize.validity.valid) elFontSize.value = elFontSize.defaultValue;
+const applyFontSize = () => document.documentElement.style.setProperty("--content-font-size", `${elFontSize.value}rem`);
+applyFontSize();
+elFontSize.addEventListener("input", () => {
+    if (!elFontSize.validity.valid) return;
+    applyFontSize();
+    lsSettings.update({ fontSize: elFontSize.valueAsNumber });
+});
+
 // Tabs UI - Single pane toggle
 const elTabs = el("#top .view-tabs");
 elTabs.addEventListener("click", (evt) => {

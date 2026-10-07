@@ -286,12 +286,12 @@
                                 </button>
                                 <button type="button" data-project-action="share-current" title="Publish this project before sharing" disabled>
                                     <i data-lucide="share-2"></i>
-                                    <span>Share</span>
+                                    <span class="desktop-only">Share</span>
                                 </button>
                                 <button id="githubUpdate" type="button" title="Update local project from GitHub Gist" hidden><i data-lucide="cloud-download"></i><span>Pull</span></button>
                                 <button type="button" id="githubPublish" class="button-primary" title="Publish to GitHub Gist">
                                     <i data-lucide="send"></i>
-                                    Push
+                                    <span>Publish</span>
                                 </button>
                                 <button type="button" id="project-delete" class="button-danger" title="Delete project" aria-label="Delete project">
                                     <i data-lucide="trash-2"></i>
@@ -348,6 +348,13 @@
                                     <option>2</option>
                                     <option>4</option>
                                 </select>
+                            </label>
+                            <label>
+                                <span title="Code editor and AI chat text">
+                                    <i data-lucide="type"></i>
+                                    Font size (rem)
+                                </span>
+                                <input id="fontSize" type="number" min="0.625" max="2" step="0.0625" value="0.875" required />
                             </label>
                             <p class="supporting-text">
                                 <i data-lucide="info"></i><br />
