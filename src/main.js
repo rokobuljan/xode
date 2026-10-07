@@ -26,7 +26,7 @@ import { normalizeTabWidth } from "./js/editor/editorIndent.js";
 import { renderIcons } from "./js/ui/icons.js";
 import { isolatePane, isPaneIsolationGesture, isViewPane, paneNameFromModel } from "./js/ui/paneTabs.js";
 import { generatePreviewHTML, isProjectEmpty, PREVIEW_SANDBOX } from "./js/preview/preview.js";
-import { createProjectShareUrl, decodeSharedPanes, SHAREABLE_PANES } from "./js/projects/sharePanes.js";
+import { createProjectShareUrl, decodeSharedPanes, encodeSharedPanes, parseGistReference, SHAREABLE_PANES } from "./js/projects/sharePanes.js";
 
 renderIcons();
 
@@ -616,11 +616,15 @@ const elGithubTokenDelete = el("#githubTokenDelete");
 const elGithubPublish = el("#githubPublish");
 const elGithubLoad = el("#githubLoad");
 const elGithubLoadId = el("#githubLoadId");
+const elPreviewGistReference = el("#preview-gist-reference");
+const elPreviewGistImport = el("#preview-gist-import");
+const elPreviewGistStatus = el("#preview-gist-status");
 const elGithubFetch = el("#githubFetch");
 const elGithubFetchLabel = el("#githubFetchLabel");
 let nextGistPage = 1;
 let hasMoreGists = true;
 let isFetchingGists = false;
+let isLoadingGist = false;
 let isPublishing = false;
 const remoteProjects = reactive({ revision: 0 });
 const remoteGistsById = new Map();
@@ -660,11 +664,47 @@ elGithubTokenDelete.addEventListener("click", () => {
     elGithubToken.dispatchEvent(new Event("input"));
 });
 
-elGithubLoad.addEventListener("click", async () => {
-    const gistId = elGithubLoadId.value.trim().match(/[0-9a-f]{32}$/)?.[0];
-    if (!gistId) return;
-    await gistLoad(gistId);
-    elGithubLoadId.value = "";
+const importGistFromInput = async (input) => {
+    if (isLoadingGist) return;
+    const reference = parseGistReference(input.value);
+    input.setCustomValidity(reference ? "" : "Enter a valid Gist ID, GitHub Gist URL, or Xode share URL.");
+    if (!input.reportValidity()) return;
+    isLoadingGist = true;
+    elGithubLoad.disabled = elPreviewGistImport.disabled = true;
+    elGithubLoadId.readOnly = elPreviewGistReference.readOnly = true;
+    delete elPreviewGistStatus.dataset.type;
+    elPreviewGistStatus.textContent = "Importing Gist…";
+    try {
+        await gistLoad(reference.gistId);
+        if (reference.panes) {
+            Object.assign(currentProjectState.panes, reference.panes);
+            params.set("p", encodeSharedPanes(reference.panes));
+        } else {
+            params.delete("p");
+        }
+        input.value = "";
+        elPreviewGistStatus.textContent = "";
+        closeModals();
+    } catch (error) {
+        elPreviewGistStatus.dataset.type = "error";
+        elPreviewGistStatus.textContent = `Could not import Gist: ${error.message}`;
+        if (input === elGithubLoadId) new Toast({ head: "Could not import Gist", body: error.message, type: "error", time: 0 });
+    } finally {
+        isLoadingGist = false;
+        elGithubLoad.disabled = elPreviewGistImport.disabled = false;
+        elGithubLoadId.readOnly = elPreviewGistReference.readOnly = false;
+    }
+};
+[elGithubLoadId, elPreviewGistReference].forEach((input) =>
+    input.addEventListener("input", () => {
+        input.setCustomValidity("");
+        if (!isLoadingGist) elPreviewGistStatus.textContent = "";
+    }),
+);
+elGithubLoad.addEventListener("click", () => void importGistFromInput(elGithubLoadId));
+el("#preview-gist-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    void importGistFromInput(elPreviewGistReference);
 });
 
 const updateSyncButtons = () => {

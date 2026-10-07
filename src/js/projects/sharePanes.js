@@ -37,3 +37,22 @@ export function createProjectShareUrl(href, gistId, panes) {
     url.searchParams.set("p", encodeSharedPanes(panes));
     return url.toString();
 }
+
+export function parseGistReference(value) {
+    const reference = String(value ?? "").trim();
+    const isGistId = (id) => /^[0-9a-f]{32}$/i.test(id ?? "");
+    if (isGistId(reference)) return { gistId: reference.toLowerCase(), panes: null };
+    try {
+        const url = new URL(reference);
+        if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) return null;
+        if (url.hostname === "gist.github.com") {
+            const segments = url.pathname.split("/").filter(Boolean);
+            const gistId = segments[segments.length === 1 ? 0 : 1];
+            return isGistId(gistId) ? { gistId: gistId.toLowerCase(), panes: null } : null;
+        }
+        const gistId = url.searchParams.get("g");
+        return isGistId(gistId) ? { gistId: gistId.toLowerCase(), panes: decodeSharedPanes(url.searchParams.get("p")) } : null;
+    } catch {
+        return null;
+    }
+}

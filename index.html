@@ -163,7 +163,13 @@
                                 <div class="welcome-actions">
                                     <button id="preview-start" type="button" class="button-primary"><i data-lucide="plus"></i><span>Start creating</span></button>
                                     <button id="preview-ask-ai" type="button" class="button-secondary"><i data-lucide="wand-sparkles"></i><span>Ask AI</span></button>
+                                    <form id="preview-gist-form" class="welcome-gist">
+                                        <label class="sr-only" for="preview-gist-reference">Shared Gist URL or ID</label>
+                                        <input id="preview-gist-reference" type="text" placeholder="Gist URL or ID" aria-describedby="preview-gist-status" autocomplete="off" spellcheck="false" required />
+                                        <button id="preview-gist-import" type="submit" title="Import a shared Gist"><i data-lucide="download"></i><span>Import</span></button>
+                                    </form>
                                 </div>
+                                <p id="preview-gist-status" class="welcome-status" role="status" aria-live="polite"></p>
                                 <div class="welcome-sharing" data-rea-open-inner data-rea-open="settings.isGithubDisabled">
                                     <p>Made something you love? Connect GitHub to publish your projects and share your creations.</p>
                                     <button type="button" class="button-quiet" data-modal="#modal-projects"><i data-lucide="github"></i><span>Connect GitHub</span></button>

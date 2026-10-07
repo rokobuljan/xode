@@ -159,8 +159,8 @@ textarea {
 }
 
 :where(button, input, select, textarea, summary, a, [tabindex]):focus-visible {
-    outline: 2px solid var(--c1);
-    outline-offset: 1px;
+    outline: 1px solid var(--c1);
+    outline-offset: -1px;
 }
 
 a {

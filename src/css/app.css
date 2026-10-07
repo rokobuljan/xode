@@ -202,9 +202,41 @@
         .welcome-actions {
             display: flex;
             flex-wrap: wrap;
+            align-items: stretch;
             justify-content: center;
             gap: 0.5rem;
             margin-top: 1.25rem;
+        }
+
+        .welcome-gist {
+            display: flex;
+            min-width: 0;
+            flex: 1 1 15rem;
+            gap: 0.5rem;
+
+            input {
+                min-width: 0;
+                width: 100%;
+                flex: 1;
+            }
+
+            button {
+                flex: 0 0 auto;
+            }
+        }
+
+        .welcome-status {
+            margin-top: 0.6rem;
+            color: var(--text-muted);
+            font-size: 0.85em;
+
+            &:empty {
+                display: none;
+            }
+
+            &[data-type="error"] {
+                color: var(--ce);
+            }
         }
 
         .welcome-sharing {
