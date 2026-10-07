@@ -298,15 +298,6 @@
                                 </button>
                             </div>
                         </div>
-                        <h2>
-                            <i data-lucide="cloud-download"></i>
-                            <span>Load Gist</span>
-                        </h2>
-                        <label>
-                            <span><i data-lucide="github"></i> Gist ID</span>
-                            <input id="githubLoadId" type="text" placeholder="GitHub Gist ID" />
-                            <button type="button" id="githubLoad" class="button-primary" title="Load Gist"><i data-lucide="download"></i> Load Project</button>
-                        </label>
 
                         <h2>
                             <i data-lucide="github"></i>
@@ -339,8 +330,8 @@
 
                         <h2><i data-lucide="settings"></i> Global Settings</h2>
                         <div class="form-stack">
-                            <label>
-                                <span title="Indent spaces">
+                            <label title="Indent spaces">
+                                <span>
                                     <i data-lucide="list-indent-increase"></i>
                                     Tab width
                                 </span>
@@ -349,15 +340,15 @@
                                     <option>4</option>
                                 </select>
                             </label>
-                            <label>
-                                <span title="Code editor and AI chat text">
+                            <label title="Code editor and AI chat text">
+                                <span>
                                     <i data-lucide="type"></i>
                                     Font size (rem)
                                 </span>
                                 <input id="fontSize" type="number" min="0.625" max="2" step="0.0625" value="0.875" required />
                             </label>
+                            <h2><i data-lucide="info"></i></h2>
                             <p class="supporting-text">
-                                <i data-lucide="info"></i><br />
                                 Format using <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd><br />
                                 <b>Emmet</b> syntax supported in HTML &amp; CSS.<br />
                                 Clear console using <kbd>Ctrl</kbd> + <kbd>L</kbd>
@@ -371,17 +362,27 @@
 
                 <section class="pane project-library">
                     <header class="header">
-                        <h2>
-                            <i data-lucide="folder-search"></i>
-                            Projects
-                        </h2>
-                        <button type="button" id="githubFetch" class="button-primary" title="Fetch XODE projects from your GitHub Gists">
-                            <i data-lucide="cloud-download"></i>
-                            <span id="githubFetchLabel">Pull Gists</span>
-                        </button>
+                        <div class="row">
+                            <h2>
+                                <i data-lucide="folder-search"></i>
+                                Projects
+                            </h2>
+                            <br />
+                            <label class="gist-field">
+                                <i data-lucide="github"></i>
+                                <input id="githubLoadId" type="text" placeholder="Gist URL or ID" title="Import a GitHub Gist by URL or ID" />
+                            </label>
+                            <button type="button" id="githubLoad" class="button-primary" title="Import a GitHub Gist">
+                                <i data-lucide="cloud-download"></i>
+                            </button>
+                            <button type="button" id="githubFetch" title="Import all XODE projects from your GitHub Gists">
+                                <i data-lucide="cloud-download"></i>
+                                <span id="githubFetchLabel">Import all</span>
+                            </button>
+                        </div>
                         <label>
                             <i data-lucide="search"></i>
-                            <input id="projects-search" type="text" placeholder="Search..." />
+                            <input id="projects-search" type="search" placeholder="Search projects…" aria-label="Search projects" />
                         </label>
                     </header>
                     <div class="content">

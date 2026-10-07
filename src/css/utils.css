@@ -24,3 +24,13 @@
     clip-path: inset(50%) !important;
     white-space: nowrap !important;
 }
+
+.row {
+    display: flex;
+    flex-direction: row;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+}
