@@ -178,7 +178,7 @@
             background-size: 200% 100%;
             background-position: 100% 0;
             color: transparent;
-            font-family: -apple-system, system-ui, sans-serif;
+            font-family: var(--font-sans);
             font-weight: 500;
             -webkit-text-fill-color: transparent;
             -webkit-background-clip: text;

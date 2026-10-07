@@ -5,6 +5,8 @@
  */
 
 import DOMPurify from "dompurify";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/fira-code";
 import "./css/index.css";
 import "./js/ui/splitview.js";
 import { closeModals } from "./js/ui/modal.js";

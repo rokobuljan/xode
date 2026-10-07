@@ -42,9 +42,7 @@
     .multi-cursor-layer,
     .gutter {
         background: transparent;
-        font:
-            normal normal var(--font-size)/1.4 "Fira Code",
-            monospace;
+        font: normal normal var(--font-size)/1.4 var(--font-mono);
         font-variant-ligatures: none;
     }
 
