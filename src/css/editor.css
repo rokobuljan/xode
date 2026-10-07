@@ -2,6 +2,12 @@
     background: color-mix(in srgb, var(--c1), transparent 78%);
 }
 
+@property --editor-caret-opacity {
+    syntax: "<number>";
+    inherits: true;
+    initial-value: 1;
+}
+
 .editor {
     --gutter-width: 1;
     --font-size: var(--content-font-size);
@@ -114,12 +120,18 @@
                 width: 1px;
                 height: 1lh;
                 background: var(--text-strong);
+                opacity: var(--editor-caret-opacity);
             }
         }
     }
 
     .canvas:has(.input:focus) .multi-cursor-layer {
         opacity: 1;
+        animation: editor-caret-blink 1s step-end infinite;
+    }
+
+    .canvas:has(.multi-cursor-layer .extra-caret) .input {
+        caret-color: transparent;
     }
 
     .gutter {
@@ -182,6 +194,17 @@
                 width: calc(100% - 5px);
             }
         }
+    }
+}
+
+@keyframes editor-caret-blink {
+    0%,
+    100% {
+        --editor-caret-opacity: 1;
+    }
+
+    50% {
+        --editor-caret-opacity: 0;
     }
 }
 

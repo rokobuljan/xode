@@ -284,11 +284,16 @@ export default class MultiCursor {
         const cursor = () => elNew("span", { className: "extra-caret", textContent: "\u200b" });
         let offset = 0;
         const value = this.area.value;
-        for (const selection of this.selections.slice(1).sort((a, b) => selectionBounds(a).start - selectionBounds(b).start)) {
+        // Include the primary caret so every caret inherits the layer's blink phase.
+        for (const selection of this.selections.slice().sort((a, b) => selectionBounds(a).start - selectionBounds(b).start)) {
             const { start, end } = selectionBounds(selection);
             fragment.append(document.createTextNode(value.slice(offset, start)));
             if (selection.head === start) fragment.append(cursor());
-            if (end > start) fragment.append(elNew("span", { className: "extra-selection", textContent: value.slice(start, end) }));
+            if (end > start) {
+                const selectedText = value.slice(start, end);
+                // The textarea already paints the primary selection.
+                fragment.append(selection === this.selections[0] ? document.createTextNode(selectedText) : elNew("span", { className: "extra-selection", textContent: selectedText }));
+            }
             if (selection.head !== start) fragment.append(cursor());
             offset = end;
         }

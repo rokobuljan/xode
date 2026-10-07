@@ -87,6 +87,31 @@ afterEach(() => {
 });
 
 describe("multi-cursor editor integration", () => {
+    it("renders every caret on one layer without painting the native selection twice", () => {
+        const editor = createEditor("one two three");
+        editor.multiCursor.setSelections([
+            { anchor: 13, head: 8 },
+            { anchor: 0, head: 3 },
+        ]);
+        const nodes = editor.multiCursor.layer.children[0].children;
+        const positions = [];
+        let offset = 0;
+        for (const node of nodes) {
+            if (node.className === "extra-caret") positions.push(offset);
+            else offset += node.textContent.length;
+        }
+        expect(positions).toEqual([3, 8]);
+        expect(nodes.filter((node) => node.className === "extra-selection").map((node) => node.textContent)).toEqual(["one"]);
+        expect(
+            nodes
+                .filter((node) => node.className !== "extra-caret")
+                .map((node) => node.textContent)
+                .join(""),
+        ).toBe(editor.value);
+        editor.multiCursor.clear();
+        expect(editor.multiCursor.layer.children).toEqual([]);
+    });
+
     it("adds adjacent cursors and handles beforeinput as a single edit", () => {
         const editor = createEditor("a\nb\nc");
         editor.elTextarea.focus();
@@ -198,6 +223,7 @@ describe("multi-cursor editor integration", () => {
         const editor = createEditor("a\nb");
         editor.multiCursor.setSelections([caret(1), caret(3)]);
         send(editor.elTextarea, "compositionstart");
+        expect(editor.multiCursor.layer.children).toEqual([]);
         editor.elTextarea.value = "a漢\nb";
         editor.elTextarea.setSelectionRange(2, 2);
         send(editor.elTextarea, "compositionend");
