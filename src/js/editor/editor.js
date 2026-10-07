@@ -1,7 +1,4 @@
-import hljs from "highlight.js/lib/core";
-import html from "highlight.js/lib/languages/xml";
-import css from "highlight.js/lib/languages/css";
-import javascript from "highlight.js/lib/languages/javascript";
+import hljs from "../shared/highlight.js";
 import expand, { extract } from "emmet";
 
 import { el, elNew, LS } from "../shared/utils.js";
@@ -11,10 +8,6 @@ import { formatCode } from "./editorFormat.js";
 import MultiCursor from "./editorMultiCursor.js";
 import Toast from "../ui/toast.js";
 import { renderIcons } from "../ui/icons.js";
-
-hljs.registerLanguage("xml", html);
-hljs.registerLanguage("css", css);
-hljs.registerLanguage("javascript", javascript);
 
 const lsSettings = LS("xode.settings");
 const getTabWidth = () => normalizeTabWidth(lsSettings.read("tabWidth"));

@@ -5,6 +5,7 @@ import "./css/splitview.css";
 import "./css/embed.css";
 import "./js/ui/splitview.js";
 import { isPaneIsolationGesture } from "./js/ui/paneTabs.js";
+import hljs from "./js/shared/highlight.js";
 import { EMBED_SANDBOX, generateEmbedPreview, getEmbedPanes, loadEmbedProject } from "./js/projects/embedProject.js";
 
 const params = new URLSearchParams(location.search);
@@ -45,7 +46,12 @@ try {
     openLink.hidden = false;
     document.querySelector(".embed-brand").href = appUrl.href;
     panes.forEach(({ name }) => {
-        if (["html", "css", "js"].includes(name)) document.querySelector(`#embed-${name}-source code`).textContent = project[name];
+        if (!["html", "css", "js"].includes(name)) return;
+        const code = document.querySelector(`#embed-${name}-source code`);
+        code.textContent = project[name];
+        code.className = `hljs language-${name}`;
+        // Highlight.js escapes source text before adding its own token spans.
+        code.innerHTML = hljs.highlight(code.textContent, { language: name, ignoreIllegals: true }).value;
     });
     const buttons = panes.map(({ name, label }) => {
         const button = document.createElement("button");

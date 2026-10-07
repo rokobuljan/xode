@@ -87,6 +87,10 @@ describe("embed viewer", () => {
         expect(nodes["#embed-preview"].attributes.sandbox).toBe("allow-scripts");
         expect(nodes["#embed-preview"].srcdoc).toContain("console.log('hello')");
         expect(nodes["#embed-html-source code"].textContent).toBe(project.html);
+        expect(nodes["#embed-html-source code"].className).toBe("hljs language-html");
+        expect(nodes["#embed-html-source code"].innerHTML).toContain('class="hljs-tag"');
+        expect(nodes["#embed-html-source code"].innerHTML).toContain("&lt;");
+        expect(nodes["#embed-html-source code"].innerHTML).not.toContain("<img");
         expect(buttons.every((button) => button.attributes["aria-pressed"] === "true")).toBe(true);
         buttons[0].listeners.click({});
         expect(nodes["#embed-pane-html"].dataset.open).toBe("false");
@@ -104,6 +108,10 @@ describe("embed viewer", () => {
         expect(nodes["#embed-preview"].srcdoc).toBe("");
         expect(nodes["#embed-css-source code"].textContent).toBe(project.css);
         expect(nodes["#embed-js-source code"].textContent).toBe(project.js);
+        expect(nodes["#embed-css-source code"].className).toBe("hljs language-css");
+        expect(nodes["#embed-css-source code"].innerHTML).toContain('class="hljs-attribute"');
+        expect(nodes["#embed-js-source code"].className).toBe("hljs language-js");
+        expect(nodes["#embed-js-source code"].innerHTML).toContain('class="hljs-string"');
         expect(nodes["#embed-pane-css"].dataset.open).toBe("true");
         expect(nodes["#embed-pane-js"].dataset.open).toBe("true");
         expect(nodes["#embed-pane-preview"].dataset.open).toBe("false");
