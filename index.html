@@ -130,8 +130,9 @@
                             <i data-lucide="list" data-cmd="InsertUnorderedList" data-cmdref="UL" title="Unordered List"></i>
                             <i data-lucide="list-ordered" data-cmd="InsertOrderedList" data-cmdref="OL" title="Ordered List"></i>
                             <i data-lucide="minus" data-cmd="insertHorizontalRule" title="Insert Horizontal Rule"></i>
-                            <i data-lucide="image" data-cmd="InsertImage" title="Insert Image"></i>
-                            <i data-lucide="link" data-cmd="CreateLink" title="Link"></i>
+                            <button type="button" data-cmd="InsertImage" title="Insert Image" aria-label="Insert image"><i data-lucide="image"></i></button>
+                            <button type="button" data-cmd="CreateLink" title="Link" aria-label="Insert link"><i data-lucide="link"></i></button>
+                            <button type="button" data-cmd="InsertTable" title="Insert Table" aria-label="Insert table"><i data-lucide="table"></i></button>
                         </div>
                         <div class="tool-group">
                             <i data-lucide="align-left" data-cmd="justifyLeft" title="Align Left"></i>
@@ -415,7 +416,7 @@
                 <div class="copy">
                     <p id="project-share-description">Choose the visible panes when someone opens this link</p>
                     <div class="publish-notice" data-share-element="publish-notice" hidden>
-                        <p role="status" aria-live="polite">This link shares the last pushed version. Your local changes aren't included.</p>
+                        <p role="status" aria-live="polite">This link shares the last pushed version. Your local changes aren't included.<br />Push changes before sharing.</p>
                         <button type="button" class="button-primary" data-share-action="publish"><i data-lucide="send"></i><span>Push changes</span></button>
                     </div>
                     <div class="pane-options">

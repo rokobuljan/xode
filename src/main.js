@@ -21,6 +21,7 @@ import { reactive, effect, mount, persist } from "./js/reactive.js";
 import { LS, el, els, elNew, download, formatDateTime, params } from "./js/utils.js";
 import { initProjectStorage, openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from "./js/project.js";
 import { Editor } from "./js/editor.js";
+import RichEditorDialog from "./js/richEditorDialog.js";
 import { normalizeTabWidth } from "./js/editorIndent.js";
 import { renderIcons } from "./js/icons.js";
 import { isolatePane, isPaneIsolationGesture, isViewPane, paneNameFromModel } from "./js/paneTabs.js";
@@ -36,6 +37,12 @@ const lsSettings = LS("xode.settings");
 const tabWidth = normalizeTabWidth(lsSettings.read("tabWidth"));
 const editors = {};
 const elPreview = el("#preview"); // the iframe
+const richEditorDialog = new RichEditorDialog();
+let pendingRichDialog = null;
+elPreview.addEventListener("load", () => {
+    pendingRichDialog = null;
+    richEditorDialog.close();
+});
 elPreview.setAttribute("sandbox", PREVIEW_SANDBOX);
 elPreview.setAttribute("credentialless", "");
 elPreview.setAttribute("referrerpolicy", "no-referrer");
@@ -85,7 +92,7 @@ const projectInit = async (isNew = true, id) => {
 let previewTimeoutId;
 const previewCurrentProject = (pane = "all", isForce = false) => {
     // If richEditor and iframe have focus - do NOT preview changes (prevent infinite editing loop)
-    if (currentProjectState.panes.richEditor && document.activeElement === elPreview) {
+    if (pendingRichDialog || (currentProjectState.panes.richEditor && document.activeElement === elPreview)) {
         return;
     }
 
@@ -113,7 +120,18 @@ const previewCurrentProject = (pane = "all", isForce = false) => {
 addEventListener("message", async (evt) => {
     if (evt.source !== elPreview.contentWindow || !evt.data || typeof evt.data.type !== "string") return;
 
-    if (evt.data.type === "content-changed") {
+    if (evt.data.type === "rich-dialog-open") {
+        if (!currentProjectState.panes.richEditor || pendingRichDialog || !["link", "image", "table"].includes(evt.data.kind) || typeof evt.data.requestId !== "string") return;
+        const requestId = evt.data.requestId;
+        pendingRichDialog = requestId;
+        clearTimeout(previewTimeoutId);
+        const value = await richEditorDialog.show(evt.data.kind, evt.data.values);
+        if (pendingRichDialog !== requestId) return;
+        pendingRichDialog = null;
+        // Focus the preview before syncing the edit, so it does not get rebuilt.
+        elPreview.focus({ preventScroll: true });
+        elPreview.contentWindow.postMessage({ type: "rich-dialog-result", requestId, value }, "*");
+    } else if (evt.data.type === "content-changed") {
         if (!currentProjectState.panes.richEditor || typeof evt.data.html !== "string") return;
         const body = new DOMParser().parseFromString(evt.data.html, "text/html").body;
         body.querySelector("#◆xode-js")?.remove();
@@ -524,6 +542,9 @@ els('[data-project-action="share-current"]').forEach((button) => {
 });
 
 // Editor exec commander for richEditor mode (text editing buttons)
+addEventListener("pointerdown", (evt) => {
+    if (evt.target.closest("[data-cmd]")) evt.preventDefault();
+});
 addEventListener("click", (evt) => {
     const elBtnCmd = evt.target.closest("[data-cmd]");
     if (!elBtnCmd) return;

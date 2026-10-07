@@ -191,8 +191,105 @@ const actions = {
         if (elTarget) elTarget.innerHTML = val;
     },
 };
+
+let pendingRichDialog = null;
+const closestAnchor = (node) => (node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement)?.closest("a");
+const syncRichContent = () => {
+    clearTimeout(debounceTimer);
+    notifyParent({ type: "content-changed", html: document.documentElement.outerHTML });
+};
+const openRichDialog = (kind) => {
+    if (document.designMode !== "on" || pendingRichDialog) return;
+    syncRichContent();
+    const selection = window.getSelection();
+    const range = selection.rangeCount ? selection.getRangeAt(0).cloneRange() : document.createRange();
+    if (!selection.rangeCount) {
+        range.selectNodeContents(document.body);
+        range.collapse(false);
+    }
+    const anchor = closestAnchor(range.startContainer);
+    const existingLink = anchor && anchor === closestAnchor(range.endContainer) ? anchor : null;
+    const requestId = crypto.randomUUID();
+    pendingRichDialog = { requestId, kind, range, existingLink };
+    notifyParent({
+        type: "rich-dialog-open",
+        requestId,
+        kind,
+        values:
+            existingLink && kind === "link"
+                ? {
+                      href: existingLink.getAttribute("href"),
+                      blank: existingLink.target === "_blank",
+                      noopener: existingLink.relList.contains("noopener"),
+                  }
+                : {},
+    });
+};
+const applyRichDialog = ({ requestId, value }) => {
+    if (!pendingRichDialog || requestId !== pendingRichDialog.requestId) return;
+    const { kind, range, existingLink } = pendingRichDialog;
+    pendingRichDialog = null;
+    if (document.designMode !== "on" || !range.startContainer.isConnected || !range.endContainer.isConnected) return;
+    document.body.focus({ preventScroll: true });
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    if (!value) return;
+    document.execCommand("styleWithCSS", false, false);
+    if (kind === "table") {
+        const { rows, columns, header } = value;
+        if (![rows, columns].every((count) => Number.isInteger(count) && count >= 1 && count <= 20)) return;
+        const cellStyle = "padding: 0.5em; background: color-mix(in srgb, currentColor, transparent 94%);";
+        const bodyRows = Array.from({ length: rows - (header ? 1 : 0) }, () => `<tr>${`<td style="${cellStyle}"><br></td>`.repeat(columns)}</tr>`).join("");
+        const heading = header ? `<thead><tr>${Array.from({ length: columns }, (_, index) => `<th scope="col" style="${cellStyle}">Column ${index + 1}</th>`).join("")}</tr></thead>` : "";
+        const table = `<table style="width: 100%; border-spacing: 0.25em;">${heading}<tbody>${bodyRows}</tbody></table><p><br></p>`;
+        document.execCommand("insertHTML", false, table);
+    } else if (kind === "image") {
+        if (typeof value.src !== "string" || !/^(https:\/\/|data:image\/(?:png|jpeg|gif|webp|avif);base64,)/i.test(value.src)) return;
+        const image = document.createElement("img");
+        image.src = value.src;
+        image.alt = typeof value.alt === "string" ? value.alt : "";
+        document.execCommand("insertHTML", false, image.outerHTML);
+    } else {
+        let url;
+        try {
+            url = new URL(value.href);
+        } catch {
+            return;
+        }
+        if (url.protocol !== "https:" || url.username || url.password) return;
+        const setAttributes = (anchor) => {
+            anchor.href = url.href;
+            if (value.blank) anchor.target = "_blank";
+            else anchor.removeAttribute("target");
+            if (value.noopener) anchor.relList.add("noopener");
+            else anchor.relList.remove("noopener");
+            if (!anchor.rel) anchor.removeAttribute("rel");
+        };
+        if (existingLink && range.collapsed) {
+            setAttributes(existingLink);
+        } else if (range.collapsed) {
+            const anchor = document.createElement("a");
+            anchor.textContent = url.href;
+            setAttributes(anchor);
+            document.execCommand("insertHTML", false, anchor.outerHTML);
+        } else {
+            document.execCommand("createLink", false, url.href);
+            const linkedRange = selection.rangeCount ? selection.getRangeAt(0) : range;
+            document.querySelectorAll("a[href]").forEach((anchor) => {
+                if (anchor.href === url.href && linkedRange.intersectsNode(anchor)) setAttributes(anchor);
+            });
+        }
+    }
+    syncRichContent();
+};
 // Messages from parent window
 window.addEventListener("message", (evt) => {
+    if (evt.source !== window.parent || evt.origin !== EDITOR_ORIGIN || !evt.data || typeof evt.data.type !== "string") return;
+    if (evt.data.type === "rich-dialog-result") {
+        applyRichDialog(evt.data);
+        return;
+    }
     // Actions
     if (evt.data.type === "action") {
         const [prop, val] = evt.data.args;
@@ -203,17 +300,17 @@ window.addEventListener("message", (evt) => {
     }
     // execcommand
     else if (evt.data.type === "cmd") {
-        let [cmd, par] = evt.data.args;
-        if (cmd === "InsertImage") par = prompt("Image URL:", "");
-        else if (cmd === "CreateLink") {
-            par = prompt("Link URL:", "http://");
-            if (par === "" || par == "http://") cmd = "Unlink";
+        const [cmd, par] = evt.data.args;
+        const dialogKind = { InsertImage: "image", CreateLink: "link", InsertTable: "table" }[cmd];
+        if (dialogKind) {
+            openRichDialog(dialogKind);
+            return;
         }
         document.execCommand("styleWithCSS", false, false);
         document.execCommand(cmd, false, par);
         if (document.designMode === "on") {
             document.body.focus?.({ preventScroll: true });
         }
-        // notifyParent({ type: "content-changed", html: document.documentElement.outerHTML })
+        if (document.designMode === "on") syncRichContent();
     }
 });
