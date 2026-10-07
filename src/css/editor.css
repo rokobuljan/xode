@@ -21,6 +21,7 @@
 
     .selection-status {
         position: absolute;
+        z-index: 3;
         right: 0.5rem;
         bottom: 0.4rem;
         color: color-mix(in srgb, var(--fg), var(--bg) 20%);
@@ -31,15 +32,18 @@
 
     .input,
     .highlight code,
+    .multi-cursor-layer,
     .gutter {
         background: transparent;
         font:
             normal normal 13px/1.4 "Fira Code",
             monospace;
+        font-variant-ligatures: none;
     }
 
     .input,
-    .highlight code {
+    .highlight code,
+    .multi-cursor-layer {
         overflow: hidden;
         padding: 0 !important;
         padding-right: 1rem !important;
@@ -81,6 +85,40 @@
         min-width: 0;
         margin: 0;
         user-select: none;
+    }
+
+    .multi-cursor-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+        margin: 0;
+        color: transparent;
+        pointer-events: none;
+        user-select: none;
+        opacity: 0;
+
+        .extra-selection {
+            background: color-mix(in srgb, var(--c1), transparent 80%);
+        }
+
+        .extra-caret {
+            position: relative;
+
+            &::after {
+                content: "";
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 1px;
+                height: 1lh;
+                background: var(--text-strong);
+            }
+        }
+    }
+
+    .canvas:has(.input:focus) .multi-cursor-layer {
+        opacity: 1;
     }
 
     .gutter {

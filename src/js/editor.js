@@ -9,6 +9,7 @@ import prettierPluginPostcss from "prettier/plugins/postcss";
 import { el, elNew, LS } from "./utils.js";
 import { extractColors } from "./colorExtract.js";
 import { getAutoIndentEdit, normalizeTabWidth } from "./editorIndent.js";
+import MultiCursor from "./editorMultiCursor.js";
 import Toast from "./toast.js";
 import { renderIcons } from "./icons.js";
 
@@ -87,7 +88,7 @@ const formatCode = async (code, language) => {
  * Owning the stack ourselves means both "user typed in the textarea" and
  * "iframe pushed new HTML" go through the exact same, reliable path.
  */
-class HistoryStack {
+export class HistoryStack {
     constructor(value, caretStart = value.length, caretEnd = value.length) {
         this.stack = [{ value, caretStart, caretEnd }];
         this.index = 0;
@@ -101,10 +102,10 @@ class HistoryStack {
     cutRedoBranch() {
         this.stack.length = this.index + 1;
     }
-    push(value, caretStart, caretEnd) {
+    push(value, caretStart, caretEnd, selections = []) {
         if (this.current.value === value) return;
         this.cutRedoBranch();
-        this.stack.push({ value, caretStart, caretEnd });
+        this.stack.push({ value, caretStart, caretEnd, selections: selections.map((selection) => ({ ...selection })) });
         this.index++;
         if (this.stack.length > this.maxSize) {
             this.stack.shift();
@@ -153,6 +154,7 @@ export class Editor {
 
         this.elTextarea = el(".input", this.elParent);
         this.elCode = el(".highlight code", this.elParent);
+        this.multiCursor = new MultiCursor(this, getTabWidth);
 
         // Init value (already seeded into the history stack above, so skip re-pushing it)
         this.setValue(this.value, { history: false });
@@ -160,6 +162,7 @@ export class Editor {
 
         // Events
         this.elTextarea.addEventListener("keydown", async (evt) => {
+            if (evt.defaultPrevented || evt.isComposing || this.multiCursor.composition) return;
             if (evt.key === "Tab") {
                 evt.preventDefault();
                 // Tab = Emmet expand
@@ -191,9 +194,10 @@ export class Editor {
         // Any normal typing: re-highlight, (debounced) record a history snapshot,
         // and tell the outside world (e.g. the iframe sync code) that the value changed.
         this.elTextarea.addEventListener("input", (evt) => {
+            if (this.multiCursor.consumedInput === evt) return;
             this.value = this.elTextarea.value;
             this.highlight();
-            if (evt.isTrusted) {
+            if (evt.isTrusted && !this.multiCursor.composition) {
                 this.queueHistory();
                 this.notifyChange("user");
             }
@@ -272,6 +276,11 @@ export class Editor {
     // inconsistent across browsers for plain <textarea> elements). Groups
     // with adjacent typing via the same debounce as normal input.
     insertAtCaret(text, caretOffset = text.length) {
+        this.captureHistorySelection();
+        if (this.multiCursor.multiple) {
+            this.multiCursor.insertText(text, caretOffset);
+            return;
+        }
         const ta = this.elTextarea;
         const start = ta.selectionStart;
         const end = ta.selectionEnd;
@@ -301,6 +310,10 @@ export class Editor {
      */
     setValue(newValue, { history = true, origin = "user" } = {}) {
         const shouldDispatch = this.elTextarea.value !== newValue;
+        if (shouldDispatch) {
+            this.flushHistory();
+            this.multiCursor.reset();
+        }
         this.elTextarea.value = newValue;
         this.value = newValue;
         this.highlight();
@@ -314,7 +327,7 @@ export class Editor {
             this.queueHistory();
         } else {
             this.flushHistory(); // cancel any pending debounce, it's superseded
-            this.history.push(newValue, newValue.length, newValue.length);
+            this.history.push(newValue, newValue.length, newValue.length, this.multiCursor.getSelections());
         }
     }
 
@@ -325,19 +338,29 @@ export class Editor {
         this.history.cutRedoBranch(); // any typing after an undo kills the old redo branch immediately
         clearTimeout(this.historyTimer);
         this.historyTimer = setTimeout(() => {
-            this.history.push(this.elTextarea.value, this.elTextarea.selectionStart, this.elTextarea.selectionEnd);
+            this.history.push(this.elTextarea.value, this.elTextarea.selectionStart, this.elTextarea.selectionEnd, this.multiCursor.getSelections());
+            this.historyTimer = null;
         }, this.historyDebounceMs);
     }
     flushHistory() {
         if (!this.historyTimer) return;
         clearTimeout(this.historyTimer);
         this.historyTimer = null;
-        this.history.push(this.elTextarea.value, this.elTextarea.selectionStart, this.elTextarea.selectionEnd);
+        this.history.push(this.elTextarea.value, this.elTextarea.selectionStart, this.elTextarea.selectionEnd, this.multiCursor.getSelections());
+    }
+    captureHistorySelection() {
+        if (this.history.current.value !== this.elTextarea.value) return;
+        Object.assign(this.history.current, {
+            caretStart: this.elTextarea.selectionStart,
+            caretEnd: this.elTextarea.selectionEnd,
+            selections: this.multiCursor.getSelections(),
+        });
     }
     resetHistory(value = this.elTextarea.value) {
         clearTimeout(this.historyTimer);
         this.historyTimer = null;
         this.value = value;
+        this.multiCursor.reset();
         this.history = new HistoryStack(value, value.length, value.length);
     }
     undo() {
@@ -346,7 +369,7 @@ export class Editor {
         clearTimeout(this.historyTimer);
         this.historyTimer = null;
         if (this.elTextarea.value !== this.history.current.value) {
-            this.history.push(this.elTextarea.value, this.elTextarea.selectionStart, this.elTextarea.selectionEnd);
+            this.history.push(this.elTextarea.value, this.elTextarea.selectionStart, this.elTextarea.selectionEnd, this.multiCursor.getSelections());
         }
         const entry = this.history.undo();
         if (!entry) return;
@@ -360,9 +383,8 @@ export class Editor {
     applyHistoryEntry(entry) {
         this.elTextarea.value = entry.value;
         this.value = entry.value;
-        this.highlight();
         this.elTextarea.focus();
-        this.elTextarea.setSelectionRange(entry.caretStart, entry.caretEnd);
+        this.multiCursor.setSelections(entry.selections?.length ? entry.selections : [{ anchor: entry.caretStart, head: entry.caretEnd }], false);
         this.elTextarea.dispatchEvent(new Event("input", { bubbles: true }));
         this.notifyChange("undo"); // covers both undo() and redo() callers
     }
@@ -385,6 +407,7 @@ export class Editor {
     // Setup auto-indent on Enter key
     setupAutoIndent() {
         this.elTextarea.addEventListener("keydown", (e) => {
+            if (e.defaultPrevented || e.isComposing || this.multiCursor.composition) return;
             if (e.key === "Enter") {
                 e.preventDefault();
 
@@ -399,6 +422,7 @@ export class Editor {
             }
             // Smart backspace: remove full indent level if on whitespace-only line
             else if (e.key === "Backspace") {
+                this.captureHistorySelection();
                 const ta = this.elTextarea;
                 const start = ta.selectionStart;
                 const value = ta.value;
@@ -432,6 +456,12 @@ export class Editor {
     }
 
     selectionCounter() {
+        if (this.multiCursor?.multiple) {
+            const selections = this.multiCursor.getSelections();
+            const characters = selections.reduce((count, { anchor, head }) => count + Math.abs(head - anchor), 0);
+            this.elSelectionStat.textContent = `${selections.length} cursors${characters ? ` · ${characters} characters` : ""}`;
+            return;
+        }
         const start = this.elTextarea.selectionStart;
         const end = this.elTextarea.selectionEnd;
         const selectedText = this.elTextarea.value.substring(start, end);
@@ -442,6 +472,7 @@ export class Editor {
         if (hasCount) renderIcons(this.elSelectionStat);
     }
     emmetExpand() {
+        this.captureHistorySelection();
         const source = this.elTextarea.value;
         const caretPos = this.elTextarea.selectionStart;
         const type = { html: "markup", css: "stylesheet" }[this.syntax];
@@ -475,6 +506,7 @@ export class Editor {
         delete this.elCode.dataset.highlighted;
         this.updateLineNumbers();
         hljs.highlightElement(this.elCode);
+        this.multiCursor?.render();
     }
     updateLineNumbers() {
         if (!this.elTextarea || !this.elLines) return;
@@ -501,6 +533,10 @@ export class Editor {
         }
     }
     updateHighlights() {
+        if (this.multiCursor?.multiple) {
+            CSS.highlights.delete("word-highlight");
+            return;
+        }
         const text = this.elTextarea.value; // must match code.textContent exactly
         const start = this.elTextarea.selectionStart;
         const end = this.elTextarea.selectionEnd;

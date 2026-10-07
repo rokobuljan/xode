@@ -4,7 +4,7 @@ export function normalizeTabWidth(value) {
 }
 
 export function getAutoIndentEdit(value, selectionStart, selectionEnd, tabWidth) {
-    const lineStart = value.lastIndexOf("\n", selectionStart - 1) + 1;
+    const lineStart = selectionStart > 0 ? value.lastIndexOf("\n", selectionStart - 1) + 1 : 0;
     const currentLine = value.substring(lineStart, selectionStart);
     const indent = currentLine.match(/^\s*/)[0] || "";
     const previousChar = selectionStart > 0 ? value[selectionStart - 1] : "";
