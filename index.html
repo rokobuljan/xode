@@ -103,10 +103,7 @@
                     <div class="splitter"></div>
                     <div class="splitview" data-view="console" data-rea-open="project.panes.console">
                         <div class="console" tabindex="0"></div>
-                        <button class="console-clear" type="button" title="Clear Console">
-                            Clear
-                            <kbd>Ctrl</kbd>+<kbd>K</kbd>
-                        </button>
+                        <button class="console-clear" type="button" title="Clear [Crtl + L]"><i data-lucide="x"></i></button>
                     </div>
                 </div>
                 <div class="splitter"></div>
@@ -232,7 +229,7 @@
                                 </div>
                             </div>
                         </details>
-                        <button type="button" data-chat-element="new-chat" title="Start a new chat"><i data-lucide="message-circle-plus"></i><span>New chat</span></button>
+                        <button type="button" data-chat-element="new-chat" title="Start a new chat"><i data-lucide="message-circle-plus"></i><span>New</span></button>
                         <button type="button" class="stop" data-chat-element="stop" title="Stop generating" hidden><i data-lucide="square"></i><span>Stop</span></button>
                         <button type="button" class="send button-primary" data-chat-element="send" title="Send message" aria-label="Send message"><i data-lucide="arrow-up"></i></button>
                     </div>
@@ -350,7 +347,8 @@
                             <p class="supporting-text">
                                 <i data-lucide="info"></i><br />
                                 Format using <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd><br />
-                                <b>Emmet</b> syntax supported in HTML &amp; CSS.
+                                <b>Emmet</b> syntax supported in HTML &amp; CSS.<br />
+                                Clear console using <kbd>Ctrl</kbd> + <kbd>L</kbd>
                             </p>
                         </div>
                     </div>

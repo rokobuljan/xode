@@ -20,7 +20,7 @@ const paneConsole = {
         this.elBtnClear = el(`[data-view="console"] .console-clear`);
         this.elBtnClear.addEventListener("click", () => this.clear());
         this.el.onkeydown = (evt) => {
-            if ((evt.ctrlKey || evt.metaKey) && evt.key === "k") {
+            if ((evt.ctrlKey || evt.metaKey) && evt.key === "l") {
                 evt.preventDefault();
                 this.clear();
             }
