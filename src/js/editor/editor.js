@@ -1,17 +1,20 @@
-import hljs from "highlight.js";
+import hljs from "highlight.js/lib/core";
+import html from "highlight.js/lib/languages/xml";
+import css from "highlight.js/lib/languages/css";
+import javascript from "highlight.js/lib/languages/javascript";
 import expand, { extract } from "emmet";
-import * as prettier from "prettier/standalone";
-import prettierPluginBabel from "prettier/plugins/babel";
-import prettierPluginEstree from "prettier/plugins/estree";
-import prettierPluginHtml from "prettier/plugins/html";
-import prettierPluginPostcss from "prettier/plugins/postcss";
 
 import { el, elNew, LS } from "../shared/utils.js";
 import { extractColors } from "./colorExtract.js";
 import { getAutoIndentEdit, normalizeTabWidth } from "./editorIndent.js";
+import { formatCode } from "./editorFormat.js";
 import MultiCursor from "./editorMultiCursor.js";
 import Toast from "../ui/toast.js";
 import { renderIcons } from "../ui/icons.js";
+
+hljs.registerLanguage("xml", html);
+hljs.registerLanguage("css", css);
+hljs.registerLanguage("javascript", javascript);
 
 const lsSettings = LS("xode.settings");
 const getTabWidth = () => normalizeTabWidth(lsSettings.read("tabWidth"));
@@ -54,29 +57,6 @@ function scrollToCaret(evt) {
     area.blur();
     area.focus();
 }
-
-const formatCode = async (code, language) => {
-    const parserMap = {
-        js: "babel",
-        html: "html",
-        css: "css",
-    };
-    const pluginMap = {
-        babel: [prettierPluginBabel, prettierPluginEstree],
-        html: [prettierPluginHtml],
-        css: [prettierPluginPostcss],
-    };
-    const parser = parserMap[language];
-    return await prettier.format(code, {
-        parser,
-        plugins: pluginMap[parser],
-        semi: true,
-        singleQuote: true,
-        tabWidth: getTabWidth(),
-        htmlWhitespaceSensitivity: "ignore",
-        bracketSameLine: true,
-    });
-};
 
 /**
  * A self-contained undo/redo stack, fully decoupled from the browser's
@@ -391,7 +371,7 @@ export class Editor {
 
     async format() {
         try {
-            const formatted = await formatCode(this.elTextarea.value, this.syntax);
+            const formatted = await formatCode(this.elTextarea.value, this.syntax, getTabWidth());
             this.setValue(formatted); // immediate history snapshot, it's a deliberate action
             return formatted;
         } catch (err) {

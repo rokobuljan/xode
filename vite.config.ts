@@ -7,6 +7,16 @@ const frameProtectionHeaders = {
 
 export default defineConfig({
     base: "./",
+    build: {
+        rolldownOptions: {
+            output: {
+                codeSplitting: {
+                    // Cache Emmet separately while keeping Tab expansion immediately available.
+                    groups: [{ name: "emmet", test: /node_modules[\\/]emmet[\\/]/ }],
+                },
+            },
+        },
+    },
     server: { headers: frameProtectionHeaders },
     preview: { headers: frameProtectionHeaders },
     staged: {
