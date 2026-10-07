@@ -1,4 +1,4 @@
-import { countLines } from "./utils.js";
+import { countLines } from "../shared/utils.js";
 
 export const PREVIEW_SANDBOX = "allow-modals allow-forms allow-pointer-lock allow-popups allow-scripts";
 

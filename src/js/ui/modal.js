@@ -1,4 +1,4 @@
-import { el, els } from "./utils.js";
+import { el, els } from "../shared/utils.js";
 
 export function closeModals() {
     els(".modal.is-open").forEach((modal) => modal.classList.remove("is-open"));

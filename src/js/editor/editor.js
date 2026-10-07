@@ -6,12 +6,12 @@ import prettierPluginEstree from "prettier/plugins/estree";
 import prettierPluginHtml from "prettier/plugins/html";
 import prettierPluginPostcss from "prettier/plugins/postcss";
 
-import { el, elNew, LS } from "./utils.js";
+import { el, elNew, LS } from "../shared/utils.js";
 import { extractColors } from "./colorExtract.js";
 import { getAutoIndentEdit, normalizeTabWidth } from "./editorIndent.js";
 import MultiCursor from "./editorMultiCursor.js";
-import Toast from "./toast.js";
-import { renderIcons } from "./icons.js";
+import Toast from "../ui/toast.js";
+import { renderIcons } from "../ui/icons.js";
 
 const lsSettings = LS("xode.settings");
 const getTabWidth = () => normalizeTabWidth(lsSettings.read("tabWidth"));

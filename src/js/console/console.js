@@ -1,5 +1,5 @@
-import { bus } from "./bus.js";
-import { el, elNew } from "./utils.js";
+import { bus } from "../shared/bus.js";
+import { el, elNew } from "../shared/utils.js";
 
 const paneConsole = {
     originalConsole: {

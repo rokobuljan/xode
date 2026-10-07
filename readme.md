@@ -2,6 +2,20 @@
 
 Simple fiddling code editor for the web
 
+## Source layout
+
+`src/main.js` wires the app together. JavaScript modules in `src/js` are grouped by responsibility:
+
+- `editor/` — code editing, selections, color tools, and rich text dialogs.
+- `chat/` — AI chat, model handling, response parsing, and conversation storage.
+- `projects/` — project storage, GitHub Gists, synchronization, and sharing.
+- `preview/` — preview document generation and sandbox settings.
+- `console/` — console output and developer console warning.
+- `ui/` — reusable dialogs, icons, pane controls, and notifications.
+- `shared/` — utilities, event bus, and reactive state.
+
+Keep tests beside the modules they exercise. Put feature-specific code in its feature folder; use `ui/` and `shared/` for code reused across features. Dialog markup lives in `index.html`, with styles in `src/css`.
+
 ## Multiple cursors
 
 Edit multiple locations within the active HTML, CSS, or JS pane:

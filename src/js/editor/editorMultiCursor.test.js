@@ -3,7 +3,7 @@
 import { Editor, HistoryStack } from "./editor.js";
 import MultiCursor from "./editorMultiCursor.js";
 
-vi.mock("./toast.js", () => ({ default: class {} }));
+vi.mock("../ui/toast.js", () => ({ default: class {} }));
 
 class TestNode extends EventTarget {
     constructor() {

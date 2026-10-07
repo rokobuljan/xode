@@ -1,4 +1,4 @@
-import { LS } from "./utils.js";
+import { LS } from "../shared/utils.js";
 const ls = LS("xode.settings");
 
 /**

@@ -1,4 +1,4 @@
-import { elNew } from "./utils.js";
+import { elNew } from "../shared/utils.js";
 import { applySelectionEdits, characterBoundary, editSelections, indentSelections, lineBounds, normalizeSelections, replayNativeEdit, selectOccurrence, selectionBounds, verticalSelection, wordBoundary } from "./editorSelections.js";
 
 let activeEditor = null;

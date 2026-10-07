@@ -6,27 +6,27 @@
 
 import DOMPurify from "dompurify";
 import "./css/index.css";
-import "./js/splitview.js";
-import { closeModals } from "./js/modal.js";
-import paneConsole from "./js/console.js";
-import { init as initChat } from "./js/chat.js";
-import Toast from "./js/toast.js";
-import "./js/consoleWarning.js";
-import gist, { setToken, getToken, hasToken, clearToken, GistApiError, GIST_PAGE_SIZE, XODE_MANIFEST_FILENAME, createXodeManifestFile, hasXodeManifest, readXodeManifest } from "./js/githubGist.js";
-import { projectContent, hasRemoteChanges, hasPushChanges } from "./js/projectSync.js";
-import { bus } from "./js/bus.js";
+import "./js/ui/splitview.js";
+import { closeModals } from "./js/ui/modal.js";
+import paneConsole from "./js/console/console.js";
+import { init as initChat } from "./js/chat/chat.js";
+import Toast from "./js/ui/toast.js";
+import "./js/console/consoleWarning.js";
+import gist, { setToken, getToken, hasToken, clearToken, GistApiError, GIST_PAGE_SIZE, XODE_MANIFEST_FILENAME, createXodeManifestFile, hasXodeManifest, readXodeManifest } from "./js/projects/githubGist.js";
+import { projectContent, hasRemoteChanges, hasPushChanges } from "./js/projects/projectSync.js";
+import { bus } from "./js/shared/bus.js";
 
-import { reactive, effect, mount, persist } from "./js/reactive.js";
+import { reactive, effect, mount, persist } from "./js/shared/reactive.js";
 
-import { LS, el, els, elNew, download, formatDateTime, params } from "./js/utils.js";
-import { initProjectStorage, openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from "./js/project.js";
-import { Editor } from "./js/editor.js";
-import RichEditorDialog from "./js/richEditorDialog.js";
-import { normalizeTabWidth } from "./js/editorIndent.js";
-import { renderIcons } from "./js/icons.js";
-import { isolatePane, isPaneIsolationGesture, isViewPane, paneNameFromModel } from "./js/paneTabs.js";
-import { generatePreviewHTML, PREVIEW_SANDBOX } from "./js/preview.js";
-import { createProjectShareUrl, decodeSharedPanes, SHAREABLE_PANES } from "./js/sharePanes.js";
+import { LS, el, els, elNew, download, formatDateTime, params } from "./js/shared/utils.js";
+import { initProjectStorage, openProject, listProjects, saveProject, createProject, deleteProject, setLastProjectId, loadProject } from "./js/projects/project.js";
+import { Editor } from "./js/editor/editor.js";
+import RichEditorDialog from "./js/editor/richEditorDialog.js";
+import { normalizeTabWidth } from "./js/editor/editorIndent.js";
+import { renderIcons } from "./js/ui/icons.js";
+import { isolatePane, isPaneIsolationGesture, isViewPane, paneNameFromModel } from "./js/ui/paneTabs.js";
+import { generatePreviewHTML, PREVIEW_SANDBOX } from "./js/preview/preview.js";
+import { createProjectShareUrl, decodeSharedPanes, SHAREABLE_PANES } from "./js/projects/sharePanes.js";
 
 renderIcons();
 

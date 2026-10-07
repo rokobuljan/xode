@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 
-const injectScript = readFileSync(new URL("../../public/inject.js", import.meta.url), "utf8");
+const injectScript = readFileSync(new URL("../../../public/inject.js", import.meta.url), "utf8");
 
 function bridge() {
     const events = {};

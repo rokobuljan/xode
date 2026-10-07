@@ -1,10 +1,10 @@
 import DOMPurify from "dompurify";
 import { diffLines } from "diff";
 import { marked } from "marked";
-import { bus } from "./bus.js";
+import { bus } from "../shared/bus.js";
 import { mapLanguageToPane, parseAIResponse, shouldShowJumpLatest, sniffPane, splitMarkdownSegments, summarizeChanges } from "./chatCore.js";
 import { isChatModel, normalizeModelList } from "./chatModels.js";
-import { renderIcons } from "./icons.js";
+import { renderIcons } from "../ui/icons.js";
 import {
     clearApiKey,
     clearConversation,
@@ -25,7 +25,7 @@ import {
     setModelCache,
     updateChatSettings,
 } from "./chatStorage.js";
-import { el, elNew } from "./utils.js";
+import { el, elNew } from "../shared/utils.js";
 
 const PROVIDERS = {
     gemini: { label: "Google Gemini", kind: "gemini", keyPlaceholder: "Enter a Gemini API key", keyHelp: "Create a key at aistudio.google.com/app/api-keys." },

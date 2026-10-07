@@ -6,7 +6,7 @@
  */
 
 import { openDB } from "idb";
-import { generateUUID } from "./utils.js";
+import { generateUUID } from "../shared/utils.js";
 
 const APP_PREFIX = "xode";
 const DB_NAME = APP_PREFIX;

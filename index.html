@@ -439,6 +439,82 @@
             </form>
         </dialog>
 
+        <dialog class="confirm-dialog rich-editor-dialog" id="rich-link-dialog" aria-labelledby="rich-link-title" aria-describedby="rich-link-description">
+            <form method="dialog">
+                <button class="close" type="button" value="cancel" aria-label="Close link dialog"><i data-lucide="x"></i></button>
+                <header>
+                    <i data-lucide="link"></i>
+                    <h2 id="rich-link-title">Insert link</h2>
+                </header>
+                <p id="rich-link-description" class="supporting-text">Link the selected text to an HTTPS address.</p>
+                <div class="fields">
+                    <label class="field">HTTPS URL<input name="href" type="url" placeholder="https://example.com" required autofocus /></label>
+                    <label class="check-option"><input name="blank" type="checkbox" checked /><span>Open in a new tab (_blank)</span></label>
+                    <label class="check-option"><input name="noopener" type="checkbox" checked /><span>Prevent access to this window (noopener)</span></label>
+                </div>
+                <p class="status" role="alert" aria-live="polite"></p>
+                <footer class="actions">
+                    <button type="button" value="cancel"><i data-lucide="x"></i><span>Cancel</span></button>
+                    <button type="submit" value="submit" class="button-primary"><i data-lucide="check"></i><span>Insert</span></button>
+                </footer>
+            </form>
+        </dialog>
+
+        <dialog class="confirm-dialog rich-editor-dialog" id="rich-image-dialog" aria-labelledby="rich-image-title" aria-describedby="rich-image-description">
+            <form method="dialog">
+                <button class="close" type="button" value="cancel" aria-label="Close image dialog"><i data-lucide="x"></i></button>
+                <header>
+                    <i data-lucide="image"></i>
+                    <h2 id="rich-image-title">Insert image</h2>
+                </header>
+                <p id="rich-image-description" class="supporting-text">Use an image URL or upload an image up to 150 KB.</p>
+                <div class="fields">
+                    <div class="field">
+                        <label for="rich-image-url">Image URL or local file</label>
+                        <div class="image-source">
+                            <input id="rich-image-url" name="src" type="url" placeholder="https://example.com/image.png" aria-describedby="rich-image-upload-note rich-image-selection" required autofocus />
+                            <button type="button" data-image-browse><i data-lucide="folder-search"></i><span>Browse…</span></button>
+                        </div>
+                        <input name="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/avif" aria-label="Choose a local image" hidden />
+                        <div id="rich-image-selection" class="image-selection" aria-live="polite" hidden>
+                            <span data-image-filename></span>
+                            <button type="button" class="button-quiet" data-image-clear aria-label="Remove selected image"><i data-lucide="x"></i><span>Remove</span></button>
+                        </div>
+                        <small id="rich-image-upload-note">PNG, JPEG, GIF, WebP, or AVIF · up to 150 KB.</small>
+                    </div>
+                    <label class="field">Alternative text<input name="alt" type="text" placeholder="Describe the image" /></label>
+                </div>
+                <p class="status" role="alert" aria-live="polite"></p>
+                <footer class="actions">
+                    <button type="button" value="cancel"><i data-lucide="x"></i><span>Cancel</span></button>
+                    <button type="submit" value="submit" class="button-primary"><i data-lucide="check"></i><span>Insert</span></button>
+                </footer>
+            </form>
+        </dialog>
+
+        <dialog class="confirm-dialog rich-editor-dialog" id="rich-table-dialog" aria-labelledby="rich-table-title" aria-describedby="rich-table-description">
+            <form method="dialog">
+                <button class="close" type="button" value="cancel" aria-label="Close table dialog"><i data-lucide="x"></i></button>
+                <header>
+                    <i data-lucide="table"></i>
+                    <h2 id="rich-table-title">Insert table</h2>
+                </header>
+                <p id="rich-table-description" class="supporting-text">Choose between 1 and 20 rows and columns.</p>
+                <div class="fields">
+                    <div class="table-dimensions">
+                        <label class="field">Rows<input name="rows" type="number" min="1" max="20" step="1" value="3" required autofocus /></label>
+                        <label class="field">Columns<input name="columns" type="number" min="1" max="20" step="1" value="3" required /></label>
+                    </div>
+                    <label class="check-option"><input name="header" type="checkbox" checked /><span>First row is a header</span></label>
+                </div>
+                <p class="status" role="alert" aria-live="polite"></p>
+                <footer class="actions">
+                    <button type="button" value="cancel"><i data-lucide="x"></i><span>Cancel</span></button>
+                    <button type="submit" value="submit" class="button-primary"><i data-lucide="check"></i><span>Insert</span></button>
+                </footer>
+            </form>
+        </dialog>
+
         <script type="module" src="/src/main.js"></script>
     </body>
 </html>
