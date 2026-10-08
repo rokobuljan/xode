@@ -55,6 +55,10 @@
             width: 2.5rem;
         }
     }
+
+    button {
+        background: transparent;
+    }
 }
 
 .view-tabs {
