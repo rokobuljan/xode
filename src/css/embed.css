@@ -2,58 +2,42 @@
 @import "highlight.js/styles/atom-one-light.css" (prefers-color-scheme: light);
 
 .embed {
+    --content-font-size: 0.8rem;
+
     .embed-bar {
         display: flex;
         align-items: center;
-        flex: 0 0 auto;
-        gap: 0.75rem;
-        padding: 0.5rem;
         background: var(--surface-1);
 
         .embed-brand {
-            display: flex;
-            flex: 0 0 auto;
-            color: var(--text-strong);
+            padding: 0.5rem;
+            color: inherit;
 
             svg {
-                width: 3.8rem;
-                height: 1rem;
+                display: block;
+                height: 1em;
             }
         }
 
         nav {
-            display: flex;
-            flex: 1;
-            flex-wrap: wrap;
-            gap: 0.25rem;
+            display: inline-flex;
+            margin: 0 auto;
         }
 
         button {
             background: transparent;
             color: var(--text-muted);
+            flex: 1;
+            padding: 0.5rem 0.7rem;
+
+            &:not([aria-pressed="true"]) {
+                &:hover {
+                    color: var(--c1);
+                }
+            }
 
             &[aria-pressed="true"] {
-                background: var(--accent-soft);
-                color: var(--c1);
-            }
-        }
-
-        #embed-open {
-            flex: 0 0 auto;
-            padding: 0.4rem;
-            font-size: 0.75rem;
-        }
-
-        @media (width < 480px) {
-            flex-wrap: wrap;
-
-            nav {
-                order: 1;
-                flex-basis: 100%;
-            }
-
-            #embed-open {
-                margin-left: auto;
+                color: var(--text-strong);
             }
         }
     }
@@ -69,8 +53,12 @@
         }
 
         > .splitter,
-        .embed-code-panes > .splitter {
-            background: transparent;
+        .splitview > .splitter {
+            background: var(--surface-2);
+
+            &:hover {
+                background: var(--c1);
+            }
         }
 
         iframe,
@@ -94,7 +82,7 @@
             padding: 1rem;
             background: var(--surface-inset);
             color: var(--text);
-            font: var(--content-font-size)/1.6 var(--font-mono);
+            font: var(--content-font-size) var(--font-mono);
             tab-size: 4;
         }
 
@@ -113,6 +101,7 @@
             [data-level="warn"] {
                 color: var(--warning);
             }
+
             [data-level="error"] {
                 color: var(--ce);
             }

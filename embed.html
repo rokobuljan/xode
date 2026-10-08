@@ -7,9 +7,10 @@
         <title>Xode embed</title>
         <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     </head>
+
     <body class="embed">
         <header class="embed-bar">
-            <a class="embed-brand" href="./" target="_blank" rel="noopener noreferrer" aria-label="Xode app"
+            <a id="embed-open" class="embed-brand" href="./" target="_blank" rel="noopener noreferrer" title="Edit project in Xode app"
                 ><svg aria-hidden="true" viewBox="0 0 282 72">
                     <path
                         fill="currentColor"
@@ -19,7 +20,6 @@
                     <path fill="#00bbff" d="M52,3L28,36,52,69H68L44,36,68,3H52Z" /></svg
             ></a>
             <nav aria-label="Project views"></nav>
-            <a id="embed-open" target="_blank" rel="noopener noreferrer" hidden>Open in Xode ↗</a>
         </header>
         <main class="embed-content splitview is-vertical">
             <p id="embed-status" role="status" aria-live="polite">Loading project…</p>
@@ -39,11 +39,11 @@
                 <section id="embed-pane-console" class="splitview embed-pane" data-open="false" aria-label="Console pane">
                     <div id="embed-console" role="log" aria-label="Console output" tabindex="0"></div>
                 </section>
+                <div class="splitter"></div>
+                <section id="embed-pane-preview" class="splitview embed-pane" data-open="false" aria-label="Preview pane">
+                    <iframe id="embed-preview" title="Project preview" sandbox="allow-scripts" credentialless referrerpolicy="no-referrer" allow="camera 'none'; microphone 'none'; geolocation 'none'"></iframe>
+                </section>
             </div>
-            <div class="splitter"></div>
-            <section id="embed-pane-preview" class="splitview embed-pane" data-open="false" aria-label="Preview pane">
-                <iframe id="embed-preview" title="Project preview" sandbox="allow-scripts" credentialless referrerpolicy="no-referrer" allow="camera 'none'; microphone 'none'; geolocation 'none'"></iframe>
-            </section>
         </main>
         <script type="module" src="/src/embed.js"></script>
     </body>

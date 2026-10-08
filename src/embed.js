@@ -7,16 +7,16 @@ import "./js/ui/splitview.js";
 import { isPaneIsolationGesture } from "./js/ui/paneTabs.js";
 import hljs from "./js/shared/highlight.js";
 import { EMBED_SANDBOX, generateEmbedPreview, getEmbedPanes, loadEmbedProject } from "./js/projects/embedProject.js";
-
+const el = (sel, par = document) => par.querySelector(sel);
 const params = new URLSearchParams(location.search);
 const gistId = params.get("g");
-const status = document.querySelector("#embed-status");
-const preview = document.querySelector("#embed-preview");
-const output = document.querySelector("#embed-console");
-const openLink = document.querySelector("#embed-open");
-const nav = document.querySelector(".embed-bar nav");
+const status = el("#embed-status");
+const preview = el("#embed-preview");
+const output = el("#embed-console");
+const openLink = el("#embed-open");
+const nav = el(".embed-bar nav");
 const panes = getEmbedPanes(params.get("p"));
-const paneElements = Object.fromEntries(panes.map(({ name }) => [name, document.querySelector(`#embed-pane-${name}`)]));
+const paneElements = Object.fromEntries(panes.map(({ name }) => [name, el(`#embed-pane-${name}`)]));
 const visiblePanes = new Set(panes.map(({ name }) => name));
 preview.setAttribute("sandbox", EMBED_SANDBOX);
 
@@ -44,10 +44,10 @@ try {
     appUrl.searchParams.set("p", panes.map(({ code }) => code).join(""));
     openLink.href = appUrl.href;
     openLink.hidden = false;
-    document.querySelector(".embed-brand").href = appUrl.href;
+    el(".embed-brand").href = appUrl.href;
     panes.forEach(({ name }) => {
         if (!["html", "css", "js"].includes(name)) return;
-        const code = document.querySelector(`#embed-${name}-source code`);
+        const code = el(`#embed-${name}-source code`);
         code.textContent = project[name];
         code.className = `hljs language-${name}`;
         // Highlight.js escapes source text before adding its own token spans.
@@ -56,7 +56,7 @@ try {
     const buttons = panes.map(({ name, label }) => {
         const button = document.createElement("button");
         button.type = "button";
-        button.textContent = label;
+        button.textContent = label.replace("Console", "›_").replace("Preview", "View");
         button.dataset.view = name;
         button.title = `Toggle ${label} pane (Ctrl/Cmd+click to isolate)`;
         nav.append(button);
