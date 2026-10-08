@@ -195,6 +195,10 @@
             font-weight: 600;
             line-height: 1.15;
             letter-spacing: -0.035em;
+            display: inline-block;
+            background: linear-gradient(to right, var(--text-faint), var(--text-strong), var(--text-faint));
+            color: transparent;
+            background-clip: text;
         }
 
         .welcome-intro {

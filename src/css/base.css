@@ -81,7 +81,7 @@ button {
     gap: 0.38rem;
     padding: 0.5rem 0.8rem;
     border: 0;
-    border-radius: 0;
+    border-radius: 0.1em;
     background: color-mix(in srgb, var(--bg), #000 30%);
     color: color-mix(in srgb, var(--fg), var(--bg) 20%);
     line-height: 1;
