@@ -33,6 +33,12 @@ export default class MultiCursor {
             this.pointerSelections = event.altKey ? this.getSelections() : null;
             if (!event.altKey) this.clear();
         });
+        this.area.addEventListener("mousedown", (event) => {
+            if (event.button !== 0 || event.detail !== 2) return;
+            // Let the native word selection run, then trim before its first paint.
+            // Waiting for dblclick leaves the space visible until the second mouseup.
+            requestAnimationFrame(() => this.trimWordSelection());
+        });
         this.area.addEventListener("click", (event) => {
             const previous = this.pointerSelections;
             this.pointerSelections = null;
@@ -41,6 +47,7 @@ export default class MultiCursor {
             const matching = previous.findIndex((selection) => selection.anchor === clicked.anchor && selection.head === clicked.head);
             this.setSelections(matching >= 0 && previous.length > 1 ? previous.filter((_, index) => index !== matching) : [clicked, ...previous]);
         });
+        this.area.addEventListener("dblclick", () => this.trimWordSelection());
         this.area.addEventListener("pointercancel", () => {
             this.pointerSelections = null;
         });
@@ -81,6 +88,18 @@ export default class MultiCursor {
     nativeSelection() {
         const { selectionStart: start, selectionEnd: end, selectionDirection: direction } = this.area;
         return direction === "backward" ? { anchor: end, head: start } : { anchor: start, head: end };
+    }
+
+    trimWordSelection() {
+        // Windows word selection can include trailing whitespace.
+        const primary = this.nativeSelection();
+        const { start, end } = selectionBounds(primary);
+        const selected = this.area.value.slice(start, end).trimEnd();
+        if (!selected || selected.length === end - start) return;
+        const trimmedEnd = start + selected.length;
+        const trimmed = primary.anchor > primary.head ? { anchor: trimmedEnd, head: start } : { anchor: start, head: trimmedEnd };
+        this.setSelections([trimmed, ...this.getSelections().slice(1)]);
+        this.editor.updateHighlights();
     }
 
     getSelections() {

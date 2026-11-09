@@ -44,6 +44,7 @@ class TestTextarea extends TestNode {
 }
 
 const caret = (head) => ({ anchor: head, head });
+const animationFrames = [];
 const send = (area, type, properties = {}) => {
     const event = new Event(type, { cancelable: true });
     Object.assign(event, properties);
@@ -73,6 +74,8 @@ function createEditor(value, syntax = "html") {
 
 beforeEach(() => {
     vi.useFakeTimers();
+    animationFrames.length = 0;
+    vi.stubGlobal("requestAnimationFrame", (callback) => animationFrames.push(callback));
     const document = new TestNode();
     document.createElement = () => new TestNode();
     document.createDocumentFragment = () => new TestNode();
@@ -87,6 +90,70 @@ afterEach(() => {
 });
 
 describe("multi-cursor editor integration", () => {
+    it.each(["html", "css", "js"])("trims the native %s word selection before paint while the second mouse button press is held", (syntax) => {
+        const editor = createEditor("Splitview chat", syntax);
+        editor.elTextarea.setSelectionRange(4, 4);
+        send(editor.elTextarea, "mousedown", { button: 0, detail: 2 });
+        // The browser's default action selects the word after mousedown dispatch.
+        editor.elTextarea.setSelectionRange(0, 10);
+        animationFrames.shift()();
+
+        expect(editor.multiCursor.getSelections()).toEqual([{ anchor: 0, head: 9 }]);
+        expect(editor.updateHighlights).toHaveBeenCalledTimes(1);
+        send(editor.elTextarea, "mouseup");
+        send(editor.elTextarea, "dblclick");
+        expect(editor.multiCursor.getSelections()).toEqual([{ anchor: 0, head: 9 }]);
+        expect(editor.updateHighlights).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+        [0, 1],
+        [0, 3],
+        [2, 2],
+    ])("leaves native selection timing alone for mouse button %s and click count %s", (button, detail) => {
+        const editor = createEditor("Splitview chat");
+        editor.elTextarea.setSelectionRange(0, 10);
+        send(editor.elTextarea, "mousedown", { button, detail });
+
+        expect(animationFrames).toHaveLength(0);
+        expect(editor.elTextarea.selectionEnd).toBe(10);
+    });
+
+    it.each(["html", "css", "js"])("excludes trailing whitespace when double-clicking a word in the %s pane", (syntax) => {
+        const editor = createEditor("Splitview chat", syntax);
+        editor.elTextarea.setSelectionRange(0, 10);
+        send(editor.elTextarea, "dblclick");
+
+        expect(editor.multiCursor.getSelections()).toEqual([{ anchor: 0, head: 9 }]);
+        expect(editor.selectionCounter).toHaveBeenCalled();
+        expect(editor.updateHighlights).toHaveBeenCalled();
+        editor.insertAtCaret("New");
+        expect(editor.value).toBe("New chat");
+    });
+
+    it.each([
+        ["Splitview \t chat", 0, 12, "backward", 0, 9],
+        ["Splitview chat", 10, 14, "forward", 10, 14],
+        ["Splitview   chat", 9, 12, "forward", 9, 12],
+    ])("preserves selection direction and whitespace-only selections in %s", (value, start, end, direction, expectedStart, expectedEnd) => {
+        const editor = createEditor(value);
+        editor.elTextarea.setSelectionRange(start, end, direction);
+        send(editor.elTextarea, "dblclick");
+
+        expect(editor.elTextarea.selectionStart).toBe(expectedStart);
+        expect(editor.elTextarea.selectionEnd).toBe(expectedEnd);
+        expect(editor.elTextarea.selectionDirection).toBe(direction);
+    });
+
+    it("keeps intentionally selected trailing spaces outside double-clicks", () => {
+        const editor = createEditor("Splitview chat");
+        editor.elTextarea.setSelectionRange(0, 10);
+        document.activeElement = editor.elTextarea;
+        send(document, "selectionchange");
+
+        expect(editor.multiCursor.getSelections()).toEqual([{ anchor: 0, head: 10 }]);
+    });
+
     it("renders every caret on one layer without painting the native selection twice", () => {
         const editor = createEditor("one two three");
         editor.multiCursor.setSelections([

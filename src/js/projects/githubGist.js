@@ -1,4 +1,5 @@
 import { LS } from "../shared/utils.js";
+import { bus } from "../shared/bus.js";
 const ls = LS("xode.settings");
 
 /**
@@ -41,11 +42,13 @@ export function createXodeManifestFile(project = {}) {
 /* Token helpers */
 
 export function getToken() {
-    return ls.read().gt;
+    return ls.read()?.gt?.trim();
 }
 
 export function setToken(gt) {
-    ls.update({ gt });
+    const token = gt.trim();
+    if (token) ls.update({ gt: token });
+    else clearToken();
 }
 
 export function clearToken() {
@@ -65,7 +68,7 @@ export class GistAuthError extends Error {
 
 export class GistApiError extends Error {
     constructor(status, details) {
-        super(details?.message || `GitHub API error: ${status}`);
+        super(status === 401 ? "Your GitHub token has expired or is invalid. Create a new token with the gist scope and reconnect in GitHub Connect." : details?.message || `GitHub API error: ${status}`);
         this.name = "GistApiError";
         this.status = status;
         this.details = details;
@@ -87,7 +90,13 @@ function requireAuth(fn) {
 function optionalAuth(fn) {
     return async (...args) => {
         const token = getToken(); // may be null — fn must handle that
-        return fn(token, ...args);
+        try {
+            return await fn(token, ...args);
+        } catch (error) {
+            // A rejected token must not prevent reading a publicly accessible Gist.
+            if (token && error instanceof GistApiError && error.status === 401) return fn(null, ...args);
+            throw error;
+        }
     };
 }
 
@@ -105,7 +114,14 @@ async function request(url, options = {}, token = null) {
 
     if (!res.ok) {
         const details = await res.json().catch(() => ({}));
-        throw new GistApiError(res.status, details);
+        const error = new GistApiError(res.status, details);
+        error.authHandled = res.status === 401 && Boolean(token);
+        // Ignore stale failures from requests sent before the user replaced their token.
+        if (res.status === 401 && token && getToken() === token) {
+            clearToken();
+            bus.emit("github:auth-expired", { message: error.message });
+        }
+        throw error;
     }
 
     if (res.status === 204) return null; // e.g. DELETE

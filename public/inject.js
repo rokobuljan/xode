@@ -152,22 +152,37 @@ document.addEventListener(
             // Keep malformed escape sequences usable as literal IDs.
         }
 
-        const scrollRoot = document.scrollingElement;
-        if (!scrollRoot) return;
-        if (!fragment) {
-            scrollRoot.scrollTop = 0;
-            scrollRoot.scrollLeft = 0;
-            return;
-        }
-
-        const target = document.getElementById(fragment) ?? document.getElementsByName(fragment)[0];
-        if (!target) return;
-        const bounds = target.getBoundingClientRect();
-        scrollRoot.scrollTop += bounds.top;
-        scrollRoot.scrollLeft += bounds.left;
+        const target = fragment ? (document.getElementById(fragment) ?? document.getElementsByName(fragment)[0]) : document.body;
+        if (target) scrollToFragmentTarget(target, !fragment);
     },
     true,
 );
+// Native scrollIntoView is disabled (it propagates into the editor), so emulate it:
+// align the target in every scrollable ancestor, then in the document viewport.
+function scrollToFragmentTarget(target, toTop) {
+    const scrollRoot = document.scrollingElement ?? document.documentElement;
+    const canScroll = (el) => {
+        if (el === scrollRoot) return true;
+        const { overflowX, overflowY } = getComputedStyle(el);
+        const scrollable = /auto|scroll|overlay/;
+        return (scrollable.test(overflowY) && el.scrollHeight > el.clientHeight) || (scrollable.test(overflowX) && el.scrollWidth > el.clientWidth);
+    };
+    const style = getComputedStyle(target);
+    const marginTop = parseFloat(style.scrollMarginTop) || 0;
+    const marginLeft = parseFloat(style.scrollMarginLeft) || 0;
+    for (let el = toTop ? target : target.parentElement; el; el = el.parentElement) {
+        if (!canScroll(el)) continue;
+        if (toTop) {
+            el.scrollTop = 0;
+            el.scrollLeft = 0;
+            continue;
+        }
+        const box = el === scrollRoot ? { top: 0, left: 0 } : el.getBoundingClientRect();
+        const bounds = target.getBoundingClientRect();
+        el.scrollTop += bounds.top - box.top - (el === scrollRoot ? 0 : el.clientTop) - marginTop;
+        el.scrollLeft += bounds.left - box.left - (el === scrollRoot ? 0 : el.clientLeft) - marginLeft;
+    }
+}
 document.addEventListener(
     "submit",
     (evt) => {

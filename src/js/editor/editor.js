@@ -497,7 +497,7 @@ export class Editor {
                     const elLine = this.elLines.children[color.line - 1];
                     const elColor = elNew("span", {
                         className: "swatch",
-                        title: color.raw,
+                        title: color.css,
                     });
                     elColor.style.setProperty("--swatch", color.css);
                     elLine.append(elColor);

@@ -37,6 +37,7 @@ await initProjectStorage();
 const initialProject = await openProject();
 
 const lsSettings = LS("xode.settings");
+const isGistUnauthorized = (error) => error instanceof GistApiError && error.status === 401 && error.authHandled;
 const tabWidth = normalizeTabWidth(lsSettings.read("tabWidth"));
 const editors = {};
 const elPreview = el("#preview"); // the iframe
@@ -513,7 +514,7 @@ async function openProjectShareDialog(project) {
     try {
         await cacheRemoteGist(project.gistId);
     } catch (error) {
-        console.warn("Could not check shared project for unpublished changes", error);
+        if (!isGistUnauthorized(error)) console.warn("Could not check shared project for unpublished changes", error);
     }
     if (pendingProjectShare === project) updateSharePublishNotice();
 }
@@ -627,8 +628,6 @@ bus.on("ai:update", ({ syntax, content }) => {
 
 // GISTS
 
-let token = getToken();
-
 // Save token to localStorage
 const elGithubToken = el("#githubToken");
 const elGithubTokenDelete = el("#githubTokenDelete");
@@ -657,6 +656,7 @@ const resetGistPagination = () => {
 };
 
 const updateElGithubToken = () => {
+    const token = getToken();
     elGithubToken.value = "";
     if (token) elGithubToken.placeholder = "ENABLED!";
     else elGithubToken.placeholder = "GitHub Token (classic)";
@@ -668,8 +668,20 @@ const updateElGithubToken = () => {
     settingsState.isGithubDisabled = !token;
 };
 
-elGithubToken.addEventListener("input", (evt) => {
-    token = evt.target.value;
+bus.on("github:auth-expired", ({ message }) => {
+    resetGistPagination();
+    updateElGithubToken();
+    new Toast({
+        head: "GitHub token expired or invalid",
+        body: `${message} <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">Create a new GitHub token</a>.`,
+        type: "error",
+        time: 0,
+    });
+});
+
+// Commit after editing so the connected state does not hide the field mid-token.
+elGithubToken.addEventListener("change", (evt) => {
+    const token = evt.target.value.trim();
     if (token) setToken(token);
     else clearToken();
     resetGistPagination();
@@ -680,7 +692,7 @@ elGithubToken.addEventListener("blur", () => {
 });
 elGithubTokenDelete.addEventListener("click", () => {
     updateElGithubToken();
-    elGithubToken.dispatchEvent(new Event("input"));
+    elGithubToken.dispatchEvent(new Event("change"));
 });
 
 const importGistFromInput = async (input) => {
@@ -707,7 +719,7 @@ const importGistFromInput = async (input) => {
     } catch (error) {
         elPreviewGistStatus.dataset.type = "error";
         elPreviewGistStatus.textContent = `Could not import Gist: ${error.message}`;
-        if (input === elGithubLoadId) new Toast({ head: "Could not import Gist", body: error.message, type: "error", time: 0 });
+        if (input === elGithubLoadId && !isGistUnauthorized(error)) new Toast({ head: "Could not import Gist", body: error.message, type: "error", time: 0 });
     } finally {
         isLoadingGist = false;
         elGithubLoad.disabled = elPreviewGistImport.disabled = false;
@@ -748,7 +760,7 @@ const checkRemoteProject = async () => {
     try {
         await cacheRemoteGist(id);
     } catch (error) {
-        console.warn("Could not check for Gist updates", error);
+        if (!isGistUnauthorized(error)) console.warn("Could not check for Gist updates", error);
     }
 };
 const markProjectSynced = (project, remote) => {
@@ -771,6 +783,7 @@ elRemoteUpdate.addEventListener("click", async () => {
         await projectInit(false, id);
         await drawProjects();
     } catch (error) {
+        if (isGistUnauthorized(error)) return;
         new Toast({ head: "Could not update project", body: error.message, type: "error", time: 0 });
     } finally {
         elRemoteUpdate.disabled = false;
@@ -860,6 +873,10 @@ elGithubFetch.addEventListener("click", async () => {
                     }
                 }),
             );
+            if (!hasToken()) {
+                if (imported) await drawProjects({ reset: true });
+                return;
+            }
         }
 
         if (imported) await drawProjects({ reset: true });
@@ -882,6 +899,7 @@ elGithubFetch.addEventListener("click", async () => {
             time: failed ? 0 : 4000,
         });
     } catch (error) {
+        if (isGistUnauthorized(error)) return;
         new Toast({
             head: "Could not fetch Gists",
             body: error.message,
@@ -937,6 +955,7 @@ const gistPublish = async (project) => {
                 time: 3000,
             });
         } catch (err) {
+            if (isGistUnauthorized(err)) return false;
             new Toast({
                 head: "Error",
                 type: "error",
@@ -959,6 +978,7 @@ const gistPublish = async (project) => {
                 time: 3000,
             });
         } catch (err) {
+            if (isGistUnauthorized(err)) return false;
             if (err instanceof GistApiError && err.status === 404) {
                 try {
                     const forked = await gist.fork(project.gistId);
@@ -982,6 +1002,7 @@ const gistPublish = async (project) => {
                         time: 4000,
                     });
                 } catch (forkErr) {
+                    if (isGistUnauthorized(forkErr)) return false;
                     new Toast({
                         head: "Error",
                         type: "error",
